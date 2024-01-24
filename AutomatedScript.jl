@@ -1,3 +1,5 @@
+module AutomatedScript
+
 using Oscar
 
 ##################################################################
@@ -9,19 +11,22 @@ using Oscar
 
 # TODO: Modify all the below to work in Fp.
 
+#= Example
 n = 3
+d = 3
 p = 2
 Fp = GF(p)
 
 R = ZZ
-PR, (x, y, z) = PolynomialRing(R, ["x$i" for i in 1:n])
-polynomial = y^2*z - x^3 - x*z^2 - z^3
+PR, (w, x, y, z) = PolynomialRing(R, ["x$i" for i in 1:(n+1)])
+polynomial = w^3 + x^3 + y^3 + z^3 + x*y*z + w*x*y
+=#
 
 # TODO: Check that it is homogenous. Let d = degree.
 
-d = 3
 
-partials = [ derivative(polynomial, i) for i in 1:n ]
+
+#partials = [ derivative(polynomial, i) for i in 1:n ]
 
 # TODO: Ensure partials are not all zero.
 
@@ -45,6 +50,17 @@ function gen_exp_vec(n,d)
             append!(y[j],i)
         end
         append!(result,y)
+    end
+    return result
+end
+
+function gen_mon(exp_vec, R, PR)
+    result = []
+    for i in axes(exp_vec,1)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(1), exp_vec[i])
+        monomial = finish(B)
+        push!(result,monomial)
     end
     return result
 end
@@ -98,7 +114,7 @@ end
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial
 function convert_m_to_p(mat, expvec, R, PR)
     result = []
-    for i in axes(mat,1)
+    for i in 1:nrows(mat)
         B = MPolyBuildCtx(PR)
         for j in axes(expvec,1)
             push_term!(B, mat[i,j], expvec[j])
@@ -110,29 +126,36 @@ end
 
 # Computes the basis vectors associated with case h. Columns of
 # returned matrix will be linearly independent vectors.
-function basis_vectors(n, d, h, partials, R)
+function basis_vectors(n, d, polynomial, R, PR)
+    result = []
+    partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
     # If number of monomials is too small, just use
     # constant as basis vector.
-    if h*d - n - 1 <= 0
-        return R(1)
+    for h in 1:n
+        if h*d - n - 1 <= 0
+            append!(result,[PR(1)]) 
+        else
+            # compute all monomials of degree `hd - n - 1`
+            expvec = gen_exp_vec(n+1, h*d - n - 1)
+
+            # TODO: compute all distinct products between the partial derivatives
+            # and monomials(n+1, hd - n - d). These are our relations.
+            #rmonomials = compute_monomials(n+1, h*d - n - d)
+            rexpvec = gen_exp_vec(n+1,h*d - n - d)
+            rmonomials = gen_mon(rexpvec,R,PR)
+            relations = compute_relations(rmonomials, partials)
+
+            # TODO: Check that the number of relations is <= the number of
+            # monomials (which is = n + d - 1 choose d)
+
+            # TODO: Let the i-th vector element of `monomials` be the i-th basis
+            # element in the monomial basis. Convert all relations into that form.
+            M = matrix(R, convert_p_to_m(relations, expvec))
+            v, N = nullspace(M)
+            append!(result, convert_m_to_p(transpose(N), expvec, R, PR))
+        end
     end
-
-    # compute all monomials of degree `hd - n - 1`
-    expvec = gen_exp_vec(n+1, h*d - n - 1)
-
-    # TODO: compute all distinct products between the partial derivatives
-    # and monomials(n+1, hd - n - d). These are our relations.
-    rmonomials = compute_monomials(n+1, h*d - n - d)
-    relations = compute_relations(rmonomials, partials)
-
-    # TODO: Check that the number of relations is <= the number of
-    # monomials (which is = n + d - 1 choose d)
-
-    # TODO: Let the i-th vector element of `monomials` be the i-th basis
-    # element in the monomial basis. Convert all relations into that form.
-    M = matrix(R, convert_p_to_m(relations, expvec))
-
-    return nullspace(M)
+    return result
 end
 
 # TODO: Compute Omega in terms of differential symbol and exterior
@@ -144,3 +167,4 @@ end
 # Future TODO: Parallelize these algorithms either by hand or by trying to use
 # more library functions (for example the Combinatorics.jl library seems promising
 # and likely is automatically parallel).
+end
