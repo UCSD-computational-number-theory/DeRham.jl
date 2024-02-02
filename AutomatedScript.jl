@@ -18,7 +18,7 @@ p = 2
 Fp = GF(p)
 
 R = ZZ
-PR, (w, x, y, z) = PolynomialRing(R, ["x$i" for i in 1:(n+1)])
+PR, (w, x, y, z) = PolynomialRing(R, ["x$i" for i in 0:n])
 polynomial = w^3 + x^3 + y^3 + z^3 + x*y*z + w*x*y
 =#
 
