@@ -133,7 +133,7 @@ function basis_vectors(n, d, polynomial, R, PR)
     # constant as basis vector.
     for h in 1:n
         if h*d - n - 1 <= 0
-            append!(result,[PR(1)]) 
+            push!(result,[PR(1), h]) 
         else
             # compute all monomials of degree `hd - n - 1`
             expvec = gen_exp_vec(n+1, h*d - n - 1)
@@ -152,7 +152,12 @@ function basis_vectors(n, d, polynomial, R, PR)
             # element in the monomial basis. Convert all relations into that form.
             M = matrix(R, convert_p_to_m(relations, expvec))
             v, N = nullspace(M)
-            append!(result, convert_m_to_p(transpose(N), expvec, R, PR))
+            B = convert_m_to_p(transpose(N),expvec, R, PR)
+            Bh = []
+            for i in B
+                push!(Bh, [i,h])
+            end
+            append!(result, Bh)
         end
     end
     return result
