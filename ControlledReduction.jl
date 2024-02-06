@@ -53,7 +53,7 @@ function applyFrobenius(n,d,f,N,p,beta,m,R,PR)
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1), p*(beta + alpha + o))
             monomial = div(finish(B),X1)
-            sum = sum + R(p^(m-1))*(R(D[j+1]*coeff(fj,alpha) % p^s))*monomial
+            sum = sum + R(p^(m-1))*(R(D[j+1]*(coeff(fj,alpha)^p) % p^s))*monomial
         end
         push!(result, [sum, p*(m+j)])
     end
