@@ -12,21 +12,18 @@ using Oscar
 # TODO: Modify all the below to work in Fp.
 
 #= Example
-n = 3
-d = 3
-p = 2
+n = 2
+d = 5
+p = 41
 Fp = GF(p)
 
-R = ZZ
-PR, (w, x, y, z) = PolynomialRing(R, ["x$i" for i in 0:n])
-polynomial = w^3 + x^3 + y^3 + z^3 + x*y*z + w*x*y
+R = Fp
+PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
+polynomial = x^5 + y^5 + z^5 + x*(y^3)*z
+partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 =#
 
 # TODO: Check that it is homogenous. Let d = degree.
-
-
-
-#partials = [ derivative(polynomial, i) for i in 1:n ]
 
 # TODO: Ensure partials are not all zero.
 
@@ -138,24 +135,28 @@ function basis_vectors(n, d, polynomial, R, PR)
             # compute all monomials of degree `hd - n - 1`
             expvec = gen_exp_vec(n+1, h*d - n - 1)
 
-            # TODO: compute all distinct products between the partial derivatives
-            # and monomials(n+1, hd - n - d). These are our relations.
-            #rmonomials = compute_monomials(n+1, h*d - n - d)
-            rexpvec = gen_exp_vec(n+1,h*d - n - d)
-            rmonomials = gen_mon(rexpvec,R,PR)
-            relations = compute_relations(rmonomials, partials)
+            if h*d - n - d <= 0
+                B = gen_mon(expvec,R,PR)
+            else
+                # TODO: compute all distinct products between the partial derivatives
+                # and monomials(n+1, hd - n - d). These are our relations.
+                #rmonomials = compute_monomials(n+1, h*d - n - d)
+                rexpvec = gen_exp_vec(n+1,h*d - n - d)
+                rmonomials = gen_mon(rexpvec,R,PR)
+                relations = compute_relations(rmonomials, partials)
 
-            # TODO: Check that the number of relations is <= the number of
-            # monomials (which is = n + d - 1 choose d)
+                # TODO: Check that the number of relations is <= the number of
+                # monomials (which is = n + d - 1 choose d)
 
-            # TODO: Let the i-th vector element of `monomials` be the i-th basis
-            # element in the monomial basis. Convert all relations into that form.
-            M = matrix(R, convert_p_to_m(relations, expvec))
-            v, N = nullspace(M)
-            B = convert_m_to_p(transpose(N),expvec, R, PR)
+                # TODO: Let the i-th vector element of `monomials` be the i-th basis
+                # element in the monomial basis. Convert all relations into that form.
+                M = matrix(R, convert_p_to_m(relations, expvec))
+                v, N = nullspace(M)
+                B = convert_m_to_p(transpose(N),expvec, R, PR)
+            end
             Bh = []
             for i in B
-                push!(Bh, [i,h])
+                push!(Bh, [map_coefficients(lift,i),h])
             end
             append!(result, Bh)
         end
