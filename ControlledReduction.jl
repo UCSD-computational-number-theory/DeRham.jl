@@ -5,29 +5,72 @@ include("AutomatedScript.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
-    gensJS = []
+    gensJS = [PR(0),PR(0),PR(0)]
+    B = MPolyBuildCtx(PR)
+    push_term!(B, R(1), V)
+    XV = finish(B)
     for i in 0:n
         if i in S
-            push!(gensJS,parts[i])
+            #push!(gensJS,parts[i+1])
+            gensJS[i+1] = parts[i+1]
         else
-            push!(gensJS,Vars[i+1]*parts[i+1])
+            #push!(gensJS,Vars[i+1]*parts[i+1])
+            gensJS[i+1] = Vars[i+1]*parts[i+1]
+            #parts[i+1] = Vars[i+1]*parts[i+1]
             push!(SC,i)
         end
     end
     # get gi's using psuedoinverse
-    gc, t = reduce_with_quotients(g[1],parts)
+    gc, t = reduce_with_quotients(XV*g[1],gensJS)
     gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    return [sum((PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1]) for i in S; init = PR(0)) + sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
+    return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
 end
 
+function chooseV(I,d)
+    V = zeros(Int,length(I))
+    i = 0
+    s = 1
+    while i < d
+        if s > length(I)
+            s = 1
+        end
+        if (I - V)[s] > 0
+            V[s] = V[s] + 1
+            i = i + 1
+        end
+    end
+    return V
+end
+
+function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+    while g[2] > n
+        g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+    end
+    return g
+end
+
 function computeR(u,v,s,n,d,R,PR,vars)
-    ev = AutomatedScript.gen_exp_vec(n,d*n-n)
+    ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
     monomials = AutomatedScript.gen_mon(ev,R,PR)
     reductions = []
     for m in monomials
         push!(reductions,computeReduction(u,v,s,n,d,m,ev,R,PR,vars))
+    end
+    return transpose(AutomatedScript.convert_p_to_m(reductions,ev))
+end
+
+function computeRPoly(V,S,n,d,parts,R,PR)
+    URing, UVars = PolynomialRing(R, ["u$i" for i in 0:n])
+    PURing, Vars = PolynomialRing(URing, ["x$i" for i in 0:n])
+    polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
+    parts = [ derivative(polynomial, i) for i in 1:(n+1) ]
+    ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
+    monomials = AutomatedScript.gen_mon(ev,URing,PURing)
+    reductions = []
+    for m in monomials
+        push!(reductions, computeReduction(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
     end
     return transpose(AutomatedScript.convert_p_to_m(reductions,ev))
 end
