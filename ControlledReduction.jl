@@ -40,6 +40,7 @@ function chooseV(I,d)
             V[s] = V[s] + 1
             i = i + 1
         end
+        s = s + 1
     end
     return V
 end
