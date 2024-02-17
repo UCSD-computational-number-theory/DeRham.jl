@@ -19,7 +19,7 @@ Fp = GF(p)
 
 R = Fp
 PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
-polynomial = x^5 + y^5 + z^5 + x*(y^3)*z
+polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
 partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 =#
 
@@ -101,7 +101,7 @@ function convert_p_to_m(polys, expvec)
     for i in axes(polys,1)
         temp = []
         for j in axes(expvec,1)
-            append!(temp, [coeff(polys[i], expvec[j])])
+            push!(temp, coeff(polys[i], expvec[j]))
         end
         push!(result, transpose(temp))
     end

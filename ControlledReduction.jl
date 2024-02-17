@@ -21,9 +21,9 @@ function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
         end
     end
     # get gi's using psuedoinverse
-    gc, t = reduce_with_quotients(XV*g[1],gensJS)
-    gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
+    gc, t = reduce_with_quotients(div(XV*g[1],XS),gensJS)
+    gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
     return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
 end
@@ -51,6 +51,47 @@ function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     return g
 end
 
+function evaluateRUV(RUV,U)
+    result = copy(RUV)
+    for i in axes(RUV,1)
+        for j in axes(RUV,2)
+            result[i,j] = evaluate(RUV[i,j],U)
+        end
+    end
+    return result
+end
+
+function computeReductionChain(I,n,d,m,S,parts,R,PR)
+    chain = 0
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    gVec = chooseV(I,n*d - n)
+    I = I - gVec
+    Vs = []
+    RUVs = []
+    while m > n
+        V = chooseV(I,d)
+        U = I - V
+        l = findall(x->x==V, Vs)
+        if length(l) > 0
+            RPoly = RUVs[l[1]]
+        else
+            RPoly = computeRPoly(V,S,n,d,parts,R,PR)
+            push!(Vs,V)
+            push!(RUVs,RPoly)
+        end
+        RNums = evaluateRUV(RPoly,U)
+        if chain == 0
+            chain = RNums
+        else
+            chain = RNums*chain
+        end
+        m = m - 1
+        I = U
+    end
+    return chain
+end
+
+#=
 function computeR(u,v,s,n,d,R,PR,vars)
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
     monomials = AutomatedScript.gen_mon(ev,R,PR)
@@ -60,19 +101,22 @@ function computeR(u,v,s,n,d,R,PR,vars)
     end
     return transpose(AutomatedScript.convert_p_to_m(reductions,ev))
 end
+=#
 
 function computeRPoly(V,S,n,d,parts,R,PR)
     URing, UVars = PolynomialRing(R, ["u$i" for i in 0:n])
     PURing, Vars = PolynomialRing(URing, ["x$i" for i in 0:n])
+    #this is temporary
     polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
     parts = [ derivative(polynomial, i) for i in 1:(n+1) ]
+    #
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
     monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
         push!(reductions, computeReduction(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
     end
-    return transpose(AutomatedScript.convert_p_to_m(reductions,ev))
+    return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
 
 function computeD(N,m)
