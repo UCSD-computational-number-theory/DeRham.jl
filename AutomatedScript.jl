@@ -111,7 +111,7 @@ end
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial
 function convert_m_to_p(mat, expvec, R, PR)
     result = []
-    for i in 1:nrows(mat)
+    for i in axes(mat,1)
         B = MPolyBuildCtx(PR)
         for j in axes(expvec,1)
             push_term!(B, mat[i,j], expvec[j])
@@ -123,7 +123,8 @@ end
 
 # Computes the basis vectors associated with case h. Columns of
 # returned matrix will be linearly independent vectors.
-function basis_vectors(n, d, polynomial, R, PR)
+function basis_vectors(n, d, p, precision, polynomial, R, PR)
+    Qp = PadicField(p,precision)
     result = []
     partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
     # If number of monomials is too small, just use
@@ -156,6 +157,7 @@ function basis_vectors(n, d, polynomial, R, PR)
             end
             Bh = []
             for i in B
+                #push!(Bh, [change_base_ring(Qp,map_coefficients(lift,i)),h])
                 push!(Bh, [map_coefficients(lift,i),h])
             end
             append!(result, Bh)

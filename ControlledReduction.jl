@@ -1,11 +1,12 @@
 module ControlledReduction
 
 using Oscar
+using BitIntegers
 include("AutomatedScript.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
-    gensJS = [PR(0),PR(0),PR(0)]
+    gensJS = copy(parts)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), V)
     XV = finish(B)
@@ -32,13 +33,19 @@ function chooseV(I,d)
     V = zeros(Int,length(I))
     i = 0
     s = 1
+    foundNonZero = false
     while i < d
-        if s > length(I)
+        if s > length(I) && foundNonZero == false
+            println(V)
+            return V
+        elseif s > length(I)
             s = 1
+            foundNonZero = false
         end
         if (I - V)[s] > 0
             V[s] = V[s] + 1
             i = i + 1
+            foundNonZero = true
         end
         s = s + 1
     end
@@ -52,17 +59,17 @@ function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     return g
 end
 
-function evaluateRUV(RUV,U)
+function evaluateRUV(RUV,U,ResRing)
     result = copy(RUV)
     for i in axes(RUV,1)
         for j in axes(RUV,2)
-            result[i,j] = evaluate(RUV[i,j],U)
+            result[i,j] = evaluate(change_base_ring(ResRing,map_coefficients(lift,RUV[i,j])),U)
         end
     end
     return result
 end
 
-function computeReductionChain(I,n,d,m,S,parts,R,PR)
+function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
     chain = 0
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
     gVec = chooseV(I,n*d - n)
@@ -80,7 +87,7 @@ function computeReductionChain(I,n,d,m,S,parts,R,PR)
             push!(Vs,V)
             push!(RUVs,RPoly)
         end
-        RNums = evaluateRUV(RPoly,U)
+        RNums = evaluateRUV(RPoly,U,ResRing)
         if chain == 0
             chain = RNums
         else
@@ -89,8 +96,51 @@ function computeReductionChain(I,n,d,m,S,parts,R,PR)
         m = m - 1
         I = U
     end
-    return chain
+    return [chain, I]
 end
+
+function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
+    t = getTerms(poly)
+    result = 0
+    for i in t
+        o = ones(Int,length(exponent_vector(i[1],1)))
+        I = exponent_vector(i[1],1) + o
+        gVec = chooseV(I,n*d - n)
+        ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+        gMat = zeros(Int,length(ev))
+        for j in axes(gMat,1)
+            if gVec == ev[j]
+                gMat[j] = coeff(map_coefficients(lift,i[1]),1)
+                break
+            end
+        end
+        RChain = computeReductionChain(I,n,d,i[2],S,parts,R,PR,ResRing)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(1), RChain[2])
+        XU = finish(B)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(1), o)
+        XS = finish(B)
+        gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]*gMat),ev,R,PR)[1],XS)
+        result = result + gReduction
+    end
+    return [result,n]
+end
+
+function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
+    result = 0
+    for i in FT
+        for j in i
+            s = N + j[2] - 1
+            ResRing = residue_ring(ZZ,Int1024(p)^s)
+            result = computeReductionOfPoly(j,n,d,S,parts,R,PR,ResRing)[1]
+        end
+    end
+    return [result,n]
+end
+        
+
+
 
 #=
 function computeR(u,v,s,n,d,R,PR,vars)
@@ -145,7 +195,7 @@ function applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
             push_term!(B, R(1), p*(beta + alpha + o))
             monomial = div(finish(B),X1)
             #println(typeof(coeff(fj,alpha)^p))
-            sum = sum + R(p^(m-1))*(R(D[j+1]*(coeff(fj,alpha)^p) % p^s))*monomial
+            sum = sum + p^(m-1)*(D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p) % p^s)*monomial
         end
         push!(result, [sum, p*(m+j)])
     end
@@ -166,7 +216,7 @@ function applyFrobenius(n,d,f,N,p,poly,R,PR)
     temp = []
     for i in t
         ev = exponent_vector(i[1],1)
-        push!(temp, applyFrobeniusToMon(n,d,map_coefficients(lift,f),N,p,ev,poly[2],R,PR))
+        push!(temp, applyFrobeniusToMon(n,d,f,N,p,ev,poly[2],R,PR))
     end
     return temp
 end
