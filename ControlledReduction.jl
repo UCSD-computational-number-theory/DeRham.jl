@@ -2,6 +2,7 @@ module ControlledReduction
 
 using Oscar
 using BitIntegers
+using LinearAlgebra
 include("AutomatedScript.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
@@ -30,7 +31,7 @@ function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
 end
 
 #LA test --------------------------------
-function computeReductionLA(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+function computeReductionLA(U,V,S,n,d,f,g,ev,R,PR,Vars)
     SC = []
     gensJS = copy(parts)
     B = MPolyBuildCtx(PR)
@@ -49,8 +50,10 @@ function computeReductionLA(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     end
     # get gi's using psuedoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    partsMat = FindMonomialBasis.find_monomial_bases(f)[]
-    gc, t = reduce_with_quotients(div(XV*g[1],XS),gensJS)
+    partsMat = LinearAlgebra.pinv(CopiedFindMonomialBasis.find_monomial_basis(f, 2, true)[2])
+    gVec = AutomatedScript.convert_p_to_m(g,AutomatedScript.gen_exp_vec(n,n*d-n))
+    gJS = partsMat*gVec
+    gc = 
     gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
     return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
@@ -343,6 +346,13 @@ function applyFrobenius(n,d,f,N,p,poly,R,PR)
     return temp
 end
 
-
+function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
+    result = []
+    for b in Basis
+        push!(result, applyFrobenius(n,d,f,N,p,b,R,PR))
+    end
+    return result
+end
+    
 
 end
