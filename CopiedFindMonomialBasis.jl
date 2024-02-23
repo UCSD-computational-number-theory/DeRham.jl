@@ -43,10 +43,12 @@ f = x^5 + y^5 + z^5 + x * y^3 * z
 function find_monomial_basis(f, m, controlled)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
+    
+    l = d * n - n + d
 
     if controlled
-        rows = binomial(m*d - 1, n)
-        sec = binomial(m*d - d - 1, n)
+        rows = binomial(l + n, n)
+        sec = binomial(l - d + n, n)
     else
         rows = binomial(m*d-1, n)
         sec = binomial(m*d - d, n)
@@ -58,7 +60,7 @@ function find_monomial_basis(f, m, controlled)
     # Uncontrolled: rows = binomial(m*d - n - d, n)
     # if m*d - n - d - 1 > 0:
     if controlled
-        mon = compute_monomials(n + 1, m*d - n - d - 1)
+        mon = compute_monomials(n + 1, l - d)
     else
         mon = compute_monomials(n + 1, m*d - n - d)
     end
@@ -86,7 +88,11 @@ function find_monomial_basis(f, m, controlled)
     non_pivot_rows = setdiff([1:nrows;], pivot_rows)
 
     # Uncontrolled: row_monomials = compute_monomials(n + 1, m*d - n - 1)
-    row_monomials = compute_monomials(n + 1, m*d - n - 1)
+    if controlled
+        row_monomials = compute_monomials(n + 1, l)
+    else
+        row_monomials = compute_monomials(n + 1, m*d - n - 1)
+    end
 
     # non_pivot_rows = find_non_pivot_rows(M)
     return map((i) -> row_monomials[i], non_pivot_rows), M
