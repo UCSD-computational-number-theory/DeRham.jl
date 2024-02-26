@@ -132,7 +132,7 @@ function psuedo_inverse_classical(f, p, R, PR)
     flag, B = is_invertible_with_inverse(M, side=:right)
 
     if flag
-        return B
+        return Array(B)
     end
 end
 
@@ -145,7 +145,7 @@ function psuedo_inverse_controlled(f, p, R, PR)
     flag, B = is_invertible_with_inverse(M, side=:right)
 
     if flag
-        return B
+        return Array(B)
     end
 end
 
