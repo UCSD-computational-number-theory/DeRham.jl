@@ -11,8 +11,8 @@ end
 
 # Coefficient Ring
 # p = 7
-p = 41
-R = GF(p) # GF(p)
+# p = 41
+# R = GF(p) # GF(p)
 
 # Polynomial Setup
 
@@ -31,16 +31,16 @@ R = GF(p) # GF(p)
 # 4. Now we multiple the inverse A^-1 by the elements of the nullspace we found vi
 #   to get A vi the associated representation in the matrix
 
-n = 2
-d = 5
-S, vars = PolynomialRing(R, ["x$i" for i in 0:n])
-x, y, z = vars
-f = x^5 + y^5 + z^5 + x * y^3 * z
+# n = 2
+# d = 5
+# S, vars = PolynomialRing(R, ["x$i" for i in 0:n])
+# x, y, z = vars
+# f = x^5 + y^5 + z^5 + x * y^3 * z
 
 # Finds a monomial basis for polynomial de Rham cohomology with Z(f)
 # for each case of 1 < m < n.
 
-function find_monomial_basis(f, m, controlled)
+function find_monomial_basis(f, m, controlled, p, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     
@@ -111,6 +111,42 @@ function pivot_columns(M)
         j+=1
     end
     return res
+end
+
+# Computes the basis
+function main_find_basis(f, p, R, PR)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+
+    basis, _ = find_monomial_basis(f, 2, false, p, R, PR)
+
+    return basis
+end
+
+function psuedo_inverse_classical(f, p, R, PR)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+
+    _, M = find_monomial_basis(f, 2, false, p, R, PR)
+
+    flag, B = is_invertible_with_inverse(M, side=:right)
+
+    if flag
+        return B
+    end
+end
+
+function psuedo_inverse_controlled(f, p, R, PR)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+
+    _, M = find_monomial_basis(f, 2, true, p, R, PR)
+
+    flag, B = is_invertible_with_inverse(M, side=:right)
+
+    if flag
+        return B
+    end
 end
 
 # Find all monomial bases
