@@ -3,6 +3,9 @@ module ControlledReduction
 using Oscar
 using BitIntegers
 using LinearAlgebra
+
+include("PrecisionEstimate.jl")
+include("CopiedFindMonomialBasis.jl")
 include("AutomatedScript.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
@@ -31,30 +34,26 @@ function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
 end
 
 #LA test --------------------------------
-function computeReductionLA(U,V,S,n,d,f,g,ev,R,PR,Vars)
+function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
     SC = []
-    gensJS = copy(parts)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), V)
     XV = finish(B)
     for i in 0:n
         if i in S
-            #push!(gensJS,parts[i+1])
-            gensJS[i+1] = parts[i+1]
         else
-            #push!(gensJS,Vars[i+1]*parts[i+1])
-            gensJS[i+1] = Vars[i+1]*parts[i+1]
-            #parts[i+1] = Vars[i+1]*parts[i+1]
             push!(SC,i)
         end
     end
     # get gi's using psuedoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    partsMat = LinearAlgebra.pinv(CopiedFindMonomialBasis.find_monomial_basis(f, 2, true)[2])
-    gVec = AutomatedScript.convert_p_to_m(g,AutomatedScript.gen_exp_vec(n,n*d-n))
-    gJS = partsMat*gVec
-    gc = 
-    gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
+    gVec = AutomatedScript.convert_p_to_m([div(XV*(g[1]),XS)],AutomatedScript.gen_exp_vec(n+1,n*d-n+d-length(S)))
+    gJS = psuedoInverseMat*transpose(gVec)
+    gc = []
+    for i in 1:(n+1)
+        push!(gc, AutomatedScript.convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),AutomatedScript.gen_exp_vec(n+1,n*d-n),R,PR)[1])
+    end
+    gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
     return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
 end
@@ -67,7 +66,6 @@ function chooseV(I,d)
     foundNonZero = false
     while i < d
         if s > length(I) && foundNonZero == false
-            println(V)
             return V
         elseif s > length(I)
             s = 1
@@ -131,7 +129,7 @@ function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
 end
 
 #LA test --------------------
-function computeReductionChainLA(I,n,d,m,S,parts,R,PR,ResRing)
+function computeReductionChainLA(I,n,d,m,S,f,psuedoInverseMat,R,PR)
     chain = 0
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
     gVec = chooseV(I,n*d - n)
@@ -145,16 +143,17 @@ function computeReductionChainLA(I,n,d,m,S,parts,R,PR,ResRing)
         if length(l) > 0
             RPoly = RUVs[l[1]]
         else
-            RPoly = computeRPolyLA(V,S,n,d,parts,R,PR)
+            RPoly = computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
             push!(Vs,V)
             push!(RUVs,RPoly)
         end
-        RNums = evaluateRUV(RPoly,U,ResRing)
+        RNums = evaluateRUV(RPoly,U,R)
         if chain == 0
             chain = RNums
         else
             chain = RNums*chain
         end
+        println("multipled part of reduction chain")
         m = m - 1
         I = U
     end
@@ -191,7 +190,8 @@ function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
 end
 
 #LA test ------------------------
-function computeReductionOfPolyLA(poly,n,d,S,parts,R,PR,ResRing)
+function computeReductionOfPolyLA(poly,n,d,S,f,psuedoInverseMat,R,PR)
+    println("starting reduction of poly")
     t = getTerms(poly)
     result = 0
     for i in t
@@ -199,14 +199,14 @@ function computeReductionOfPolyLA(poly,n,d,S,parts,R,PR,ResRing)
         I = exponent_vector(i[1],1) + o
         gVec = chooseV(I,n*d - n)
         ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
-        gMat = zeros(Int,length(ev))
+        gMat = zeros(R,length(ev))
         for j in axes(gMat,1)
             if gVec == ev[j]
-                gMat[j] = coeff(map_coefficients(lift,i[1]),1)
+                gMat[j] = coeff(i[1],1)
                 break
             end
         end
-        RChain = computeReductionChainLA(I,n,d,i[2],S,parts,R,PR,ResRing)
+        RChain = computeReductionChainLA(I,n,d,i[2],S,f,psuedoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), RChain[2])
         XU = finish(B)
@@ -233,16 +233,18 @@ function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
 end
 
 #LA test ---------------------------
-function computeReductionOfTransformLA(FT,n,d,p,N,S,parts,R,PR)
-    result = 0
+function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
+    result = []
     for i in FT
+        temp = 0
         for j in i
-            s = N + j[2] - 1
-            ResRing = residue_ring(ZZ,Int1024(p)^s)
-            result = computeReductionOfPolyLA(j,n,d,S,parts,R,PR,ResRing)[1]
+            temp = temp + R(inv(R(Factorial(j[2])))*Factorial(n))*computeReductionOfPolyLA([p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
+            println("computed reduction of part of basis element")
         end
+        push!(result,[temp,n])
+        println("computed reudction of basis element")
     end
-    return [result,n]
+    return result
 end
 #-------------------------------------
         
@@ -278,18 +280,14 @@ function computeRPoly(V,S,n,d,parts,R,PR)
 end
 
 #LA test ------------------------
-function computeRPolyLA(V,S,n,d,parts,R,PR)
+function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
     URing, UVars = PolynomialRing(R, ["u$i" for i in 0:n])
     PURing, Vars = PolynomialRing(URing, ["x$i" for i in 0:n])
-    #this is temporary
-    polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
-    parts = [ derivative(polynomial, i) for i in 1:(n+1) ]
-    #
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
     monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
+        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
@@ -319,8 +317,8 @@ function applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1), p*(beta + alpha + o))
             monomial = div(finish(B),X1)
-            #println(typeof(coeff(fj,alpha)^p))
-            sum = sum + p^(m-1)*(D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p) % p^s)*monomial
+            sum = sum + p^(m-1)*(D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial
+            #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
     end
@@ -349,10 +347,62 @@ end
 function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
     for b in Basis
-        push!(result, applyFrobenius(n,d,f,N,p,b,R,PR))
+        push!(result, applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR))
+        println("Applied Frob to Basis element")
     end
     return result
+end
+
+function Factorial(x)
+    fact = 1
+    while x != 0
+        fact = fact*x
+        x = x - 1
+    end
+    return fact
+end
+
+function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
+    Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
+    N = max(Nm...)
+    s = N + n - 1
+    M = Int(precision + floor((p*s-1)/(p-1) + 1))
+    PrecisionRing = PadicField(p,M)
+    PrecisionRingPoly, PVars = PolynomialRing(PrecisionRing, ["x$i" for i in 0:n])
+    BasisT = CopiedFindMonomialBasis.find_monomial_bases(f,R,PR,vars)
+    Basis = []
+    for i in 1:n
+        for j in BasisT[i][2]
+            push!(Basis,[change_base_ring(PrecisionRing,map_coefficients(lift,j)),i])
+        end
+    end
+    FBasis = applyFrobeniusToBasis(Basis,n,d,f,N,p,PrecisionRing,PrecisionRingPoly)
+    psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,p,R,PR,vars)
+    psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
+    for i in 1:nrows(psuedoInverseMat)
+        for j in 1:ncols(psuedoInverseMat)
+            psuedoInverseMat[i,j] = PrecisionRing(lift(psuedoInverseMatTemp[i,j]))
+        end
+    end
+    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    return Reductions
 end
     
 
 end
+
+#=
+include("ControlledReduction.jl")
+include("PrecisionEstimate.jl")
+include("CopiedFindMonomialBasis.jl")
+include("AutomatedScript.jl")
+n = 3
+d = 4
+p = 7
+Fp = GF(p)
+
+R = Fp
+PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
+x,y,z,w = Vars
+polynomial = x^4 + y^4 + z^4 + w^4
+=#

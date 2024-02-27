@@ -1,4 +1,4 @@
-module FindMonomialBasis
+module CopiedFindMonomialBasis
 using Oscar
 
 
@@ -40,7 +40,7 @@ end
 # Finds a monomial basis for polynomial de Rham cohomology with Z(f)
 # for each case of 1 < m < n.
 
-function find_monomial_basis(f, m, controlled, p, R, PR)
+function find_monomial_basis(f, m, controlled, R, PR,vars)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     
@@ -60,9 +60,9 @@ function find_monomial_basis(f, m, controlled, p, R, PR)
     # Uncontrolled: rows = binomial(m*d - n - d, n)
     # if m*d - n - d - 1 > 0:
     if controlled
-        mon = compute_monomials(n + 1, l - d)
+        mon = compute_monomials(n + 1, l - d,PR,vars)
     else
-        mon = compute_monomials(n + 1, m*d - n - d)
+        mon = compute_monomials(n + 1, m*d - n - d,PR,vars)
     end
     partials = [ derivative(f, i) for i in 1:n+1 ]
 
@@ -73,9 +73,9 @@ function find_monomial_basis(f, m, controlled, p, R, PR)
     for i in 1:n+1
         for monomial in 1:length(mon)
             if controlled
-                current_term = polynomial_to_lex_vector(vars[i] * mon[monomial] * partials[i], n)
+                current_term = polynomial_to_lex_vector(vars[i] * mon[monomial] * partials[i], n,R,PR,vars)
             else
-                current_term = polynomial_to_lex_vector(mon[monomial] * partials[i], n)
+                current_term = polynomial_to_lex_vector(mon[monomial] * partials[i], n,R,PR,vars)
             end
             # Uncontrolled: current_term = polynomial_to_lex_vector(mon[monomial] * partials[i], n)
             M[:, sec * (i-1) + monomial] = current_term
@@ -89,9 +89,9 @@ function find_monomial_basis(f, m, controlled, p, R, PR)
 
     # Uncontrolled: row_monomials = compute_monomials(n + 1, m*d - n - 1)
     if controlled
-        row_monomials = compute_monomials(n + 1, l)
+        row_monomials = compute_monomials(n + 1, l,PR,vars)
     else
-        row_monomials = compute_monomials(n + 1, m*d - n - 1)
+        row_monomials = compute_monomials(n + 1, m*d - n - 1,PR,vars)
     end
 
     # non_pivot_rows = find_non_pivot_rows(M)
@@ -114,20 +114,20 @@ function pivot_columns(M)
 end
 
 # Computes the basis
-function main_find_basis(f, p, R, PR)
+function main_find_basis(f, R, PR,vars)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
 
-    basis, _ = find_monomial_basis(f, 2, false, p, R, PR)
+    basis, _ = find_monomial_basis(f, 2, false, R, PR,vars)
 
     return basis
 end
 
-function psuedo_inverse_classical(f, p, R, PR)
+function psuedo_inverse_classical(f, p, R, PR,vars)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
 
-    _, M = find_monomial_basis(f, 2, false, p, R, PR)
+    _, M = find_monomial_basis(f, 2, false, R, PR,vars)
 
     flag, B = is_invertible_with_inverse(M, side=:right)
 
@@ -136,11 +136,11 @@ function psuedo_inverse_classical(f, p, R, PR)
     end
 end
 
-function psuedo_inverse_controlled(f, p, R, PR)
+function psuedo_inverse_controlled(f, p, R, PR,vars)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
 
-    _, M = find_monomial_basis(f, 2, true, p, R, PR)
+    _, M = find_monomial_basis(f, 2, true, R, PR,vars)
 
     flag, B = is_invertible_with_inverse(M, side=:right)
 
@@ -156,15 +156,16 @@ end
 # controlled_matrix = res[m][4]
 
 # (m, basis, matrix, matrix)
-function find_monomial_bases(f)
+function find_monomial_bases(f,R,PR,vars)
     n = nvars(parent(f)) - 1
+    d = total_degree(f)
     res = []
     for m in 1:n
         if m*d - n - d <= 0
-            push!(res, (m, compute_monomials(m*d - n - 1, d), nothing, nothing))
+            push!(res, (m, compute_monomials(m*d - n - 1, d,PR,vars), nothing, nothing))
         else
-            uncontrolled = find_monomial_basis(f, m, false)
-            controlled = find_monomial_basis(f, m, true)
+            uncontrolled = find_monomial_basis(f, m, false,R,PR,vars)
+            controlled = find_monomial_basis(f, m, true,R,PR,vars)
             push!(res, (m, uncontrolled[1], uncontrolled[2], controlled[2]))
         end
     end
@@ -185,12 +186,12 @@ function find_non_pivot_rows(M)
 end
 
 # Computes all monomials of degree `d` in `n` variables.
-function compute_monomials(n, d)
+function compute_monomials(n, d, PR,vars)
     result = []
     
     function backtrack(start, current)
         if length(current) == d
-            push!(result, prod(S(var) for var in current))
+            push!(result, prod(PR(var) for var in current))
             return
         end
 
@@ -206,10 +207,10 @@ end
 
 # Given a homogenous polynomial `f` of degree `d`` in `n` variables, computes
 # the coefficient vector
-function polynomial_to_lex_vector(f, n)
+function polynomial_to_lex_vector(f, n,R,PR,vars)
     d = total_degree(f)
 
-    mon = compute_monomials(n + 1, d)
+    mon = compute_monomials(n + 1, d,PR,vars)
     res = fill(R(0), length(mon))
     for i in 1:length(mon)
         res[i] = coeff(f, mon[i])
@@ -219,9 +220,9 @@ end
 
 # Given a lexicographically ordered vector of monomial coefficients, returns
 # the associated polynomial
-function lex_vec_to_polynomial(vect, n, d)
+function lex_vec_to_polynomial(vect, n, d,PR,vars)
     res = S()
-    mon = compute_monomials(n + 1, d)
+    mon = compute_monomials(n + 1, d,PR,vars)
     for i in 1:length(vect)
         res += S(vect[i]) * mon[i]
     end
