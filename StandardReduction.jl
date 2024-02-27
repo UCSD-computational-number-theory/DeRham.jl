@@ -1,7 +1,9 @@
 module StandardReduction
 
 using Oscar
+using LinearAlgebra
 include("FindMonomialBasis.jl")
+include("AutomatedScript.jl")
 
 # One step reduction (formula)
 function stdRed_step(F_poly, f_tilde_exp, p_denom)
@@ -9,7 +11,7 @@ function stdRed_step(F_poly, f_tilde_exp, p_denom)
        num_vars = nvars(parent(F_poly)) - 1
 
        # Groebner basis G_i
-       groeb_basis = find_monomial_basis(F_poly, n)
+       groeb_basis = FindMonomialBasis.find_monomial_basis(F_poly, n, false)
 
        # partial derivatives of G_i, and \sum_i{\partial_i{G_i}}
        partials = [ derivative(groeb_basis, i) for i in 1:n+1 ]
@@ -19,7 +21,7 @@ function stdRed_step(F_poly, f_tilde_exp, p_denom)
 end
 
 # reduction: exponent downto number of variables
-function stdRed(F_poly, f_tilde_exp, p_denom)
+function stdandardReduction(F_poly, f_tilde_exp, p_denom)
        # Number of variables, n
        num_vars = nvars(parent(F_poly)) - 1
 
@@ -30,6 +32,20 @@ function stdRed(F_poly, f_tilde_exp, p_denom)
        return (F_poly, f_tilde_exp, p_denom)
 end
 
+function psuedo_inverse_classical(F_poly, p, R, PR)
+    n = nvars(parent(F_poly)) - 1
+    d = total_degree(F_poly)
+
+    _, M = FindMonomialBasis.find_monomial_basis(f, 2, false)
+
+    flag, B = is_invertible_with_inverse(M, side=:right)
+
+    if flag
+        return Array(B)
+    end
+end
+
+#=
 # (From Thomas' code)
 # Finds a monomial basis for polynomial de Rham cohomology with Z(f)
 # for each case of `m = 1 ... n`.
@@ -65,5 +81,6 @@ function find_monomial_basis(f, m)
     non_pivot_rows = find_non_pivot_rows(M)
     return map((i) -> row_monomials[i], non_pivot_rows)
 end
+=#
 
 end
