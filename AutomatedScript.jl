@@ -44,9 +44,9 @@ function gen_exp_vec(n,d)
     for i in 0:d
         y = gen_exp_vec(n-1,d-i)
         for j in axes(y,1)
-            append!(y[j],i)
+            prepend!(y[j],i)
         end
-        append!(result,y)
+        prepend!(result,y)
     end
     return result
 end

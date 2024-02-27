@@ -1,6 +1,7 @@
 module StandardReduction
 
 using Oscar
+include("FindMonomialBasis.jl")
 
 # One step reduction (formula)
 function stdRed_step(F_poly, f_tilde_exp, p_denom)
@@ -11,7 +12,7 @@ function stdRed_step(F_poly, f_tilde_exp, p_denom)
        groeb_basis = find_monomial_basis(F_poly, n)
 
        # partial derivatives of G_i, and \sum_i{\partial_i{G_i}}
-       partials = [ derivative(groeb_basis, i) for i in 1:n+1]
+       partials = [ derivative(groeb_basis, i) for i in 1:n+1 ]
        result = sum(partials)
 
        return (result, f_tilde_exp - 1, p_denom / (f_tilde_exp - 1))

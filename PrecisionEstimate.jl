@@ -11,9 +11,11 @@ function compute_N(p, r, m, n)
 end
 
 function compute_precisions_each(p, r, n)
+    result = []
     for m = 1:n
-        println(compute_N(p, r, m, n))
+        push!(result,compute_N(p, r, m, n))
     end
+    return result
 end
 
 compute_precisions_each(p, r, n)
