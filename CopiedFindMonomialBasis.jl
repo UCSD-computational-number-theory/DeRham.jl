@@ -50,7 +50,7 @@ end
 #
 # Usage: "Linear Algebra Problem", l = d*m - n - 1. (See Section 1.2.2)
 #
-function compute_classical_matrix(f, l, m, R, PR)
+function compute_basis_matrix(f, l, m, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
 
@@ -136,7 +136,7 @@ function compute_monomial_basis(f, m, R, PR)
 
     row_monomials = compute_monomials(n + 1, m*d - n - 1, PR)
 
-    M = compute_classical_matrix(f, d*m - n - 1, m, R, PR)
+    M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)
         return row_monomials
     end
@@ -161,17 +161,8 @@ function compute_monomial_bases(f, R, PR)
     return res
 end
 
-function psuedo_inverse_classical(f, m, R, PR)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    
-    M = compute_classical_matrix(f, d*m - n - 1, m, R, PR)
-
-    flag, B = is_invertible_with_inverse(M, side=:left)
-
-    if flag
-        return Array(B)
-    end
+function psuedo_inverse_classical(f, R, PR)
+    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end
 
 function psuedo_inverse_controlled(f, S, R, PR)
@@ -194,7 +185,7 @@ end
 function find_non_pivot_rows(M)
     res = []
     N = rref(M)[2]
-    for i in 1:size(N, 1)
+    for i in eachindex(N, 1)
         if all(N[i, :] .== 0)
             push!(res, i)
         end
@@ -246,11 +237,15 @@ end
 
 # Given a lexicographically ordered vector of monomial coefficients, returns
 # the associated polynomial
-function lex_vec_to_polynomial(vect, n, d, PR)
-    res = PR()
-    mon = compute_monomials(n + 1, d, PR)
-    for i in 1:length(vect)
-        res += PR(vect[i]) * mon[i]
+function vector_to_polynomial(vect, n, d, PR, order=:lex)
+    if order == :lex
+        res = PR()
+        mon = compute_monomials(n + 1, d, PR)
+        for i in eachindex(vect)
+            res += PR(vect[i]) * mon[i]
+        end
+    else
+        throw(ArgumentError("Invalid option '$order'"))
     end
     return res
 end
