@@ -136,7 +136,7 @@ function compute_monomial_basis(f, m, R, PR)
 
     row_monomials = compute_monomials(n + 1, m*d - n - 1, PR)
 
-    M = compute_classical_mat(f, d*m - n - 1, m, R, PR)
+    M = compute_classical_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)
         return row_monomials
     end
