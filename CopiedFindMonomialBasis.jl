@@ -102,19 +102,6 @@ function find_monomial_bases(f)
     return res
 end
 
-# Given a matrix M, find rows number corresponding to non-pivot
-# rows.
-function find_non_pivot_rows(M)
-    res = []
-    N = rref(M)[2]
-    for i in 1:size(N, 1)
-        if all(N[i, :] .== 0)
-            push!(res, i)
-        end
-    end
-    return res
-end
-
 # Computes all monomials of degree `d` in `n` variables.
 function compute_monomials(n, d)
     result = []
