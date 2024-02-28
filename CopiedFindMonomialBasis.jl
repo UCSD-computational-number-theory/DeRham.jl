@@ -1,9 +1,7 @@
 module FindMonomialBasis
 using Oscar
 
-macro assert(ex)
-    return :( $ex ? nothing : throw(AssertionError($(string(ex)))) )
-end
+include("Utils.jl")
 
 # Polynomial Setup
 
@@ -29,26 +27,9 @@ PR, vars = PolynomialRing(R, ["x$i" for i in 0:n])
 x, y, z = vars
 f = x^5 + y^5 + z^5 + x * y^3 * z
 
-function pivot_columns(M)
-    rank, M = rref(M)
-    res = fill(0, rank)
-    ncols = size(M, 2)
-    j = 1
-    for i in 1:rank
-        while j <= ncols && M[i, j] == 0
-            j += 1
-        end
-        res[i] = j
-        j+=1
-    end
-    return res
-end
-
 # Given $f, m$, over the ring $\texttt{PR} = R[x_0, \dots, x_n]$, computes the matrix for the map
 # $$(\mu_0, \dots, \mu_n) \mapsto \sum_{i=0}^n \mu_i \partial_i f$$
 # where each $\mu_i$ are monomials of degree $dm - n - 1 - (d-1)$.
-#
-# Usage: "Linear Algebra Problem", l = d*m - n - 1. (See Section 1.2.2)
 #
 function compute_basis_matrix(f, l, m, R, PR)
     n = nvars(parent(f)) - 1
@@ -82,9 +63,6 @@ end
 # $$(\mu_0, \dots, \mu_n) \mapsto \sum_{i\in S} \mu_i \partial_i f + \sum_{i\not\in S} \mu_i x_i \partial_i f$$
 # where $\mu_i$ for $0\leq i < |S|$ are of degree $l - (d - 1)$ and $\mu_i$ for
 # $|S| \leq i \leq n$ are of degree $l - d$.
-#
-# Usage: If $f$ is nondegenerate, you can use this for cases $l=0,d,\dots, dn$. (See Prop 1.18)
-# Usage: Use this for case $l = dn - n + d - |S|$. (See Prop 1.15)
 #
 function compute_controlled_matrix(f, l, S, R, PR)
     n = nvars(parent(f)) - 1
@@ -161,93 +139,26 @@ function compute_monomial_bases(f, R, PR)
     return res
 end
 
-function psuedo_inverse_classical(f, R, PR)
-    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-end
 
+# Computes the psuedo_inverse for the controlled case.
 function psuedo_inverse_controlled(f, S, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     
     len_S = length(S)
-
+    
     M = compute_controlled_matrix(f, d * n - n + d - len_S, S, R, PR)
-
+    
     flag, B = is_invertible_with_inverse(M, side=:right)
-
+    
     if flag
         return Array(B)
     end
 end
 
-# Given a matrix M, find rows number corresponding to non-pivot
-# rows.
-function find_non_pivot_rows(M)
-    res = []
-    N = rref(M)[2]
-    for i in eachindex(N, 1)
-        if all(N[i, :] .== 0)
-            push!(res, i)
-        end
-    end
-    return res
-end
-
-# Computes all monomials of degree `d` in `n` variables.
-function compute_monomials(n, d, PR)
-    if d <= 0
-        return []
-    end
-
-    result = []
-    
-    function backtrack(start, current)
-        if length(current) == d
-            push!(result, prod(PR(var) for var in current))
-            return
-        end
-
-        for i in start:n
-            backtrack(i, [current..., vars[i]])
-        end
-    end
-
-    backtrack(1, [])
-
-    return result
-end
-
-# Given a homogenous polynomial `f` of degree `d`` in `n` variables, computes
-# the coefficient vector
-function polynomial_to_vector(f, n, R, PR; order=:lex)
-
-    if order == :lex
-        d = total_degree(f)
-
-        mon = compute_monomials(n, d, PR)
-        res = fill(R(0), length(mon))
-        for i in eachindex(mon)
-            res[i] = coeff(f, mon[i])
-        end
-        return res
-    else
-        throw(ArgumentError("Invalid option '$order'"))
-    end
-end
-
-# Given a lexicographically ordered vector of monomial coefficients, returns
-# the associated polynomial
-function vector_to_polynomial(vect, n, d, PR, order=:lex)
-    if order == :lex
-        res = PR()
-        mon = compute_monomials(n + 1, d, PR)
-        for i in eachindex(vect)
-            res += PR(vect[i]) * mon[i]
-        end
-    else
-        throw(ArgumentError("Invalid option '$order'"))
-    end
-    return res
+# Computes the psuedo_inverse for the classical case.
+function psuedo_inverse_classical(f, R, PR)
+    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end
 
 end
