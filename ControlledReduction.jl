@@ -238,7 +238,8 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     for i in FT
         temp = 0
         for j in i
-            temp = temp + R(inv(R(Factorial(j[2])))*Factorial(n))*computeReductionOfPolyLA([p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
+            temp = temp + computeReductionOfPolyLA([p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
+            #R(inv(R(Factorial(j[2])))*Factorial(n))*
             println("computed reduction of part of basis element")
         end
         push!(result,[temp,n])
@@ -288,6 +289,23 @@ function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
     reductions = []
     for m in monomials
         push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
+    end
+    return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
+end
+
+function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
+    YRing, y = PolynomialRing(R, "y")
+    PYRing, Vars = PolynomialRing(YRing, ["x$i" for i in 0:n])
+    yV = []
+    for i in axes(V,1)
+        push!(yV, y*V[i])
+    end
+    UVars = mins + yV
+    ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
+    monomials = AutomatedScript.gen_mon(ev,YRing,PYRing)
+    reductions = []
+    for m in monomials
+        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
     end
     return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
@@ -362,9 +380,13 @@ function Factorial(x)
     return fact
 end
 
+function computeT()
+end
+
 function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
-    N = max(Nm...)
+    #N = max(Nm...)
+    N = 6
     s = N + n - 1
     M = Int(precision + floor((p*s-1)/(p-1) + 1))
     PrecisionRing = PadicField(p,M)
@@ -376,6 +398,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             push!(Basis,[change_base_ring(PrecisionRing,map_coefficients(lift,j)),i])
         end
     end
+    println(Basis)
     FBasis = applyFrobeniusToBasis(Basis,n,d,f,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,p,R,PR,vars)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
@@ -384,8 +407,14 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             psuedoInverseMat[i,j] = PrecisionRing(lift(psuedoInverseMatTemp[i,j]))
         end
     end
-    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    return Reductions
+    denoms = []
+    for i in FBasis
+        for j in i
+            push!(denoms,j[2])
+        end
+    end
+    #Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    return BasisT
 end
     
 
@@ -398,11 +427,12 @@ include("CopiedFindMonomialBasis.jl")
 include("AutomatedScript.jl")
 n = 3
 d = 4
-p = 7
+p = 11
 Fp = GF(p)
 
 R = Fp
 PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
 x,y,z,w = Vars
 polynomial = x^4 + y^4 + z^4 + w^4
+Test = ControlledReduction.computeFrobeniusMatrix(n,d,polynomial,7,p,R,PR,Vars)
 =#
