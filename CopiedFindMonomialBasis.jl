@@ -38,7 +38,7 @@ function compute_basis_matrix(f, l, m, R, PR)
     @assert(0 <= m && m <= n)
 
     section = binomial(n + l - (d-1), n)
-    domain_mons = compute_monomials(n+1, l - (d - 1), PR)
+    domain_mons = Utils.compute_monomials(n+1, l - (d - 1), PR)
 
     if length(domain_mons) <= 0
         return []
@@ -51,7 +51,7 @@ function compute_basis_matrix(f, l, m, R, PR)
 
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
-            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, order=:lex)
+            M[:, section * (i-1) + monomial] = Utils.polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, order=:lex)
         end
     end
     
@@ -112,7 +112,7 @@ function compute_monomial_basis(f, m, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
 
-    row_monomials = compute_monomials(n + 1, m*d - n - 1, PR)
+    row_monomials = Utils.compute_monomials(n + 1, m*d - n - 1, PR)
 
     M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)
@@ -121,7 +121,7 @@ function compute_monomial_basis(f, m, R, PR)
 
     rows = size(M)[1]
 
-    pivot_rows = pivot_columns(transpose(M))
+    pivot_rows = Utils.pivot_columns(transpose(M))
     non_pivot_rows = setdiff([1:rows;], pivot_rows)
     return map((i) -> row_monomials[i], non_pivot_rows)
 end
