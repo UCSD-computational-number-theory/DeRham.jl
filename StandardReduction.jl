@@ -1,24 +1,35 @@
 module StandardReduction
 
 using Oscar
+using BitIntegers
+using LinearAlgebra
+
+include("PrecisionEstimate.jl")
+include("FindMonomialBasis.jl")
+include("AutomatedScript.jl")
+include("CopiedFindMonomialBasis.jl")
 
 # One step reduction (formula)
+# 
+# @F_poly: polynomial f
+# @f_tilde_exp: exponent of \tilde{f} in the denominator
+# @p_denom: the coefficient produced with the formula, in the denominator
 function stdRed_step(F_poly, f_tilde_exp, p_denom)
        # Number of variables, n
        num_vars = nvars(parent(F_poly)) - 1
 
        # Groebner basis G_i
-       groeb_basis = find_monomial_basis(F_poly, n)
+       groeb_basis = FindMonomialBasis.find_monomial_basis(F_poly, n, false)
 
        # partial derivatives of G_i, and \sum_i{\partial_i{G_i}}
-       partials = [ derivative(groeb_basis, i) for i in 1:n+1]
+       partials = [ derivative(groeb_basis, i) for i in 1:n+1 ]
        result = sum(partials)
 
        return (result, f_tilde_exp - 1, p_denom / (f_tilde_exp - 1))
 end
 
-# reduction: exponent downto number of variables
-function stdRed(F_poly, f_tilde_exp, p_denom)
+# reduction: exponent downto #variables
+function stdandardReduction(F_poly, f_tilde_exp, p_denom)
        # Number of variables, n
        num_vars = nvars(parent(F_poly)) - 1
 
@@ -29,6 +40,9 @@ function stdRed(F_poly, f_tilde_exp, p_denom)
        return (F_poly, f_tilde_exp, p_denom)
 end
 
+# psuedo_inverse_classical(f, R, PR), where R is the field and PR associated poly ring
+
+#=
 # (From Thomas' code)
 # Finds a monomial basis for polynomial de Rham cohomology with Z(f)
 # for each case of `m = 1 ... n`.
@@ -64,5 +78,6 @@ function find_monomial_basis(f, m)
     non_pivot_rows = find_non_pivot_rows(M)
     return map((i) -> row_monomials[i], non_pivot_rows)
 end
+=#
 
 end
