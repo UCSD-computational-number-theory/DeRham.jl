@@ -7,6 +7,7 @@ using LinearAlgebra
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("AutomatedScript.jl")
+include("Utils.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
@@ -391,7 +392,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     M = Int(precision + floor((p*s-1)/(p-1) + 1))
     PrecisionRing = PadicField(p,M)
     PrecisionRingPoly, PVars = PolynomialRing(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.find_monomial_bases(f,R,PR,vars)
+    BasisT = FindMonomialBasis.compute_monomial_bases(f,R,PR)
     Basis = []
     for i in 1:n
         for j in BasisT[i][2]
@@ -425,6 +426,7 @@ include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("AutomatedScript.jl")
+include("Utils.jl")
 n = 3
 d = 4
 p = 11
