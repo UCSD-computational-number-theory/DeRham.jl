@@ -1,11 +1,19 @@
 module StandardReduction
 
 using Oscar
+using BitIntegers
 using LinearAlgebra
+
+include("PrecisionEstimate.jl")
 include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
+include("CopiedFindMonomialBasis.jl")
 
 # One step reduction (formula)
+# 
+# @F_poly: polynomial f
+# @f_tilde_exp: exponent of \tilde{f} in the denominator
+# @p_denom: the coefficient produced with the formula, in the denominator
 function stdRed_step(F_poly, f_tilde_exp, p_denom)
        # Number of variables, n
        num_vars = nvars(parent(F_poly)) - 1
@@ -20,7 +28,7 @@ function stdRed_step(F_poly, f_tilde_exp, p_denom)
        return (result, f_tilde_exp - 1, p_denom / (f_tilde_exp - 1))
 end
 
-# reduction: exponent downto number of variables
+# reduction: exponent downto #variables
 function stdandardReduction(F_poly, f_tilde_exp, p_denom)
        # Number of variables, n
        num_vars = nvars(parent(F_poly)) - 1
@@ -32,18 +40,7 @@ function stdandardReduction(F_poly, f_tilde_exp, p_denom)
        return (F_poly, f_tilde_exp, p_denom)
 end
 
-function psuedo_inverse_classical(F_poly, p, R, PR)
-    n = nvars(parent(F_poly)) - 1
-    d = total_degree(F_poly)
-
-    _, M = FindMonomialBasis.find_monomial_basis(f, 2, false)
-
-    flag, B = is_invertible_with_inverse(M, side=:right)
-
-    if flag
-        return Array(B)
-    end
-end
+# psuedo_inverse_classical(f, R, PR), where R is the field and PR associated poly ring
 
 #=
 # (From Thomas' code)
