@@ -131,34 +131,70 @@ end
 
 #LA test --------------------
 function computeReductionChainLA(I,n,d,m,S,f,psuedoInverseMat,R,PR)
-    chain = 0
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    #chain = 0
     gVec = chooseV(I,n*d - n)
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    gMat = zeros(R,length(ev))
+    for j in axes(gMat,1)
+        if gVec == ev[j]
+            gMat[j] = coeff(i[1],1)
+            break
+        end
+    end
     I = I - gVec
-    Vs = []
-    RUVs = []
+    #Vs = []
+    #RUVs = []
     while m > n
         V = chooseV(I,d)
-        U = I - V
+        #U = I - V
+        K = 0
+        mins = I
+        while true
+            temp = mins - V
+            isLessThanZero = false
+            for j in temp
+                if j <= 0
+                    isLessThanZero = true
+                    break
+                end
+            end
+            if is isLessThanZero == true
+                break
+            end
+            mins = temp
+            K = K+1
+        end
+        #=
         l = findall(x->x==V, Vs)
         if length(l) > 0
             RPoly = RUVs[l[1]]
         else
-            RPoly = computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
-            push!(Vs,V)
-            push!(RUVs,RPoly)
+        =#
+        RPoly = computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
+        #push!(Vs,V)
+        #push!(RUVs,RPoly)
+        #RNums = evaluateRUV(RPoly,U,R)
+        MK = evaluateRUV(RPoly,[K],R)
+        MK1 = evaluateRUV(RPoly,[K-1],R)
+        h = MK1*MK*gMat
+        A1 = MK - MK1
+        j = 2
+        while K-j >= 0
+            MKj = MK - A1*j
+            h = MKj*h
         end
-        RNums = evaluateRUV(RPoly,U,R)
+        #=
         if chain == 0
             chain = RNums
         else
             chain = RNums*chain
         end
+        =#
         println("multipled part of reduction chain")
-        m = m - 1
-        I = U
+        m = m - K
+        I = mins
     end
-    return [chain, I]
+    return [gMat, I]
 end
 #-----------------------------
 
@@ -214,7 +250,7 @@ function computeReductionOfPolyLA(poly,n,d,S,f,psuedoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), o)
         XS = finish(B)
-        gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]*gMat),ev,R,PR)[1],XS)
+        gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
         result = result + gReduction
     end
     return [result,n]
@@ -414,8 +450,8 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             push!(denoms,j[2])
         end
     end
-    #Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    return BasisT
+    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    return Reductions
 end
     
 
