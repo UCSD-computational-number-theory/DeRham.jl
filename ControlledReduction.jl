@@ -3,12 +3,14 @@ module ControlledReduction
 using Oscar
 using BitIntegers
 using LinearAlgebra
+using Combinatorics
 
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
+include("SmallestSubsetSmooth.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
@@ -411,6 +413,7 @@ function Factorial(x)
 end
 
 function computeT()
+
 end
 
 function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
@@ -422,6 +425,8 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     PrecisionRing = PadicField(p,M)
     PrecisionRingPoly, PVars = PolynomialRing(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
+    fLift = change_base_ring(PrecisionRing,map_coefficients(lift,f))
+    #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
     for i in 1:n
         for j in BasisT[i]
@@ -430,20 +435,23 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     end
     println(Basis)
     FBasis = applyFrobeniusToBasis(Basis,n,d,f,N,p,PrecisionRing,PrecisionRingPoly)
-    psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
+    psuedoInverseMat = CopiedFindMonomialBasis.psuedo_inverse_controlled(fLift,[],PrecisionRing,PrecisionRingPoly)
+    println(psuedoInverseMat)
+    #=
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
         for j in 1:ncols(psuedoInverseMat)
             psuedoInverseMat[i,j] = PrecisionRing(lift(psuedoInverseMatTemp[i,j]))
         end
     end
+    =#
     denoms = []
     for i in FBasis
         for j in i
             push!(denoms,j[2])
         end
     end
-    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],f,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
     return Reductions
 end
     
@@ -457,14 +465,15 @@ include("CopiedFindMonomialBasis.jl")
 include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
-n = 3
-d = 4
-p = 11
+include("SmallestSubsetSmooth.jl")
+n = 2
+d = 3
+p = 41
 Fp = GF(p)
 
 R = Fp
 PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
-x,y,z,w = Vars
-polynomial = x^4 + y^4 + z^4 + w^4
+x,y,z = Vars
+polynomial = x^3 + y^3 + z^3 + x*y^3*z
 Test = ControlledReduction.computeFrobeniusMatrix(n,d,polynomial,7,p,R,PR,Vars)
 =#
