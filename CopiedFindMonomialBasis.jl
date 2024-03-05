@@ -1,4 +1,4 @@
-module FindMonomialBasis
+module CopiedFindMonomialBasis
 using Oscar
 
 include("Utils.jl")
@@ -34,11 +34,12 @@ f = x^5 + y^5 + z^5 + x * y^3 * z
 function compute_basis_matrix(f, l, m, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
+    vars = gens(PR)
 
     @assert(0 <= m && m <= n)
 
     section = binomial(n + l - (d-1), n)
-    domain_mons = Utils.compute_monomials(n+1, l - (d - 1), PR)
+    domain_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,vars)
 
     if length(domain_mons) <= 0
         return []
@@ -67,13 +68,14 @@ end
 function compute_controlled_matrix(f, l, S, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
+    vars = gens(PR)
 
     len_S = length(S)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
-    in_set_mons = compute_monomials(n+1, l - (d - 1), PR)
-    not_in_set_mons = compute_monomials(n+1, l - d, PR)
+    in_set_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,vars)
+    not_in_set_mons = Utils.compute_monomials(n+1, l - d, PR,vars)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -93,13 +95,13 @@ function compute_controlled_matrix(f, l, S, R, PR)
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
-            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, order=:lex)
+            M[:, in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, order=:lex)
         end
     end
 
     for i in (len_S+1):n+1
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, order=:lex)
+            M[:, not_in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, order=:lex)
         end
     end
     return M
@@ -111,8 +113,9 @@ end
 function compute_monomial_basis(f, m, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
+    vars = gens(PR)
 
-    row_monomials = Utils.compute_monomials(n + 1, m*d - n - 1, PR)
+    row_monomials = Utils.compute_monomials(n + 1, m*d - n - 1, PR,vars)
 
     M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)

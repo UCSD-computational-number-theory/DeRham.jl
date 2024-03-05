@@ -9,11 +9,12 @@ end
 
 # Convert polynomial to vector form with specified order. Default is lexicographic.
 function polynomial_to_vector(f, n, R, PR; order=:lex)
+    vars = gens(PR)
 
     if order == :lex
         d = total_degree(f)
 
-        mon = compute_monomials(n, d, PR)
+        mon = compute_monomials(n, d, PR,vars)
         res = fill(R(0), length(mon))
         for i in eachindex(mon)
             res[i] = coeff(f, mon[i])
@@ -56,7 +57,7 @@ function pivot_columns(M)
 end
 
 # Computes all monomials of degree `d` in `n` variables in the polynomial ring `PR`.
-function compute_monomials(n, d, PR, order=:lex)
+function compute_monomials(n, d, PR, vars, order=:lex)
     if d <= 0
         return []
     end
