@@ -11,9 +11,9 @@ include("CopiedFindMonomialBasis.jl")
 
 # One step reduction (formula)
 # 
-# @poly: polynomial f
-# @f_tilde_exp: exponent of \tilde{f} in the denominator
-# @denom: the coefficient produced with the formula, in the denominator (p-denominator)
+# @param poly: polynomial f
+# @param f_tilde_exp: exponent of \tilde{f} in the denominator
+# @param denom: the coefficient in the denominator (p-denominator)
 function stdRed_step(poly, f_tilde_exp, denom)
        # Number of variables, n
        num_vars = nvars(parent(poly)) - 1
@@ -44,3 +44,19 @@ end
 CopiedFindMonomialBasis.psuedo_inverse_classical(f, R, PR)
 
 end
+
+
+
+# Examples
+p = 7
+R = GF(p)
+PR, vars = PolynomialRing(R, ["x", "y", "z"])
+x, y, z = vars
+f2 = x^2 * z - x^3 - x * z^2 - z^3
+
+p = 7
+R = GF(p)
+# R = residue_ring(ZZ, 7)
+PR, vars = PolynomialRing(R, ["w", "x", "y", "z"])
+w, x, y, z = vars
+f3 = x^4 + y^4 + z^4 + w^4

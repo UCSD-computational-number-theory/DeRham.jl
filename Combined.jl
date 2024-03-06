@@ -1,13 +1,15 @@
 module Combined
 using Oscar
 include("ControlledReduction.jl")
+include("CopiedFindMonomialBasis.jl")
 
 
 
 function frobenius_matrix_classical(f, n, d, precision, p)
     # Step 1: find monomial basis
     PR = parent(f)
-    R = coefficient_ring(PR) # function name?
+    R = base_ring(f)
+    monomialBases = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
     
     # Step 2: apply Frobenius
 
