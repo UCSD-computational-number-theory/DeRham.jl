@@ -11,6 +11,7 @@ include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
+include("StandardReduction.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
@@ -147,7 +148,9 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
     I = I - gVec
     #Vs = []
     #RUVs = []
+    h = 0
     while m > n
+        println(m)
         V = chooseV(I,d)
         #U = I - V
         K = 0
@@ -156,7 +159,7 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
             temp = mins - V
             isLessThanZero = false
             for j in temp
-                if j <= 0
+                if j < 0
                     isLessThanZero = true
                     break
                 end
@@ -167,6 +170,7 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
             mins = temp
             K = K+1
         end
+        println(K)
         #=
         l = findall(x->x==V, Vs)
         if length(l) > 0
@@ -186,6 +190,7 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
             MKj = MK - A1*j
             h = MKj*h
             println("multipled part of reduction chain")
+            j = j + 1
         end
         #=
         if chain == 0
@@ -240,11 +245,12 @@ function computeReductionOfPolyLA(poly,n,d,S,f,psuedoInverseMat,R,PR)
         gCoeff = coeff(i[1],1)
         RChain = computeReductionChainLA(I,gCoeff,n,d,i[2],S,f,psuedoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
-        push_term!(B, R(1), RChain[2])
+        push_term!(B, R(1), Int.(RChain[2]))
         XU = finish(B)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), o)
         XS = finish(B)
+        ev = AutomatedScript.gen_exp_vec(n+1,d*n - n - 1)
         gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
         result = result + gReduction
     end
@@ -412,8 +418,31 @@ function Factorial(x)
     return fact
 end
 
-function computeT()
-
+function computeT(Basis,f,n,R,PR)
+    ev = AutomatedScript.gen_exp_vec(n+1,d*n-n-1)
+    mons = AutomatedScript.gen_mon(ev,R,PR)
+    T = []
+    for m in mons
+        temp = []
+        for i in 0:(n-1)
+            if i == 0
+            else
+                mterms = terms(m)
+                sum = 0
+                for t in mterms
+                    sum = sum + StandardReduction.stdRed_step(f,exponent_vector(t,1),n-i+1)[1]
+                end
+                m = sum
+            end
+            for j in 0:(length(Basis[i]-1))
+                c = coeff(m,exponent_vector(Basis[i][j],1))
+                push!(temp, c)
+                m = m - c*Basis[i][j]
+            end
+        end
+        push!(T, transpose(temp))
+    end
+    return vcat(T...)
 end
 
 function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
@@ -425,6 +454,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     PrecisionRing = PadicField(p,M)
     PrecisionRingPoly, PVars = PolynomialRing(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
+    println(BasisT)
     fLift = change_base_ring(PrecisionRing,map_coefficients(lift,f))
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
@@ -435,23 +465,21 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     end
     println(Basis)
     FBasis = applyFrobeniusToBasis(Basis,n,d,f,N,p,PrecisionRing,PrecisionRingPoly)
-    psuedoInverseMat = CopiedFindMonomialBasis.psuedo_inverse_controlled(fLift,[],PrecisionRing,PrecisionRingPoly)
-    println(psuedoInverseMat)
-    #=
+    println(FBasis[1])
+    psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
         for j in 1:ncols(psuedoInverseMat)
             psuedoInverseMat[i,j] = PrecisionRing(lift(psuedoInverseMatTemp[i,j]))
         end
     end
-    =#
     denoms = []
     for i in FBasis
         for j in i
             push!(denoms,j[2])
         end
     end
-    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    #Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
     return Reductions
 end
     
@@ -466,14 +494,15 @@ include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
-n = 2
-d = 3
-p = 41
-Fp = GF(p)
+n = 3
+d = 4
+p = 7
+Fp = GF(p,1)
 
 R = Fp
 PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
-x,y,z = Vars
-polynomial = x^3 + y^3 + z^3 + x*y^3*z
+x,y,z,w = Vars
+polynomial = x^4 + y^4 + z^4 + w^4
+parent(polynomial)
 Test = ControlledReduction.computeFrobeniusMatrix(n,d,polynomial,7,p,R,PR,Vars)
 =#
