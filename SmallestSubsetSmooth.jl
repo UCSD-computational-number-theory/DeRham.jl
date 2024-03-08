@@ -11,7 +11,7 @@ p = 7
 precision = 30
 # k = GF(p)
 
-R, vars = PolynomialRing(PadicField(p, precision), ["x$i" for i in 0:n])
+R, vars = polynomial_ring(PadicField(p, precision), ["x$i" for i in 0:n])
 (x,y,z) = vars
 polynomial = z * y^2 - x^3 - x^2 * z
 =#

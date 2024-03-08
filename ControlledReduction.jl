@@ -303,8 +303,8 @@ end
 =#
 
 function computeRPoly(V,S,n,d,parts,R,PR)
-    URing, UVars = PolynomialRing(R, ["u$i" for i in 0:n])
-    PURing, Vars = PolynomialRing(URing, ["x$i" for i in 0:n])
+    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
+    PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     #this is temporary
     polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
     parts = [ derivative(polynomial, i) for i in 1:(n+1) ]
@@ -320,8 +320,8 @@ end
 
 #LA test ------------------------
 function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
-    URing, UVars = PolynomialRing(R, ["u$i" for i in 0:n])
-    PURing, Vars = PolynomialRing(URing, ["x$i" for i in 0:n])
+    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
+    PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n)
     monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
@@ -332,8 +332,8 @@ function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
 end
 
 function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
-    YRing, y = PolynomialRing(R, "y")
-    PYRing, Vars = PolynomialRing(YRing, ["x$i" for i in 0:n])
+    YRing, y = polynomial_ring(R, "y")
+    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
     yV = []
     for i in axes(V,1)
         push!(yV, y*V[i])
@@ -418,7 +418,7 @@ function Factorial(x)
     return fact
 end
 
-function computeT(Basis,f,n,R,PR)
+function computeT(Basis,f,n,d,R,PR)
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n-1)
     mons = AutomatedScript.gen_mon(ev,R,PR)
     T = []
@@ -434,16 +434,32 @@ function computeT(Basis,f,n,R,PR)
                 end
                 m = sum
             end
-            for j in 0:(length(Basis[i]-1))
-                c = coeff(m,exponent_vector(Basis[i][j],1))
+            for j in 0:(length(Basis[n-i])-1)
+                println(n-i)
+                println(length(Basis[n-i])-j)
+                c = coeff(m,exponent_vector(Basis[n-i][length(Basis[n-i])-j],1))
                 push!(temp, c)
-                m = m - c*Basis[i][j]
+                m = m - c*Basis[n-i][length(Basis[n-i])-j]
             end
         end
         push!(T, transpose(temp))
     end
     return vcat(T...)
 end
+
+function liftCoefficients(R,PR,f)
+    t = terms(f)
+    sum = 0 
+    for i in t
+        ev = exponent_vector(i,1)
+        c = coeff(i,1)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(lift(ZZ,c)), ev)
+        sum = sum + finish(B)
+    end
+    return sum
+end
+
 
 function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
@@ -452,15 +468,25 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     s = N + n - 1
     M = Int(precision + floor((p*s-1)/(p-1) + 1))
     PrecisionRing = PadicField(p,M)
-    PrecisionRingPoly, PVars = PolynomialRing(PrecisionRing, ["x$i" for i in 0:n])
+    PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
+    fLift = liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    BasisTLift = []
+    for i in BasisT
+        temp = []
+        for j in i
+            push!(temp,liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+        end
+        push!(BasisTLift,temp)
+    end
+    T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     println(BasisT)
-    fLift = change_base_ring(PrecisionRing,map_coefficients(lift,f))
+    println(T)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
     for i in 1:n
         for j in BasisT[i]
-            push!(Basis,[change_base_ring(PrecisionRing,map_coefficients(lift,j)),i])
+            push!(Basis,[liftCoefficients(PrecisionRing,PrecisionRingPoly,j),i])
         end
     end
     println(Basis)
@@ -500,9 +526,8 @@ p = 7
 Fp = GF(p,1)
 
 R = Fp
-PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
+PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z,w = Vars
-polynomial = x^4 + y^4 + z^4 + w^4
-parent(polynomial)
-Test = ControlledReduction.computeFrobeniusMatrix(n,d,polynomial,7,p,R,PR,Vars)
+f = x^4 + y^4 + z^4 + w^4
+Test = ControlledReduction.computeFrobeniusMatrix(n,d,f,7,p,R,PR,Vars)
 =#

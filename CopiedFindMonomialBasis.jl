@@ -7,7 +7,7 @@ include("Utils.jl")
 
 # n = 2 # number of variables - 1
 # d = 3 # degree of homogenous polynomial
-# S, vars = PolynomialRing(R, ["x$i" for i in 0:n])
+# S, vars = polynomial_ring(R, ["x$i" for i in 0:n])
 # x, y,z = vars
 # f = -x^3 - x*z^2 + y^2*z - z^3
 
@@ -23,7 +23,7 @@ p = 41
 R = GF(p)
 n = 2
 d = 5
-PR, vars = PolynomialRing(R, ["x$i" for i in 0:n])
+PR, vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x, y, z = vars
 f = x^5 + y^5 + z^5 + x * y^3 * z
 

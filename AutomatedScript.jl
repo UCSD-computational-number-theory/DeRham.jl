@@ -18,7 +18,7 @@ p = 41
 Fp = GF(p)
 
 R = Fp
-PR, Vars = PolynomialRing(R, ["x$i" for i in 0:n])
+PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
 partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 =#
@@ -64,7 +64,7 @@ end
 
 # Computes all monomials of degree `d` in `n` variables.
 function compute_monomials(n, d)
-    S, vars = PolynomialRing(ZZ, ["x$i" for i in 1:n])
+    S, vars = polynomial_ring(ZZ, ["x$i" for i in 1:n])
 
     result = []
     
