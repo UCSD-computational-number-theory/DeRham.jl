@@ -373,7 +373,7 @@ function applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1), p*(beta + alpha + o))
             monomial = div(finish(B),X1)
-            sum = sum + p^(m-1)*(D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial
+            sum = sum + p^(m-1)*(D[j+1]*(coeff(fj,alpha)^p))*monomial
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
@@ -471,6 +471,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    println(typeof(fLift))
     BasisTLift = []
     for i in BasisT
         temp = []
@@ -479,9 +480,9 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
         push!(BasisTLift,temp)
     end
-    T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    #T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     println(BasisT)
-    println(T)
+    #println(T)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
     for i in 1:n
@@ -490,13 +491,13 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
     end
     println(Basis)
-    FBasis = applyFrobeniusToBasis(Basis,n,d,f,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     println(FBasis[1])
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
         for j in 1:ncols(psuedoInverseMat)
-            psuedoInverseMat[i,j] = PrecisionRing(lift(psuedoInverseMatTemp[i,j]))
+            psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
         end
     end
     denoms = []
@@ -505,7 +506,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             push!(denoms,j[2])
         end
     end
-    #Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
     return Reductions
 end
     
