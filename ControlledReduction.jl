@@ -483,7 +483,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
         push!(BasisTLift,temp)
     end
-    T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    #T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     #println(T)
     S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
