@@ -485,7 +485,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     end
     #T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     #println(T)
-    S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
+    #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
     for i in 1:n
         for j in BasisT[i]
@@ -508,7 +508,12 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
     end
     Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    return Reductions
+    FrobMatTemp = []
+    for i in Reductions
+        push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m(i[1],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
+    end
+    FrobMat = hcat(FrobMatTemp...)
+    return FrobMat
 end
     
 
