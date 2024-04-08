@@ -15,27 +15,45 @@ include("CopiedFindMonomialBasis.jl")
 # @param poly: polynomial f
 # @param f_tilde_exp: exponent of \tilde{f} in the denominator
 # @param denom: the coefficient in the denominator (p-denominator)
-function stdRed_step(poly, f_tilde_exp, denom)
+function stdRed_step(f, poly, f_tilde_exp, denom)
        # Number of variables, n
        n = nvars(parent(poly)) - 1
+       d = degree(f,1)
+       PR = parent(f)
+       R = coefficient_ring(parent(f))
+       #=
+       polyMat = AutomatedScript.convert_p_to_m([poly],AutomatedScript.gen_exp_vec(n+1,d*f_tilde_exp - n - 1))
 
        # Groebner basis G_i
-       groeb_basis = CopiedFindMonomialBasis.compute_monomial_bases(poly, base_ring(parent(poly)), parent(poly))
+       psuedoInverseMat = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
+
+       polycTemp = psuedoInverseMat*transpose(polyMat)
+       polyc = []
+       for i in 1:(n+1)
+              push!(polyc, AutomatedScript.convert_m_to_p(transpose(polycTemp[Int((i-1)*(length(polycTemp)/(n+1))+1):Int(i*(length(polycTemp)/(n+1)))]),AutomatedScript.gen_exp_vec(n+1,n*d-n),R,PR)[1])
+       end
+       partials = [ derivative(polyc[i], i) for i in 1:(n+1) ]
+
 
        # partial derivatives of G_i, and \sum_i{\partial_i{G_i}}
-       partials = [ derivative(groeb_basis, i) for i in 1:n+1 ]
        result = sum(partials)
 
-       return (result, f_tilde_exp - 1, denom / (f_tilde_exp - 1))
+       return (result, f_tilde_exp - 1, denom*(f_tilde_exp-1))
+       =#
+       fPartials = [ derivative(f, i) for i in 1:(n+1) ]
+       polyc, t = reduce_with_quotients(poly,fPartials)
+       polyPartials = [ derivative(polyc[i], i) for i in 1:(n+1) ]
+       result = sum(polyPartials)
+       return (result, f_tilde_exp - 1, denom*(f_tilde_exp-1))
 end
 
 # reduction: exponent downto #variables
-function stdandardReduction(poly, f_tilde_exp, denom)
+function stdandardReduction(f, poly, f_tilde_exp, denom)
        # Number of variables, n
        num_vars = nvars(parent(poly)) - 1
 
        while f_tilde_exp > num_vars
-          (poly, f_tilde_exp, denom) = stdRed_step(poly, f_tilde_exp, denom)
+          (poly, f_tilde_exp, denom) = stdRed_step(f, poly, f_tilde_exp, denom)
        end
 
        return (poly, f_tilde_exp, denom)

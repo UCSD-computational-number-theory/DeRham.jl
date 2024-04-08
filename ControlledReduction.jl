@@ -272,12 +272,9 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     for i in FT
         temp = 0
         for j in i
-            temp = temp + computeReductionOfPolyLA([p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
-            #R(inv(R(Factorial(j[2])))*Factorial(n))*
-            println("computed reduction of part of basis element")
+            temp = temp + computeReductionOfPolyLA([Factorial(i[length(i)][2],j[2])p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
         end
-        push!(result,[temp,n])
-        println("computed reduction of basis element")
+        push!(result,[temp,n,Factorial(i[length(i)][2],n)])
     end
     return result
 end
@@ -410,14 +407,13 @@ function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
     for b in Basis
         push!(result, applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR))
-        println("Applied Frob to Basis element")
     end
     return result
 end
 
-function Factorial(x)
+function Factorial(x,y)
     fact = 1
-    while x != 0
+    while x != y
         fact = fact*x
         x = x - 1
     end
@@ -436,19 +432,19 @@ function computeT(Basis,f,n,d,R,PR)
                 mterms = terms(m)
                 sum = 0
                 for t in mterms
-                    sum = sum + StandardReduction.stdRed_step(f,exponent_vector(t,1),n-i+1)[1]
+                    sum = sum + StandardReduction.stdRed_step(f,t,n-i+1,1)[1]
                 end
-                m = sum
+                m = inv(R(n-i))*sum
             end
             for j in 0:(length(Basis[n-i])-1)
-                c = coeff(m,exponent_vector(Basis[n-i][length(Basis[n-i])-j],1))
+                c = coeff(PR(m),exponent_vector(Basis[n-i][length(Basis[n-i])-j],1))
                 push!(temp, c)
                 m = m - c*Basis[n-i][length(Basis[n-i])-j]
             end
         end
         push!(T, transpose(temp))
     end
-    return vcat(T...)
+    return transpose(vcat(T...))
 end
 
 function liftCoefficients(R,PR,f)
@@ -483,7 +479,8 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
         push!(BasisTLift,temp)
     end
-    #T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    println(T)
     #println(T)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     Basis = []
@@ -492,7 +489,6 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             push!(Basis,[liftCoefficients(PrecisionRing,PrecisionRingPoly,j),i])
         end
     end
-    println(Basis)
     FBasis = applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
@@ -501,16 +497,11 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
         end
     end
-    denoms = []
-    for i in FBasis
-        for j in i
-            push!(denoms,j[2])
-        end
-    end
-    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    #Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,[],fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
     FrobMatTemp = []
     for i in Reductions
-        push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m(i[1],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
+        println(i)
+        push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([i[1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
     end
     FrobMat = hcat(FrobMatTemp...)
     return FrobMat
@@ -529,12 +520,12 @@ include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
 n = 2
 d = 5
-p = 41
+p = 7
 Fp = GF(p,1)
 
 R = Fp
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z = Vars
-f = x^5 + y^5 + z^5 + x*y^3*z
+f = x^5 +y^5 + z^5 + x*y^3*z
 Test = ControlledReduction.computeFrobeniusMatrix(n,d,f,7,p,R,PR,Vars)
 =#

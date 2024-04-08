@@ -164,4 +164,8 @@ function psuedo_inverse_classical(f, R, PR)
     return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end
 
+function psuedo_inverse_classicalm(f, m, R, PR)
+    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
+end
+
 end
