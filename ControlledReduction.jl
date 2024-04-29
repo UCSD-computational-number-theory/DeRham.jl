@@ -618,7 +618,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
         end
     end
-    Reductions = computeReductionOfTransformLA1(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
     println(Reductions)
     FrobMatTemp = []
     denomArray = []
