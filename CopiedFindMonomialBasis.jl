@@ -2,6 +2,7 @@ module CopiedFindMonomialBasis
 using Oscar
 
 include("Utils.jl")
+include("AutomatedScript.jl")
 
 # Polynomial Setup
 
@@ -115,7 +116,8 @@ function compute_monomial_basis(f, m, R, PR)
     d = total_degree(f)
     vars = gens(PR)
 
-    row_monomials = Utils.compute_monomials(n + 1, m*d - n - 1, PR,vars)
+    ev = AutomatedScript.gen_exp_vec(n + 1, m*d - n - 1)
+    row_monomials = AutomatedScript.gen_mon(ev,R,PR)
 
     M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)
