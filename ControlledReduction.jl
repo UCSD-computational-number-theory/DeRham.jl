@@ -639,12 +639,11 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
             FM[i,j] = BigInt(lift(ZZ,FrobMat[i,j]))/denomArray[i]
         end
     end
-    println(FM)
-    Zt,t = polynomial_ring(ZZ,"t")
+    #Zt,t = polynomial_ring(ZZ,"t")
 
-    chPoly = charpoly(Zt,FM)
+    #chPoly = charpoly(Zt,FM)
 
-    return chPoly
+    return FM
 end
     
 

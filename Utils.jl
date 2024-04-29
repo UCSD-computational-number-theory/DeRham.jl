@@ -6,8 +6,17 @@ macro assert(ex)
     return :( $ex ? nothing : throw(AssertionError($(string(ex)))) )
 end
 
+"""
+polynomial_to_vector(f, n, R, PR; order=:lex)
 
-# Convert polynomial to vector form with specified order. Default is lexicographic.
+Convert polynomial to vector form with specified order. Default is lexicographic.
+
+f is an oscar polynomial
+n is the number of variables (minus 1???)
+R is the base ring
+PR is the polynomial ring, i.e. it is parent(f)
+order is a symbol, which must be :lex or the function aborts
+"""
 function polynomial_to_vector(f, n, R, PR; order=:lex)
     vars = gens(PR)
 
