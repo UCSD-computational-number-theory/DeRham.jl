@@ -7,10 +7,10 @@ using Combinatorics
 
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
-include("FindMonomialBasis.jl")
+#include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
-include("SmallestSubsetSmooth.jl")
+#include("SmallestSubsetSmooth.jl")
 include("StandardReduction.jl")
 
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
@@ -577,9 +577,48 @@ function liftCoefficients(R,PR,f)
     return sum
 end
 
+"""
+Computes Frobenius Matrix
+n = number of vars - 1
+d = degree of the polynomial f2
+Reductions = output of computeReductionOfTransformLA
+T = output of computeT
+"""
+function computeFrobeniusMatrix(n,d,Reductions,T)
+    FrobMatTemp = []
+    denomArray = []
+    for i in 1:length(Reductions)
+        push!(denomArray, BigInt(lift(ZZ,Reductions[i][3])))
+        #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
+        push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([Reductions[i][1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
+        #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
+    end
+    FrobMat = hcat(FrobMatTemp...)
+    #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
+    #FM = MS()
+    FM = Array{BigFloat}(undef, nrows(FrobMat), ncols(FrobMat))
+    for i in axes(FrobMat,1)
+        for j in axes(FrobMat,2)
+            FM[i,j] = BigInt(lift(ZZ,FrobMat[i,j]))/denomArray[i]
+        end
+    end
 
-function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
-    Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
+    return FM
+end
+
+"""
+Wrapper function that outputs the Frobenius Matrix
+n = number of variables - 1
+d = degree of f
+f = Oscar polynomial
+precision = not in use
+p = prime number
+R = basefield(parent(f))
+PR = parent(f)
+vars = generators of PR
+"""
+function computeAll(n,d,f,precision,p,R,PR,vars)
+    #Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
     #N = max(Nm...)
     N = 6
     s = N + n - 1
@@ -605,12 +644,11 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
     #S = []
     Basis = []
     for i in 1:n
-        for j in BasisT[i]
-            push!(Basis,[liftCoefficients(PrecisionRing,PrecisionRingPoly,j),i])
+        for j in BasisTLift[i]
+            push!(Basis,[j,i])
         end
     end
-    println(Basis)
-    FBasis = applyFrobeniusToBasis(Basis,n,d,fLift,N+2,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
@@ -619,29 +657,7 @@ function computeFrobeniusMatrix(n,d,f,precision,p,R,PR,vars)
         end
     end
     Reductions = computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    println(Reductions)
-    FrobMatTemp = []
-    denomArray = []
-    for i in 1:length(Reductions)
-        push!(denomArray, BigInt(lift(ZZ,Reductions[i][3])))
-        #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
-        push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([Reductions[i][1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
-        #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
-    end
-    println(denomArray)
-    #denom = lcm(denomArray...)
-    FrobMat = hcat(FrobMatTemp...)
-    #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
-    #FM = MS()
-    FM = Array{BigFloat}(undef, nrows(FrobMat), ncols(FrobMat))
-    for i in axes(FrobMat,1)
-        for j in axes(FrobMat,2)
-            FM[i,j] = BigInt(lift(ZZ,FrobMat[i,j]))/denomArray[i]
-        end
-    end
-    #Zt,t = polynomial_ring(ZZ,"t")
-
-    #chPoly = charpoly(Zt,FM)
+    FM = computeFrobeniusMatrix(n,d,Reductions,T)
 
     return FM
 end
@@ -666,5 +682,5 @@ R = Fp
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z = Vars
 f = y^2*z - x^3 - x*z^2 - z^3
-Test = ControlledReduction.computeFrobeniusMatrix(n,d,f,7,p,R,PR,Vars)
+Test = ControlledReduction.computeAll(n,d,f,7,p,R,PR,Vars)
 =#
