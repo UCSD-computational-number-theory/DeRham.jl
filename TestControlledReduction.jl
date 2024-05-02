@@ -1,6 +1,6 @@
 module TestControlledReduction
 
-using Tests
+using Test
 using Oscar
 
 include("ControlledReduction.jl")
@@ -12,13 +12,15 @@ include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
 
 function runTests()
-    testEllCurve1_7()
-    testMonomialBasis()
-    testLinAlgProb()
-    testFrobTrans()
-    testRedOfTerms()
-    testT()
-    testFrobMat()
+    @testset "All tests" begin
+        testEllCurve1_7()
+        testMonomialBasis()
+        testLinAlgProb()
+        testFrobTrans()
+        testRedOfTerms()
+        testT()
+        testFrobMat()
+    end
 end
 
 function testEllCurve1_7()
@@ -40,7 +42,7 @@ function testMonomialBasis()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR) 
+    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR) == 1
 end
 
 function testLinAlgProb()
@@ -52,17 +54,21 @@ function testLinAlgProb()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     S = [0,1,2]
-    @test CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
+    @test CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR) == 1
 end
 
 function testFrobTrans()
     n = 2
     d = 3
     p = 7
+    N = 6
+    M = 15
     R = GF(p,1)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
+    PrecisionRing, = residue_ring(ZZ,p^M)
+    PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
@@ -80,9 +86,7 @@ function testFrobTrans()
         end
     end
     M = 15
-    PrecisionRing, = residue_ring(ZZ,p^M)
-    PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    @test ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    @test ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testRedOfTerms()
@@ -114,7 +118,7 @@ function testRedOfTerms()
             push!(Basis,[j,i])
         end
     end
-    FBasis = applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
@@ -122,7 +126,7 @@ function testRedOfTerms()
             psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
         end
     end
-    @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testT()
@@ -146,7 +150,7 @@ function testT()
         end
         push!(BasisTLift,temp)
     end
-    @test ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    @test ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testFrobMat()
@@ -171,7 +175,7 @@ function testFrobMat()
         end
         push!(BasisTLift,temp)
     end
-    T = computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    T = ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     S = [0,1,2]
     Basis = []
     for i in 1:n
@@ -188,7 +192,7 @@ function testFrobMat()
         end
     end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    @test ControlledReduction.computeFrobeniusMatrix(n,d,Reductions,T)
+    @test ControlledReduction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 
 end

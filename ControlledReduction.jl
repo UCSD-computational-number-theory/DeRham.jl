@@ -588,7 +588,7 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     FrobMatTemp = []
     denomArray = []
     for i in 1:length(Reductions)
-        push!(denomArray, BigInt(lift(ZZ,Reductions[i][3])))
+        push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
         push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([Reductions[i][1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
@@ -596,10 +596,10 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     FrobMat = hcat(FrobMatTemp...)
     #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
     #FM = MS()
-    FM = Array{BigFloat}(undef, nrows(FrobMat), ncols(FrobMat))
+    FM = Array{QQFieldElem}(undef, nrows(FrobMat), ncols(FrobMat))
     for i in axes(FrobMat,1)
         for j in axes(FrobMat,2)
-            FM[i,j] = BigInt(lift(ZZ,FrobMat[i,j]))/denomArray[i]
+            FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
         end
     end
 
