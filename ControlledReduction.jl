@@ -627,7 +627,6 @@ function computeAll(n,d,f,precision,p,R,PR,vars)
     #PrecisionRing = PadicField(p,M)
     PrecisionRing, = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    ResRing, = residue_ring(ZZ,p^M)
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
@@ -676,9 +675,7 @@ include("SmallestSubsetSmooth.jl")
 n = 2
 d = 3
 p = 7
-Fp = GF(p,1)
-
-R = Fp
+R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z = Vars
 f = y^2*z - x^3 - x*z^2 - z^3
