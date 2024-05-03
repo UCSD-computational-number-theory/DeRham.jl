@@ -577,7 +577,6 @@ function liftCoefficients(R,PR,f)
     return sum
 end
     
-
 end
 
 #=

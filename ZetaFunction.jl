@@ -28,22 +28,25 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     FrobMatTemp = []
     denomArray = []
     for i in 1:length(Reductions)
-        push!(denomArray, BigInt(lift(ZZ,Reductions[i][3])))
+        push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
         push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([Reductions[i][1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
     end
     FrobMat = hcat(FrobMatTemp...)
-    MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
-    FM = MS()
-    #FM = Array{BigFloat}(undef, nrows(FrobMat), ncols(FrobMat))
-    for i in axes(FrobMat,1)
-        for j in axes(FrobMat,2)
-            FM[i,j] = BigInt(lift(ZZ,FrobMat[i,j]))/denomArray[i]
+    #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
+    #FM = MS()
+   
+    @assert nrows(FrobMat) == ncols(FrobMat) "Frobenius matrix is not a square matrix."
+    R = matrix_space(QQ, nrows(FrobMat), ncols(FrobMat))
+    FM = Array{QQFieldElem}(undef, nrows(FrobMat), ncols(FrobMat))
+    for i in axes(FrobMat, 1)
+        for j in axes(FrobMat, 2)
+            FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
         end
     end
 
-    return FM
+    return R(FM)
 end
 
 """
@@ -59,13 +62,10 @@ INPUT:
 function LPolynomial(FM, q)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
-    println(charpoly(FM))
-    R, T = polynomial_ring(QQ, "T")
-    S = matrix_space(R, size(FM, 1), size(FM, 1))
-    I = identity_matrix(R, size(FM, 1))
-    println(charpoly(S(FM)))
+    P, T = polynomial_ring(QQ, "T")
+    f = charpoly(P, FM)
 
-    return det(I-1/q * T * FM)
+    return reverse(f)
 end 
 
 
@@ -84,7 +84,7 @@ INPUTS:
 * "PR" -- parent(f)
 * "vars" -- generators of PR
 """
-function computeAll(n, d, f, precision, p, R, PR, vars, verbose=false)
+function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     #Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
     #N = max(Nm...)
     N = 6
@@ -104,7 +104,7 @@ function computeAll(n, d, f, precision, p, R, PR, vars, verbose=false)
         end
         push!(BasisTLift,temp)
     end
-    T = ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    T = ControlledReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -114,16 +114,17 @@ function computeAll(n, d, f, precision, p, R, PR, vars, verbose=false)
             push!(Basis,[j,i])
         end
     end
-    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
-    psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
+    psuedoInverseMat = zeros(PrecisionRing, nrows(psuedoInverseMatTemp), ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
         for j in 1:ncols(psuedoInverseMat)
-            psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
+            psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ, psuedoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    FM = computeFrobeniusMatrix(n,d,Reductions,T)
+    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
+    FM = computeFrobeniusMatrix(n, d, Reductions, T) 
+
     if verbose
         println("The Frobenius matrix is $FM")
     end
