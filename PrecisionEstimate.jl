@@ -1,7 +1,7 @@
 module PrecisionEstimate
 
 p = 41
-r = 7 # precision
+r = 7 # p-adic precision
 n = 2
 
 function compute_N(p, r, m, n)
