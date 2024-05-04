@@ -43,7 +43,7 @@ function testMonomialBasis()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR) == 1
+    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR) == [[1],[z^3]]
 end
 
 function testLinAlgProb()
@@ -62,8 +62,8 @@ function testFrobTrans()
     n = 2
     d = 3
     p = 7
-    N = 6
-    M = 15
+    N = 2 # the series precision
+    M = 3 # tge absolute precision
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
