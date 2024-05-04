@@ -10,6 +10,7 @@ include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
+include("ZetaFunction.jl")
 
 function runTests()
     @testset "All tests" begin
@@ -27,18 +28,18 @@ function testEllCurve1_7()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test ControlledReduction.computeAll(n,d,f,precision,7,R,PR,vars) == [84 48; 294 17]
+    @test ZetaFunction.computeAll(n,d,f,precision,7,R,PR,vars) == [84 48; 294 17]
 end
 
 function testMonomialBasis()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
@@ -49,7 +50,7 @@ function testLinAlgProb()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
@@ -63,11 +64,11 @@ function testFrobTrans()
     p = 7
     N = 6
     M = 15
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    PrecisionRing, = residue_ring(ZZ,p^M)
+    PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -93,13 +94,13 @@ function testRedOfTerms()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     N = 6
     M = 15
-    PrecisionRing, = residue_ring(ZZ,p^M)
+    PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -133,12 +134,12 @@ function testT()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     M = 15
-    PrecisionRing, = residue_ring(ZZ,p^M)
+    PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -157,13 +158,13 @@ function testFrobMat()
     n = 2
     d = 3
     p = 7
-    R = GF(p,1)
+    R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     N = 6
     M = 15
-    PrecisionRing, = residue_ring(ZZ,p^M)
+    PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -192,7 +193,7 @@ function testFrobMat()
         end
     end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
-    @test ControlledReduction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
+    @test ZetaFunction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 
 end

@@ -564,6 +564,22 @@ function computeT(Basis,f,n,d,R,PR)
     return transpose(vcat(T...))
 end
 
+"""
+    liftCoefficients(R,PR,f)
+
+Lifts the coefficeints of f to the ring R.
+
+Works by lifting coefficients to ZZ and then 
+converting elements of ZZ to elements of R.
+Thus, this method is mostly useful for 
+lifting something mod p^m to p^n,
+for m < n.
+
+f - the polynomial to be lifted
+R - the ring for the coefficients to end up in
+PR - the polynomial ring (over R) for the result
+to end up in 
+"""
 function liftCoefficients(R,PR,f)
     t = terms(f)
     sum = 0 
