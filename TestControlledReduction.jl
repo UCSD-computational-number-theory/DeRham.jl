@@ -69,6 +69,7 @@ function testFrobTrans()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     PrecisionRing = residue_ring(ZZ,p^M)
+    println(eltype(PrecisionRing))
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -87,7 +88,52 @@ function testFrobTrans()
         end
     end
     M = 15
-    @test ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly) == 1
+
+    frobterms = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+
+    x0,x1,x2 = PVars
+
+    #TODO:test failing
+    @test frobterms[1][1] == [133*x0^6*x1^6*x2^6, 7]
+
+    #TODO: test failing
+    @test frobterms[1][2] == [1*x0^27*x1^6*x2^6 + 
+                              1*x0^13*x1^6*x2^20 + 
+                              342*x0^6*x1^20*x2^13 + 
+                              1*x0^6*x1^6*x2^27, 14]
+    
+    #TODO: test failing
+    @test frobterms[2][1] == [56*x0^6*x1^6*x2^27, 14]
+    
+    @test frobterms[2][2][2] == 21
+    bigpolyterms = terms(frobterms[2][2][1])
+   
+    coefficients = leading_coefficient.(bigpolyterms)
+    exp_vecs = leading_exponent_vector.(bigpolyterms)
+
+    # Costa's code shows:
+    #
+    # [4 1 4] --> 2
+    # [4 3 2] --> 341
+    # [5 1 3] --> 2
+    # [7 1 1] --> 2
+    #
+    # To get the monomial from 
+    # 
+    # key --> value
+    # 
+    # I think you need to do
+    #
+    # prod([x,y,z] .^ (p .* key)) * value
+    
+    #TODO:test failing
+    @test coefficients == [2,2,341,2]
+    #TODO:test failing
+    @test exp_vecs == [[27 6 27],
+                       [27 20 13],
+                       [35 6 20],
+                       [48 6 6]]
+
 end
 
 function testRedOfTerms()
