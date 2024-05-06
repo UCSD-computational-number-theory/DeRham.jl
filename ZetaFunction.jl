@@ -87,14 +87,29 @@ INPUTS:
 function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     #Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
     #N = max(Nm...)
-    N = 6
+    if verbose
+        println("Working with a degree $d hypersurface in P^$n")
+    end 
+
+    N = 6 # series precision 
     s = N + n - 1
     #M = Int(precision + floor((p*s-1)/(p-1) + 1))
-    M = 15
+    M = 15 # Absolute precision
+
+    if verbose
+        println("We work modulo $p^$M, and compute up to the $N-th term of the Frobenius power series")
+    end 
+
     #PrecisionRing = PadicField(p,M)
     PrecisionRing, = residue_ring(ZZ, p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
+    num_BasisT = length(BasisT)
+
+    if verbose
+        println("There are $num_BasisT basis elements in H^$n")
+    end 
+
     fLift = ControlledReduction.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
