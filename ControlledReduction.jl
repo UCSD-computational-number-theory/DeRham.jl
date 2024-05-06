@@ -499,7 +499,7 @@ INPUTS:
 * "beta" -- vector, representing the exponents in the monomial of the basis element
 * "m" -- integer, pole order of the basis element 
 * "R" -- ring, basering(parent(f))
-* "PR" -- ting, parent(f)
+* "PR" -- ring, parent(f)
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     s = N + m -1 # never used? 
@@ -517,7 +517,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1), p*(beta + alpha + o))
             monomial = div(finish(B),X1)
-            sum = sum + p^(m-1)*(D[j+1]*(coeff(fj,alpha)^p))*monomial
+            sum = sum + p^(m-1)*((D[j+1]*(coeff(fj,alpha)^p))%(p^s))*monomial
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
