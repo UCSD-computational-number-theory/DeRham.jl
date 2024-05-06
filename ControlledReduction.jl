@@ -474,6 +474,19 @@ function computeD(N,m)
     return D
 end
 
+"""
+applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
+
+n - number of variables minus 1
+d - degree of f
+f - the (lifted) f which is the denominator in the poles
+N - the series precision
+p - the prime number
+beta - ???
+m - ???
+R - basering(parent(f))
+PR - parent(f)
+"""
 function applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
     s = N + m -1
     o = ones(Int64, n+1)
@@ -517,10 +530,26 @@ function applyFrobenius(n,d,f,N,p,poly,R,PR)
     return temp
 end
 
+"""
+applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
+
+Applies the frobenius to all the elements of Basis
+
+Basis - array of basis elmenets
+n - number of variables minus 1
+d - degree
+f - polynomial which is the denominator of poles (lifted version)
+N - series precision
+p - the prime
+R - basering(parent(f))
+PR - parent(f)
+"""
 function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
     for b in Basis
-        push!(result, applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR))
+        Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
+        println(Fmon)
+        push!(result, Fmon)
     end
     return result
 end
@@ -564,6 +593,22 @@ function computeT(Basis,f,n,d,R,PR)
     return transpose(vcat(T...))
 end
 
+"""
+    liftCoefficients(R,PR,f)
+
+Lifts the coefficeints of f to the ring R.
+
+Works by lifting coefficients to ZZ and then 
+converting elements of ZZ to elements of R.
+Thus, this method is mostly useful for 
+lifting something mod p^m to p^n,
+for m < n.
+
+f - the polynomial to be lifted
+R - the ring for the coefficients to end up in
+PR - the polynomial ring (over R) for the result
+to end up in 
+"""
 function liftCoefficients(R,PR,f)
     t = terms(f)
     sum = 0 
