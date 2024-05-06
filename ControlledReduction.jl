@@ -466,7 +466,16 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
 end
 #----------------------------------
 
-function computeD(N,m)
+"""
+    computeD(N, m)
+
+Returns a list of length N where D_{j,m} = \sum_{i=j}^{N-1} (-1)^{i+j}\binom{-m, i}\binom{i, j}
+
+INPUTS: 
+* "N" -- integer
+* "m" -- integer
+"""
+function computeD(N, m)
     D = zeros(Int,N)
     for j in 0:(N-1)
         D[j+1] = sum((-1)^(i+j)*binomial(-m,i)*binomial(i,j) for i in j:(N-1))
@@ -475,20 +484,25 @@ function computeD(N,m)
 end
 
 """
-applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
+    applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
 
-n - number of variables minus 1
-d - degree of f
-f - the (lifted) f which is the denominator in the poles
-N - the series precision
-p - the prime number
-beta - ???
-m - ???
-R - basering(parent(f))
-PR - parent(f)
+Computes the power series expansion of p^{m-n-1}\sigma(x^{\beta}\Omega/f^m) 
+using formula (1.10) in Costa's thesis
+
+
+INPUTS: 
+* "n" -- integer, dimension of ambient projective space
+* "d" -- integer, degree of the hypersurface f
+* "f" -- polynomial, defining homogeneous equation of the hypersurface lifted to characteristic 0
+* "N" -- integer, series precision
+* "p" -- integer, a prime number that is the characteristic of the base field of the hypersurface
+* "beta" -- vector, representing the exponents in the monomial of the basis element
+* "m" -- integer, pole order of the basis element 
+* "R" -- ring, basering(parent(f))
+* "PR" -- ting, parent(f)
 """
-function applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
-    s = N + m -1
+function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
+    s = N + m -1 # never used? 
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)

@@ -27,8 +27,17 @@ partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 
 # TODO: Ensure partials are not all zero.
 
-# Generates vector of exponentials
+"""
+    gen_exp_vec(n,d)
+
+Returns all nonnegative integer lists of length n who entires sum to d
+
+INPUTS: 
+* "n" -- integer
+* "d" -- integer 
+"""
 function gen_exp_vec(n,d)
+    @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
     result = Any[]
     if n == 1
         return [[d]]
