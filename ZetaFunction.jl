@@ -101,7 +101,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     end 
 
     #PrecisionRing = PadicField(p,M)
-    PrecisionRing = residue_ring(ZZ, p^M)
+    PrecisionRing, = residue_ring(ZZ, p^M)
     println(typeof(PrecisionRing))
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
@@ -140,6 +140,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
     FM = computeFrobeniusMatrix(n, d, Reductions, T) 
+    println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")

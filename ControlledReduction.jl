@@ -86,6 +86,29 @@ function chooseV(I,d)
     return V
 end
 
+"""
+tweak(I,m)
+
+If for a vectors of ints, I, we let |I| = sum(I[i]). This function returns I after removing an integer vector, J, with |J| = m
+from it
+
+INPUTS
+* "I" -- vector of nonnegative integers 
+* "m" -- nonnegative integer
+"""
+function tweak(I,m)
+    while m > 0
+        for i in axes(I,1)
+            if (I[i] > 0)
+                I[i] = I[i] - 1
+                m = m - 1
+                break
+            end
+        end
+    end
+    return I
+end
+
 function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     while g[2] > n
         g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
@@ -134,7 +157,7 @@ function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
 end
 
 #LA test --------------------
-function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
+function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     #chain = 0
     gVec = chooseV(I,n*d - n)
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
@@ -146,12 +169,17 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
         end
     end
     I = I - gVec
-    #Vs = []
-    #RUVs = []
-    h = 0
-    while m > n
+        while m > n
+U = I
+        if m - n < p
+            nend = m - n
+        else
+            nend = p
+        end
+
         V = chooseV(I,d)
         #U = I - V
+#=
         K = 0
         mins = I
         while true
@@ -169,16 +197,22 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
             mins = temp
             K = K+1
         end
-        #=
-        l = findall(x->x==V, Vs)
-        if length(l) > 0
-            RPoly = RUVs[l[1]]
-        else
         =#
-        A,B = computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
-        #push!(Vs,V)
-        #push!(RUVs,RPoly)
-        #RNums = evaluateRUV(RPoly,U,R)
+        A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
+        i = 1
+        while i <= (nend-(d*n-n))
+            gMat = (A+B*(nend-(d*n-n)-i))*gMat
+            i = i+1
+        end
+        I = I - (nend-(d*n-n))*V
+        while i < nend
+            y = tweak(p*U - i*V,d*n-n) - tweak(p*U - (i+1)*V,d*n-n)
+            A,B = computeRPolyLAOneVar(y,I - y,S,n,d,f,psuedoInverseMat,R,PR)
+        gMat = (A+B)*gMat
+            i = i+1
+        end
+        I = tweak(p*U - nend*V,d*n-n)
+        #=
         MK = A + B*K
         MK1 = A + B*(K-1)
         h = MK1*MK*gMat
@@ -189,17 +223,12 @@ function computeReductionChainLA(I,gCoeff,n,d,m,S,f,psuedoInverseMat,R,PR)
             h = MKj*h
             j = j + 1
         end
-        #=
-        if chain == 0
-            chain = RNums
-        else
-            chain = RNums*chain
-        end
-        =#
-        m = m - K
+                m = m - K
         I = mins
+=#
+        m = m - nend
     end
-    return [h, I]
+    return [gMat, I]
 end
 
 function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,psuedoInverseMat,R,PR)
@@ -306,14 +335,14 @@ function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
 end
 
 #LA test ------------------------
-function computeReductionOfPolyLA(poly,n,d,S,f,psuedoInverseMat,R,PR)
+function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
     t = getTerms(poly)
     result = 0
     for i in t
         o = ones(Int,length(exponent_vector(i[1],1)))
         I = exponent_vector(i[1],1) + o
         gCoeff = coeff(i[1],1)
-        RChain = computeReductionChainLA(I,gCoeff,n,d,i[2],S,f,psuedoInverseMat,R,PR)
+        RChain = computeReductionChainLA(I,gCoeff,n,d,p,i[2],S,f,psuedoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), Int.(RChain[2]))
         XU = finish(B)
@@ -367,7 +396,7 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     for i in FT
         temp = 0
         for j in i
-            t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,S,f,psuedoInverseMat,R,PR)[1]
+            t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
             temp = temp + t
         end
         #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
@@ -504,7 +533,6 @@ INPUTS:
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     println("N=$N, m=$m")
     Factorial = factorial(p * (N + m - 1) - 1)
-    println("Factorial=$Factorial")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -657,6 +685,7 @@ include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
+include("ZetaFunction.jl")
 n = 2
 d = 3
 p = 7
@@ -664,5 +693,5 @@ R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z = Vars
 f = y^2*z - x^3 - x*z^2 - z^3
-Test = ControlledReduction.computeAll(n,d,f,7,p,R,PR,Vars)
+Test = ZetaFunction.computeAll(n,d,f,7,p,R,PR,Vars)
 =#
