@@ -532,7 +532,7 @@ INPUTS:
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     println("N=$N, m=$m")
-    Factorial = factorial(p * (N + m - 1) - 1)
+    Factorial = factorial(big(p * (N + m - 1) - 1))
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -541,7 +541,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     result = []
     for j in 0:(N-1)
         e = j + m
-        factorial_e = R(ZZ(Factorial/factorial(p * e - 1)))
+        factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
         println("e=$e,factorial_e=$factorial_e")
         ev = AutomatedScript.gen_exp_vec(n+1,d*j)
         fj = f^j
@@ -691,7 +691,7 @@ d = 3
 p = 7
 R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x,y,z = Vars
-f = y^2*z - x^3 - x*z^2 - z^3
+x0,x1,x2 = Vars
+f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
 Test = ZetaFunction.computeAll(n,d,f,7,p,R,PR,Vars)
 =#

@@ -27,6 +27,7 @@ INPUTS:
 function computeFrobeniusMatrix(n,d,Reductions,T)
     FrobMatTemp = []
     denomArray = []
+    println(Reductions)
     for i in 1:length(Reductions)
         push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
@@ -91,10 +92,10 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         println("Working with a degree $d hypersurface in P^$n")
     end 
 
-    N = 6 # series precision 
+    N = 2 # series precision 
     s = N + n - 1
     #M = Int(precision + floor((p*s-1)/(p-1) + 1))
-    M = 15 # Absolute precision
+    M = 3 # Absolute precision
 
     if verbose
         println("We work modulo $p^$M, and compute up to the $N-th term of the Frobenius power series")
