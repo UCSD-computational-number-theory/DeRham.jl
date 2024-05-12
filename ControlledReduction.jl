@@ -469,7 +469,7 @@ end
 """
     computeD(N, m)
 
-Returns a list of length N where D_{j,m} = \sum_{i=j}^{N-1} (-1)^{i+j}\binom{-m, i}\binom{i, j}
+Returns a list of length N where D_{j,m} = sum_{i=j}^{N-1} (-1)^{i+j}binom{-m}{i}binom{i}{j}
 
 INPUTS: 
 * "N" -- integer
@@ -486,7 +486,7 @@ end
 """
     applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
 
-Computes the power series expansion of p^{m-n-1}\sigma(x^{\beta}\Omega/f^m) 
+Computes the power series expansion of p^{m-n-1}sigma(x^{beta}Omega/f^m) 
 using formula (1.10) in Costa's thesis
 
 
@@ -498,11 +498,13 @@ INPUTS:
 * "p" -- integer, a prime number that is the characteristic of the base field of the hypersurface
 * "beta" -- vector, representing the exponents in the monomial of the basis element
 * "m" -- integer, pole order of the basis element 
-* "R" -- ring, basering(parent(f))
-* "PR" -- ring, parent(f)
+* "R" -- ring, precision ring 
+* "PR" -- ring, polynomial ring with coefficients in R 
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
-    s = N + m -1 # never used? 
+    println("N=$N, m=$m")
+    Factorial = factorial(p * (N + m - 1) - 1)
+    println("Factorial=$Factorial")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -510,14 +512,17 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     D = computeD(N,m)
     result = []
     for j in 0:(N-1)
+        e = j + m
+        factorial_e = R(ZZ(Factorial/factorial(p * e - 1)))
+        println("e=$e,factorial_e=$factorial_e")
         ev = AutomatedScript.gen_exp_vec(n+1,d*j)
         fj = f^j
         sum = 0
         for alpha in ev
             B = MPolyBuildCtx(PR)
-            push_term!(B, R(1), p*(beta + alpha + o))
-            monomial = div(finish(B),X1)
-            sum = sum + p^(m-1)*((D[j+1]*(coeff(fj,alpha)^p))%(p^s))*monomial
+            push_term!(B, R(1), p * (beta + alpha + o))
+            monomial = div(finish(B), X1)
+            sum = sum + R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p))) * monomial
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
@@ -545,18 +550,19 @@ function applyFrobenius(n,d,f,N,p,poly,R,PR)
 end
 
 """
-applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
+    applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
 
 Applies the frobenius to all the elements of Basis
 
-Basis - array of basis elmenets
-n - number of variables minus 1
-d - degree
-f - polynomial which is the denominator of poles (lifted version)
-N - series precision
-p - the prime
-R - basering(parent(f))
-PR - parent(f)
+INPUTS: 
+* "Basis" -- array of basis elmenets
+* "n" -- number of variables minus 1
+* "d" -- degree
+* "f" -- polynomial which is the denominator of poles (lifted version)
+* "N" -- series precision
+* "p" -- the prime
+* "R" -- basering(parent(f))
+* "PR" -- parent(f)
 """
 function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
@@ -608,7 +614,7 @@ function computeT(Basis,f,n,d,R,PR)
 end
 
 """
-    liftCoefficients(R,PR,f)
+    liftCoefficients(R, PR, f)
 
 Lifts the coefficeints of f to the ring R.
 
@@ -618,19 +624,24 @@ Thus, this method is mostly useful for
 lifting something mod p^m to p^n,
 for m < n.
 
-f - the polynomial to be lifted
-R - the ring for the coefficients to end up in
-PR - the polynomial ring (over R) for the result
-to end up in 
+INPUTS: 
+* "f" -- the polynomial to be lifted
+* "R" -- the ring for the coefficients to end up in
+* "PR" -- the polynomial ring (over R) for the result to end up in 
 """
-function liftCoefficients(R,PR,f)
+function liftCoefficients(R, PR, f, positiveLift=true)
     t = terms(f)
     sum = 0 
     for i in t
         ev = exponent_vector(i,1)
         c = coeff(i,1)
         B = MPolyBuildCtx(PR)
-        push_term!(B, R(lift(ZZ,c)), ev)
+        charBaseField = characteristic(parent(f))
+        if positiveLift && (lift(ZZ,c) > div(charBaseField, 2))
+            push_term!(B, R(lift(ZZ,c)-charBaseField), ev)
+        else
+            push_term!(B, R(lift(ZZ,c)), ev)
+        end
         sum = sum + finish(B)
     end
     return sum

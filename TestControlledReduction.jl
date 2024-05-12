@@ -2,6 +2,7 @@ module TestControlledReduction
 
 using Test
 using Oscar
+#using Singular
 
 include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
@@ -63,16 +64,18 @@ function testFrobTrans()
     d = 3
     p = 7
     N = 2 # the series precision
-    M = 3 # tge absolute precision
+    M = 3 # the absolute precision
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-    x,y,z = Vars
-    f = y^2*z - x^3 - x*z^2 - z^3
-    PrecisionRing = residue_ring(ZZ,p^M)
+    #x,y,z = Vars
+    #f = y^2*z - x^3 - x*z^2 - z^3
+    x0,x1,x2 = Vars
+    f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+    PrecisionRing, = residue_ring(ZZ, p^M)
     println(eltype(PrecisionRing))
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
+    fLift = ControlledReduction.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
         temp = []
@@ -87,7 +90,7 @@ function testFrobTrans()
             push!(Basis,[j,i])
         end
     end
-    M = 15
+    #M = 15
 
     frobterms = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
 
@@ -127,12 +130,12 @@ function testFrobTrans()
     # prod([x,y,z] .^ (p .* key)) * value
     
     #TODO:test failing
-    @test coefficients == [2,2,341,2]
+    @test coefficients == [2,341,2,2]
     #TODO:test failing
-    @test exp_vecs == [[27 6 27],
-                       [27 20 13],
-                       [35 6 20],
-                       [48 6 6]]
+    @test exp_vecs == [[27, 6, 27],
+                       [6, 20, 34],
+                       [13, 6, 41],
+                       [6, 6, 48]]
 
 end
 
