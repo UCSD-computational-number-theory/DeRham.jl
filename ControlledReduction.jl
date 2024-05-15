@@ -584,9 +584,9 @@ Applies the frobenius to all the elements of Basis
 
 INPUTS: 
 * "Basis" -- array of basis elmenets
-* "n" -- number of variables minus 1
-* "d" -- degree
-* "f" -- polynomial which is the denominator of poles (lifted version)
+* "n" -- integer, dimension of ambient projective space
+* "d" -- integer, degree of f
+* "f" -- polynomial, defining equation of hypersurface (lifted version)
 * "N" -- series precision
 * "p" -- the prime
 * "R" -- basering(parent(f))
@@ -596,7 +596,7 @@ function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
     for b in Basis
         Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
-        println(Fmon)
+        #println(Fmon)
         push!(result, Fmon)
     end
     return result
@@ -614,7 +614,19 @@ function Factorial(x,y)
     return fact
 end
 
-function computeT(Basis,f,n,d,R,PR)
+"""
+    computeT(Basis, f, n, d, R, PR)
+
+INPUTS: 
+* "Basis" -- list, basis elements of primitive middle cohomology group in Griffiths-Dwork construction
+* "f" -- polynomial, defining equation of hypersurface (lifted version)
+* "n" -- integer, dimension of ambient projective space
+* "d" -- dimension of ambient projective space
+* "R" -- ring, basering(parent(f))
+* "PR" -- ring, parent(f)
+"""
+
+function computeT(Basis, f, n, d, R, PR)
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n-1)
     mons = AutomatedScript.gen_mon(ev,R,PR)
     T = []

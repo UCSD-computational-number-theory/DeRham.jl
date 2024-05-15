@@ -10,11 +10,17 @@ include("CopiedFindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("CopiedFindMonomialBasis.jl")
 
-# One step reduction (formula)
-# 
-# @param poly: polynomial f
-# @param f_tilde_exp: exponent of \tilde{f} in the denominator
-# @param denom: the coefficient in the denominator (p-denominator)
+"""
+       stdRed_step(f, poly, f_tilde_exp, denom)
+
+Standard reduction step 
+
+INPUTS: 
+* "f" -- polynomial, defining equation of hypersurface 
+* "poly" -- ? 
+* "f_tilde_exp" -- vector?, exponents of f? 
+* "denom" -- integer?, coefficient in the denominator of what? 
+"""
 function stdRed_step(f, poly, f_tilde_exp, denom)
        # Number of variables, n
        n = nvars(parent(poly)) - 1
