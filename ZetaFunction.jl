@@ -43,6 +43,8 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     FM = Array{QQFieldElem}(undef, nrows(FrobMat), ncols(FrobMat))
     for i in axes(FrobMat, 1)
         for j in axes(FrobMat, 2)
+            println(lift(ZZ,FrobMat[i,j]))
+            println(denomArray[i])
             FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
         end
     end
@@ -140,8 +142,8 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         end
     end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
+    println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T) 
-    println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")

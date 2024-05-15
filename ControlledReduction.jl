@@ -169,15 +169,18 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         end
     end
     I = I - gVec
-        while m > n
-U = I
+    while m > n
+        U = I
+        println(I)
+        println(gMat)
         if m - n < p
             nend = m - n
         else
             nend = p
         end
 
-        V = chooseV(I,d)
+        V = chooseV(U,d)
+        println(V)
         #U = I - V
 #=
         K = 0
@@ -200,18 +203,20 @@ U = I
         =#
         A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
         i = 1
+        println((nend-(d*n-n)))
         while i <= (nend-(d*n-n))
             gMat = (A+B*(nend-(d*n-n)-i))*gMat
             i = i+1
         end
         I = I - (nend-(d*n-n))*V
-        while i < nend
-            y = tweak(p*U - i*V,d*n-n) - tweak(p*U - (i+1)*V,d*n-n)
+        while i <= nend
+            y = tweak(U - i*V,d*n-n) - tweak(U - (i+1)*V,d*n-n)
+            println(y)
             A,B = computeRPolyLAOneVar(y,I - y,S,n,d,f,psuedoInverseMat,R,PR)
         gMat = (A+B)*gMat
             i = i+1
         end
-        I = tweak(p*U - nend*V,d*n-n)
+        I = tweak(U - nend*V,d*n-n)
         #=
         MK = A + B*K
         MK1 = A + B*(K-1)
@@ -227,6 +232,9 @@ U = I
         I = mins
 =#
         m = m - nend
+        println(I)
+        println(gMat)
+        throw(error)
     end
     return [gMat, I]
 end
@@ -395,8 +403,9 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     result = []
     for i in FT
         temp = 0
-        for j in i
-            t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
+        for j in axes(i,1)
+            #t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
+            t = computeReductionOfPolyLA([i[length(i)-j+1][1],i[length(i)-j+1][2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
             temp = temp + t
         end
         #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
