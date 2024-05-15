@@ -13,6 +13,7 @@ include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 include("StandardReduction.jl")
 
+#=
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
     gensJS = copy(parts)
@@ -37,8 +38,14 @@ function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
 end
+=#
 
 #LA test --------------------------------
+"""
+computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
+
+applies reduction formula basis elements of Homog(dn-d), returns them as polynomials
+"""
 function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
     SC = []
     B = MPolyBuildCtx(PR)
@@ -63,6 +70,11 @@ function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
 
 end
 #----------------------------------------
+"""
+chooseV(I,d)
+
+choose direction of reduction in the same way as Costa's code
+"""
 
 function chooseV(I,d)
     V = zeros(Int,length(I))
@@ -115,14 +127,16 @@ function tweak(J,m)
     end
     return I
 end
-
+#=
 function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     while g[2] > n
         g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     end
     return g
 end
+=#
 
+#=
 function evaluateRUV(RUV,U,ResRing)
     result = copy(RUV)
     for i in axes(RUV,1)
@@ -132,7 +146,9 @@ function evaluateRUV(RUV,U,ResRing)
     end
     return result
 end
+=#
 
+#=
 function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
     chain = 0
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
@@ -162,8 +178,12 @@ function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
     end
     return [chain, I]
 end
+=#
 
 #LA test --------------------
+"""
+takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
+"""
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     #chain = 0
     println(I)
@@ -243,6 +263,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     return [gMat, I]
 end
 
+#=
 function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,psuedoInverseMat,R,PR)
     #chain = 0
     gVec = chooseV(I,n*d - n)
@@ -316,8 +337,9 @@ function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,psuedoInverseMat,R,PR)
     end
     return [h, I]
 end
+=#
 #-----------------------------
-
+#=
 function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
     t = getTerms(poly)
     result = 0
@@ -345,8 +367,11 @@ function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
     end
     return [result,n]
 end
-
+=#
 #LA test ------------------------
+"""
+given polynomial, splits into terms and applies reduction to each term
+"""
 function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
     t = getTerms(poly)
     result = 0
@@ -367,7 +392,7 @@ function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
     end
     return [result,poly[2] - min(p,poly[2]-n)]
 end
-
+#=
 function computeReductionOfPolyLA1(poly,l,n,d,S,f,psuedoInverseMat,R,PR)
     t = getTerms(poly)
     result = 0
@@ -388,8 +413,9 @@ function computeReductionOfPolyLA1(poly,l,n,d,S,f,psuedoInverseMat,R,PR)
     end
     return [result,l]
 end
+=#
 #-----------------------------------
-
+#=
 function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
     result = 0
     for i in FT
@@ -401,8 +427,12 @@ function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
     end
     return [result,n]
 end
+=#
 
 #LA test ---------------------------
+"""
+naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
+"""
 function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     result = []
     for i in FT
@@ -417,8 +447,10 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     end
     return result
 end
-
-function computeReductionOfTransformLA1(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
+"""
+trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
+"""
+function computeReductionOfTransformLADescending(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     result = []
     for i in FT
         omega = [PR(0),i[length(i)][2]]
@@ -452,7 +484,7 @@ function computeR(u,v,s,n,d,R,PR,vars)
     return transpose(AutomatedScript.convert_p_to_m(reductions,ev))
 end
 =#
-
+#=
 function computeRPoly(V,S,n,d,parts,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
@@ -468,8 +500,10 @@ function computeRPoly(V,S,n,d,parts,R,PR)
     end
     return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
+=#
 
 #LA test ------------------------
+#=
 function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
@@ -481,7 +515,10 @@ function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
     end
     return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
-
+=#
+"""
+computes reduction matrices
+"""
 function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
     YRing, y = polynomial_ring(R, "y")
     PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
@@ -509,7 +546,7 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
     return [A,B]
 end
 #----------------------------------
-
+#=
 """
     computeD(N, m)
 
@@ -526,6 +563,7 @@ function computeD(N, m)
     end
     return D
 end
+
 
 """
     applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
@@ -572,7 +610,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     end
     return result
 end
-
+=#
 function getTerms(poly)
     t = terms(poly[1])
     result = []
@@ -581,7 +619,7 @@ function getTerms(poly)
     end
     return result
 end
-
+#=
 function applyFrobenius(n,d,f,N,p,poly,R,PR)
     t = getTerms(poly)
     temp = []
@@ -616,12 +654,14 @@ function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     end
     return result
 end
+=#
 
 function Factorial(x,y)
     fact = 1
     if x == 0
         return 1
     end
+    #BEWARE could be infinite
     while x != y
         fact = fact*x
         x = x - 1
@@ -629,6 +669,7 @@ function Factorial(x,y)
     return fact
 end
 
+#=
 function computeT(Basis,f,n,d,R,PR)
     ev = AutomatedScript.gen_exp_vec(n+1,d*n-n-1)
     mons = AutomatedScript.gen_mon(ev,R,PR)
@@ -655,6 +696,7 @@ function computeT(Basis,f,n,d,R,PR)
     end
     return transpose(vcat(T...))
 end
+=#
 
 """
     liftCoefficients(R, PR, f)
