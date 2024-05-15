@@ -96,7 +96,10 @@ INPUTS
 * "I" -- vector of nonnegative integers 
 * "m" -- nonnegative integer
 """
-function tweak(I,m)
+function tweak(J,m)
+    count = 0
+    o = m
+    I = copy(J)
     while m > 0
         for i in axes(I,1)
             if (I[i] > 0)
@@ -105,6 +108,10 @@ function tweak(I,m)
                 break
             end
         end
+        if count > length(I)*o
+            return I
+        end
+        count = count+1
     end
     return I
 end
@@ -159,7 +166,10 @@ end
 #LA test --------------------
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     #chain = 0
-    gVec = chooseV(I,n*d - n)
+    println(I)
+    println(tweak(I,n*d-n))
+    gVec = I - tweak(I,n*d-n)
+    println(gVec)
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
     gMat = zeros(R,length(ev))
     for j in axes(gMat,1)
@@ -168,23 +178,19 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
             break
         end
     end
+    println(gMat)
     I = I - gVec
-    while m > n
-        U = I
-        println(I)
-        println(gMat)
-        if m - n < p
-            nend = m - n
-        else
-            nend = p
-        end
+    if m - n < p
+        nend = m - n
+    else
+        nend = p
+    end
 
-        V = chooseV(U,d)
-        println(V)
-        #U = I - V
-#=
-        K = 0
-        mins = I
+    V = chooseV(I,d)
+    #U = I - V
+    #=
+    K = 0
+    mins = I
         while true
             temp = mins - V
             isLessThanZero = false
@@ -203,20 +209,22 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         =#
         A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
         i = 1
-        println((nend-(d*n-n)))
         while i <= (nend-(d*n-n))
             gMat = (A+B*(nend-(d*n-n)-i))*gMat
+            println(gMat)
             i = i+1
         end
-        I = I - (nend-(d*n-n))*V
         while i <= nend
-            y = tweak(U - i*V,d*n-n) - tweak(U - (i+1)*V,d*n-n)
-            println(y)
-            A,B = computeRPolyLAOneVar(y,I - y,S,n,d,f,psuedoInverseMat,R,PR)
-        gMat = (A+B)*gMat
+            y = tweak(I - i*V,d*n-n) - tweak(I - (i+1)*V,d*n-n)
+            A,B = computeRPolyLAOneVar(y,tweak(I - i*V,d*n-n) - y,S,n,d,f,psuedoInverseMat,R,PR)
+            println(A+B)
+            gMat = (A+B)*gMat
+            println(gMat)
             i = i+1
         end
-        I = tweak(U - nend*V,d*n-n)
+        I = I - nend*V
+        println(I)
+        println(gMat)
         #=
         MK = A + B*K
         MK1 = A + B*(K-1)
@@ -230,12 +238,8 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         end
                 m = m - K
         I = mins
-=#
-        m = m - nend
-        println(I)
-        println(gMat)
+        =# 
         throw(error)
-    end
     return [gMat, I]
 end
 
@@ -361,7 +365,7 @@ function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
         gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
         result = result + gReduction
     end
-    return [result,n]
+    return [result,poly[2] - min(p,poly[2]-n)]
 end
 
 function computeReductionOfPolyLA1(poly,l,n,d,S,f,psuedoInverseMat,R,PR)
@@ -419,14 +423,16 @@ function computeReductionOfTransformLA1(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
     for i in FT
         omega = [PR(0),i[length(i)][2]]
         m = Int(i[1][2]/p)
-        for j in 1:(m+N-1)
-            e = m+N-j
-            omegae = Factorial(R(p*(m+N-1)-1),R(p*e-1))*i[e][1]
+        for j in 1:length(i)
+            i = FT[2]
+            #omegae = i[length(i)-j+1][1]
+            println(length(i))
+            omegae = i[2][1]
             omega[1] = omega[1] + omegae
-            l = max(p*(e-1),n)
-            omega = computeReductionOfPolyLA1([Factorial(p*(e-1),(l-1))*omega[1],omega[2]],l,n,d,S,f,psuedoInverseMat,R,PR)
+            omega = computeReductionOfPolyLA(omega,n,d,p,S,f,psuedoInverseMat,R,PR)
         end
-        push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
+        #push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
+        push!(result,omega)
     end
     return result
 end
