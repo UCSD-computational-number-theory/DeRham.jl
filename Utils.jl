@@ -93,4 +93,38 @@ function compute_monomials(n, d, PR, vars, order=:lex)
     end
 end
 
+"""
+    liftCoefficients(R, PR, f)
+
+Lifts the coefficeints of f to the ring R.
+
+Works by lifting coefficients to ZZ and then 
+converting elements of ZZ to elements of R.
+Thus, this method is mostly useful for 
+lifting something mod p^m to p^n,
+for m < n.
+
+INPUTS: 
+* "f" -- the polynomial to be lifted
+* "R" -- the ring for the coefficients to end up in
+* "PR" -- the polynomial ring (over R) for the result to end up in 
+"""
+function liftCoefficients(R, PR, f, positiveLift=true)
+    t = terms(f)
+    sum = 0 
+    for i in t
+        ev = exponent_vector(i,1)
+        c = coeff(i,1)
+        B = MPolyBuildCtx(PR)
+        charBaseField = characteristic(parent(f))
+        if positiveLift && (lift(ZZ,c) > div(charBaseField, 2))
+            push_term!(B, R(lift(ZZ,c)-charBaseField), ev)
+        else
+            push_term!(B, R(lift(ZZ,c)), ev)
+        end
+        sum = sum + finish(B)
+    end
+    return sum
+end
+
 end

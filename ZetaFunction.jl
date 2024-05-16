@@ -29,7 +29,7 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     denomArray = []
     println(Reductions)
     for i in 1:length(Reductions)
-        push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
+        #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
         push!(FrobMatTemp,T*transpose(AutomatedScript.convert_p_to_m([Reductions[i][1]],AutomatedScript.gen_exp_vec(n+1,d*n-n-1))))
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
@@ -44,8 +44,9 @@ function computeFrobeniusMatrix(n,d,Reductions,T)
     for i in axes(FrobMat, 1)
         for j in axes(FrobMat, 2)
             println(lift(ZZ,FrobMat[i,j]))
-            println(denomArray[i])
-            FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
+            #println(denomArray[i])
+            #FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
+            FM[i,j] = lift(ZZ,FrobMat[i,j])
         end
     end
 
@@ -141,7 +142,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
             psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ, psuedoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
+    Reductions = ControlledReduction.computeReductionOfTransformLA1(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T) 
 
@@ -153,3 +154,22 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
 end
 
 end 
+
+#=
+include("ControlledReduction.jl")
+include("PrecisionEstimate.jl")
+include("CopiedFindMonomialBasis.jl")
+include("FindMonomialBasis.jl")
+include("AutomatedScript.jl")
+include("Utils.jl")
+include("SmallestSubsetSmooth.jl")
+include("ZetaFunction.jl")
+n = 2
+d = 3
+p = 7
+R = GF(p,1)
+PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
+x0,x1,x2 = Vars
+f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+Test = ZetaFunction.computeAll(n,d,f,7,p,R,PR,Vars)
+=#
