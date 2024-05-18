@@ -11,39 +11,11 @@ include("AutomatedScript.jl")
 include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 
-
-#=
-function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
-    SC = []
-    gensJS = copy(parts)
-    B = MPolyBuildCtx(PR)
-    push_term!(B, R(1), V)
-    XV = finish(B)
-    for i in 0:n
-        if i in S
-            #push!(gensJS,parts[i+1])
-            gensJS[i+1] = parts[i+1]
-        else
-            #push!(gensJS,Vars[i+1]*parts[i+1])
-            gensJS[i+1] = Vars[i+1]*parts[i+1]
-            #parts[i+1] = Vars[i+1]*parts[i+1]
-            push!(SC,i)
-        end
-    end
-    # get gi's using psuedoinverse
-    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gc, t = reduce_with_quotients(div(XV*g[1],XS),gensJS)
-    gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
-    return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-
-end
-=#
-
-#LA test --------------------------------
 """
-computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
+    computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
 
-applies reduction formula basis elements of Homog(dn-d), returns them as polynomials
+applies reduction formula from Prop 1.15 in Costa's thesis to 
+basis elements of Homog(dn-d), returns them as polynomials
 """
 function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
     SC = []
@@ -68,14 +40,17 @@ function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
     return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
 end
-#----------------------------------------
+
 """
-chooseV(I,d)
+    chooseV(I, d)
 
 choose direction of reduction in the same way as Costa's code
-"""
 
-function chooseV(I,d)
+INPUTS: 
+* "I" -- list/tuple, exponents of monomials
+* "d" -- integer, degree of f 
+"""
+function chooseV(I, d)
     V = zeros(Int,length(I))
     i = 0
     s = 1
@@ -98,7 +73,7 @@ function chooseV(I,d)
 end
 
 """
-tweak(I,m)
+    tweak(I,m)
 
 If for a vectors of ints, I, we let |I| = sum(I[i]). This function returns I after removing an integer vector, J, with |J| = m
 from it
@@ -126,61 +101,10 @@ function tweak(J,m)
     end
     return I
 end
-#=
-function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
-    while g[2] > n
-        g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
-    end
-    return g
-end
-=#
 
-#=
-function evaluateRUV(RUV,U,ResRing)
-    result = copy(RUV)
-    for i in axes(RUV,1)
-        for j in axes(RUV,2)
-            result[i,j] = evaluate(change_base_ring(ResRing,map_coefficients(lift,RUV[i,j])),U)
-        end
-    end
-    return result
-end
-=#
-
-#=
-function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
-    chain = 0
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
-    gVec = chooseV(I,n*d - n)
-    I = I - gVec
-    Vs = []
-    RUVs = []
-    while m > n
-        V = chooseV(I,d)
-        U = I - V
-        l = findall(x->x==V, Vs)
-        if length(l) > 0
-            RPoly = RUVs[l[1]]
-        else
-            RPoly = computeRPoly(V,S,n,d,parts,R,PR)
-            push!(Vs,V)
-            push!(RUVs,RPoly)
-        end
-        RNums = evaluateRUV(RPoly,U,ResRing)
-        if chain == 0
-            chain = RNums
-        else
-            chain = RNums*chain
-        end
-        m = m - 1
-        I = U
-    end
-    return [chain, I]
-end
-=#
-
-#LA test --------------------
 """
+    computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
+
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 """
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
@@ -261,6 +185,283 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         #throw(error)
     return [gMat, I]
 end
+
+"""
+given polynomial, splits into terms and applies reduction to each term
+"""
+function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
+    t = Utils.getTerms(poly)
+    result = 0
+    for i in t
+        o = ones(Int,length(exponent_vector(i[1],1)))
+        I = exponent_vector(i[1],1) + o
+        gCoeff = coeff(i[1],1)
+        RChain = computeReductionChainLA(I,gCoeff,n,d,p,i[2],S,f,psuedoInverseMat,R,PR)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(1), Int.(RChain[2]))
+        XU = finish(B)
+        B = MPolyBuildCtx(PR)
+        push_term!(B, R(1), o)
+        XS = finish(B)
+        ev = AutomatedScript.gen_exp_vec(n+1,d*n - n)
+        gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
+        result = result + gReduction
+    end
+    return [result,poly[2] - min(p,poly[2]-n)]
+end
+
+"""
+naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
+"""
+function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
+    result = []
+    for i in FT
+        temp = 0
+        for j in axes(i,1)
+            #t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
+            t = computeReductionOfPolyLA([i[length(i)-j+1][1],i[length(i)-j+1][2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
+            temp = temp + t
+        end
+        #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
+        push!(result,[temp,n,Utils.Factorial(R(i[length(i)][2]),R(n))])
+    end
+    return result
+end
+
+"""
+trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
+"""
+function computeReductionOfTransformLADescending(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
+    result = []
+    for i in FT
+        omega = [PR(0),i[length(i)][2]]
+        m = Int(i[1][2]/p)
+        for j in 1:length(i)
+            i = FT[2]
+            #omegae = i[length(i)-j+1][1]
+            println(length(i))
+            omegae = i[2][1]
+            omega[1] = omega[1] + omegae
+            omega = computeReductionOfPolyLA(omega,n,d,p,S,f,psuedoInverseMat,R,PR)
+        end
+        #push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
+        push!(result,omega)
+    end
+    return result
+end
+        
+"""
+computes reduction matrices
+"""
+function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
+    YRing, y = polynomial_ring(R, "y")
+    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
+    yV = []
+    for i in axes(V,1)
+        push!(yV, y*V[i])
+    end
+    UVars = mins + yV
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    monomials = AutomatedScript.gen_mon(ev,YRing,PYRing)
+    reductions = []
+    for m in monomials
+        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
+    end
+    polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
+    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
+    A = matSpace()
+    B = matSpace()
+    for i in 1:nrows(polyMatrix)
+        for j in 1:ncols(polyMatrix)
+            A[i,j] = coeff(polyMatrix[i,j],0)
+            B[i,j] = coeff(polyMatrix[i,j],1)
+        end
+    end
+    return [A,B]
+end
+#----------------------------------
+#=
+"""
+    computeD(N, m)
+
+Returns a list of length N where D_{j,m} = sum_{i=j}^{N-1} (-1)^{i+j}binom{-m}{i}binom{i}{j}
+
+INPUTS: 
+* "N" -- integer
+* "m" -- integer
+"""
+function computeD(N, m)
+    D = zeros(Int,N)
+    for j in 0:(N-1)
+        D[j+1] = sum((-1)^(i+j)*binomial(-m,i)*binomial(i,j) for i in j:(N-1))
+    end
+    return D
+end
+
+
+"""
+    applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
+
+Computes the power series expansion of p^{m-n-1}sigma(x^{beta}Omega/f^m) 
+using formula (1.10) in Costa's thesis
+
+
+INPUTS: 
+* "n" -- integer, dimension of ambient projective space
+* "d" -- integer, degree of the hypersurface f
+* "f" -- polynomial, defining homogeneous equation of the hypersurface lifted to characteristic 0
+* "N" -- integer, series precision
+* "p" -- integer, a prime number that is the characteristic of the base field of the hypersurface
+* "beta" -- vector, representing the exponents in the monomial of the basis element
+* "m" -- integer, pole order of the basis element 
+* "R" -- ring, precision ring 
+* "PR" -- ring, polynomial ring with coefficients in R 
+"""
+function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
+    println("N=$N, m=$m")
+    Factorial = factorial(big(p * (N + m - 1) - 1))
+    o = ones(Int64, n+1)
+    B = MPolyBuildCtx(PR)
+    push_term!(B, R(1), o)
+    X1 = finish(B)
+    D = computeD(N,m)
+    result = []
+    for j in 0:(N-1)
+        e = j + m
+        factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
+        println("e=$e,factorial_e=$factorial_e")
+        ev = AutomatedScript.gen_exp_vec(n+1,d*j)
+        fj = f^j
+        sum = 0
+        for alpha in ev
+            B = MPolyBuildCtx(PR)
+            push_term!(B, R(1), p * (beta + alpha + o))
+            monomial = div(finish(B), X1)
+            sum = sum + R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p))) * monomial
+            #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
+        end
+        push!(result, [sum, p*(m+j)])
+    end
+    return result
+end
+=#
+
+#=
+function applyFrobenius(n,d,f,N,p,poly,R,PR)
+    t = getTerms(poly)
+    temp = []
+    for i in t
+        ev = exponent_vector(i[1],1)
+        push!(temp, applyFrobeniusToMon(n,d,f,N,p,ev,poly[2],R,PR))
+    end
+    return temp
+end
+
+"""
+    applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
+
+Applies the frobenius to all the elements of Basis
+
+INPUTS: 
+* "Basis" -- array of basis elmenets
+* "n" -- integer, dimension of ambient projective space
+* "d" -- integer, degree of f
+* "f" -- polynomial, defining equation of hypersurface (lifted version)
+* "N" -- series precision
+* "p" -- the prime
+* "R" -- basering(parent(f))
+* "PR" -- parent(f)
+"""
+function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
+    result = []
+    for b in Basis
+        Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
+        #println(Fmon)
+        push!(result, Fmon)
+    end
+    return result
+end
+=#
+
+#=
+function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+    SC = []
+    gensJS = copy(parts)
+    B = MPolyBuildCtx(PR)
+    push_term!(B, R(1), V)
+    XV = finish(B)
+    for i in 0:n
+        if i in S
+            #push!(gensJS,parts[i+1])
+            gensJS[i+1] = parts[i+1]
+        else
+            #push!(gensJS,Vars[i+1]*parts[i+1])
+            gensJS[i+1] = Vars[i+1]*parts[i+1]
+            #parts[i+1] = Vars[i+1]*parts[i+1]
+            push!(SC,i)
+        end
+    end
+    # get gi's using psuedoinverse
+    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
+    gc, t = reduce_with_quotients(div(XV*g[1],XS),gensJS)
+    gcpartials = [ derivative(gc[1], i) for i in 1:(n+1) ]
+    return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
+
+end
+=#
+
+#=
+function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+    while g[2] > n
+        g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+    end
+    return g
+end
+=#
+
+#=
+function evaluateRUV(RUV,U,ResRing)
+    result = copy(RUV)
+    for i in axes(RUV,1)
+        for j in axes(RUV,2)
+            result[i,j] = evaluate(change_base_ring(ResRing,map_coefficients(lift,RUV[i,j])),U)
+        end
+    end
+    return result
+end
+=#
+
+#=
+function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
+    chain = 0
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    gVec = chooseV(I,n*d - n)
+    I = I - gVec
+    Vs = []
+    RUVs = []
+    while m > n
+        V = chooseV(I,d)
+        U = I - V
+        l = findall(x->x==V, Vs)
+        if length(l) > 0
+            RPoly = RUVs[l[1]]
+        else
+            RPoly = computeRPoly(V,S,n,d,parts,R,PR)
+            push!(Vs,V)
+            push!(RUVs,RPoly)
+        end
+        RNums = evaluateRUV(RPoly,U,ResRing)
+        if chain == 0
+            chain = RNums
+        else
+            chain = RNums*chain
+        end
+        m = m - 1
+        I = U
+    end
+    return [chain, I]
+end
+=#
 
 #=
 function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,psuedoInverseMat,R,PR)
@@ -367,30 +568,7 @@ function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
     return [result,n]
 end
 =#
-#LA test ------------------------
-"""
-given polynomial, splits into terms and applies reduction to each term
-"""
-function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
-    t = getTerms(poly)
-    result = 0
-    for i in t
-        o = ones(Int,length(exponent_vector(i[1],1)))
-        I = exponent_vector(i[1],1) + o
-        gCoeff = coeff(i[1],1)
-        RChain = computeReductionChainLA(I,gCoeff,n,d,p,i[2],S,f,psuedoInverseMat,R,PR)
-        B = MPolyBuildCtx(PR)
-        push_term!(B, R(1), Int.(RChain[2]))
-        XU = finish(B)
-        B = MPolyBuildCtx(PR)
-        push_term!(B, R(1), o)
-        XS = finish(B)
-        ev = AutomatedScript.gen_exp_vec(n+1,d*n - n)
-        gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
-        result = result + gReduction
-    end
-    return [result,poly[2] - min(p,poly[2]-n)]
-end
+
 #=
 function computeReductionOfPolyLA1(poly,l,n,d,S,f,psuedoInverseMat,R,PR)
     t = getTerms(poly)
@@ -413,64 +591,6 @@ function computeReductionOfPolyLA1(poly,l,n,d,S,f,psuedoInverseMat,R,PR)
     return [result,l]
 end
 =#
-#-----------------------------------
-#=
-function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
-    result = 0
-    for i in FT
-        for j in i
-            s = N + j[2] - 1
-            ResRing = residue_ring(ZZ,Int1024(p)^s)
-            result = computeReductionOfPoly(j,n,d,S,parts,R,PR,ResRing)[1]
-        end
-    end
-    return [result,n]
-end
-=#
-
-#LA test ---------------------------
-"""
-naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
-"""
-function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
-    result = []
-    for i in FT
-        temp = 0
-        for j in axes(i,1)
-            #t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
-            t = computeReductionOfPolyLA([i[length(i)-j+1][1],i[length(i)-j+1][2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
-            temp = temp + t
-        end
-        #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
-        push!(result,[temp,n,Factorial(R(i[length(i)][2]),R(n))])
-    end
-    return result
-end
-
-"""
-trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
-"""
-function computeReductionOfTransformLADescending(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
-    result = []
-    for i in FT
-        omega = [PR(0),i[length(i)][2]]
-        m = Int(i[1][2]/p)
-        for j in 1:length(i)
-            i = FT[2]
-            #omegae = i[length(i)-j+1][1]
-            println(length(i))
-            omegae = i[2][1]
-            omega[1] = omega[1] + omegae
-            omega = computeReductionOfPolyLA(omega,n,d,p,S,f,psuedoInverseMat,R,PR)
-        end
-        #push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
-        push!(result,omega)
-    end
-    return result
-end
-#-------------------------------------
-        
-
 
 
 #=
@@ -516,158 +636,20 @@ function computeRPolyLA(V,S,n,d,f,psuedoInverseMat,R,PR)
     return Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
 end
 =#
-"""
-computes reduction matrices
-"""
-function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
-    YRing, y = polynomial_ring(R, "y")
-    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
-    yV = []
-    for i in axes(V,1)
-        push!(yV, y*V[i])
-    end
-    UVars = mins + yV
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
-    monomials = AutomatedScript.gen_mon(ev,YRing,PYRing)
-    reductions = []
-    for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
-    end
-    polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
-    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
-    A = matSpace()
-    B = matSpace()
-    for i in 1:nrows(polyMatrix)
-        for j in 1:ncols(polyMatrix)
-            A[i,j] = coeff(polyMatrix[i,j],0)
-            B[i,j] = coeff(polyMatrix[i,j],1)
+#-----------------------------------
+#=
+function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
+    result = 0
+    for i in FT
+        for j in i
+            s = N + j[2] - 1
+            ResRing = residue_ring(ZZ,Int1024(p)^s)
+            result = computeReductionOfPoly(j,n,d,S,parts,R,PR,ResRing)[1]
         end
     end
-    return [A,B]
-end
-#----------------------------------
-#=
-"""
-    computeD(N, m)
-
-Returns a list of length N where D_{j,m} = sum_{i=j}^{N-1} (-1)^{i+j}binom{-m}{i}binom{i}{j}
-
-INPUTS: 
-* "N" -- integer
-* "m" -- integer
-"""
-function computeD(N, m)
-    D = zeros(Int,N)
-    for j in 0:(N-1)
-        D[j+1] = sum((-1)^(i+j)*binomial(-m,i)*binomial(i,j) for i in j:(N-1))
-    end
-    return D
-end
-
-
-"""
-    applyFrobeniusToMon(n,d,f,N,p,beta,m,R,PR)
-
-Computes the power series expansion of p^{m-n-1}sigma(x^{beta}Omega/f^m) 
-using formula (1.10) in Costa's thesis
-
-
-INPUTS: 
-* "n" -- integer, dimension of ambient projective space
-* "d" -- integer, degree of the hypersurface f
-* "f" -- polynomial, defining homogeneous equation of the hypersurface lifted to characteristic 0
-* "N" -- integer, series precision
-* "p" -- integer, a prime number that is the characteristic of the base field of the hypersurface
-* "beta" -- vector, representing the exponents in the monomial of the basis element
-* "m" -- integer, pole order of the basis element 
-* "R" -- ring, precision ring 
-* "PR" -- ring, polynomial ring with coefficients in R 
-"""
-function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
-    println("N=$N, m=$m")
-    Factorial = factorial(big(p * (N + m - 1) - 1))
-    o = ones(Int64, n+1)
-    B = MPolyBuildCtx(PR)
-    push_term!(B, R(1), o)
-    X1 = finish(B)
-    D = computeD(N,m)
-    result = []
-    for j in 0:(N-1)
-        e = j + m
-        factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
-        println("e=$e,factorial_e=$factorial_e")
-        ev = AutomatedScript.gen_exp_vec(n+1,d*j)
-        fj = f^j
-        sum = 0
-        for alpha in ev
-            B = MPolyBuildCtx(PR)
-            push_term!(B, R(1), p * (beta + alpha + o))
-            monomial = div(finish(B), X1)
-            sum = sum + R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p))) * monomial
-            #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
-        end
-        push!(result, [sum, p*(m+j)])
-    end
-    return result
+    return [result,n]
 end
 =#
-function getTerms(poly)
-    t = terms(poly[1])
-    result = []
-    for i in t
-        push!(result,[i,poly[2]])
-    end
-    return result
-end
-#=
-function applyFrobenius(n,d,f,N,p,poly,R,PR)
-    t = getTerms(poly)
-    temp = []
-    for i in t
-        ev = exponent_vector(i[1],1)
-        push!(temp, applyFrobeniusToMon(n,d,f,N,p,ev,poly[2],R,PR))
-    end
-    return temp
-end
-
-"""
-    applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
-
-Applies the frobenius to all the elements of Basis
-
-INPUTS: 
-* "Basis" -- array of basis elmenets
-* "n" -- integer, dimension of ambient projective space
-* "d" -- integer, degree of f
-* "f" -- polynomial, defining equation of hypersurface (lifted version)
-* "N" -- series precision
-* "p" -- the prime
-* "R" -- basering(parent(f))
-* "PR" -- parent(f)
-"""
-function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
-    result = []
-    for b in Basis
-        Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
-        #println(Fmon)
-        push!(result, Fmon)
-    end
-    return result
-end
-=#
-
-function Factorial(x,y)
-    fact = 1
-    if x == 0
-        return 1
-    end
-    #BEWARE could be infinite
-    while x != y
-        fact = fact*x
-        x = x - 1
-    end
-    return fact
-end
 
 #=
 function computeT(Basis,f,n,d,R,PR)

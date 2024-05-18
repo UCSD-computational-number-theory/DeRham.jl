@@ -69,14 +69,6 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     return result
 end
 
-function getTerms(poly)
-    t = terms(poly[1])
-    result = []
-    for i in t
-        push!(result,[i,poly[2]])
-    end
-    return result
-end
 
 #=
 function applyFrobenius(n,d,f,N,p,poly,R,PR)

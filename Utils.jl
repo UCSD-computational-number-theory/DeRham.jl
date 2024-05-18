@@ -127,4 +127,28 @@ function liftCoefficients(R, PR, f, positiveLift=true)
     return sum
 end
 
+function getTerms(poly)
+    t = terms(poly[1])
+    result = []
+    for i in t
+        push!(result,[i,poly[2]])
+    end
+    return result
+end
+
+function Factorial(x,y)
+    fact = 1
+    if x == 0
+        return 1
+    end
+    #BEWARE could be infinite
+    while x != y
+        fact = fact*x
+        x = x - 1
+    end
+    return fact
+end
+
+
+
 end
