@@ -7,11 +7,10 @@ using Combinatorics
 
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
-#include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
-include("StandardReduction.jl")
+
 
 #=
 function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
@@ -259,7 +258,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
                 m = m - K
         I = mins
         =# 
-        throw(error)
+        #throw(error)
     return [gMat, I]
 end
 

@@ -5,13 +5,6 @@ using BitIntegers
 using LinearAlgebra
 using Combinatorics
 
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-#include("FindMonomialBasis.jl")
-include("AutomatedScript.jl")
-include("Utils.jl")
-#include("SmallestSubsetSmooth.jl")
-include("StandardReduction.jl")
 
 """
     computeD(N, m)

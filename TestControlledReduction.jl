@@ -2,16 +2,16 @@ module TestControlledReduction
 
 using Test
 using Oscar
-#using Singular
 
 include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
-include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
 include("ZetaFunction.jl")
+include("Frobenius.jl")
+include("FinalReduction.jl")
 
 function runTests()
     @testset "All tests" begin
@@ -75,12 +75,12 @@ function testFrobTrans()
     println(eltype(PrecisionRing))
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
+    fLift = Utils.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
@@ -92,7 +92,7 @@ function testFrobTrans()
     end
     #M = 15
 
-    frobterms = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    frobterms = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
 
     x0,x1,x2 = PVars
 
@@ -152,12 +152,12 @@ function testRedOfTerms()
     PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
@@ -168,7 +168,7 @@ function testRedOfTerms()
             push!(Basis,[j,i])
         end
     end
-    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
@@ -191,16 +191,16 @@ function testT()
     PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
-    @test ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly) == 1
+    @test FinalReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testFrobMat()
@@ -216,16 +216,16 @@ function testFrobMat()
     PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp, Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
-    T = ControlledReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    T = FinalReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     S = [0,1,2]
     Basis = []
     for i in 1:n
@@ -233,7 +233,7 @@ function testFrobMat()
             push!(Basis,[j,i])
         end
     end
-    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
     psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)

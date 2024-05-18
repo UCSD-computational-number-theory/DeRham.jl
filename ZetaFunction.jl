@@ -8,10 +8,11 @@ using Combinatorics
 include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
-include("FindMonomialBasis.jl")
 include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
+include("Frobenius.jl")
+include("FinalReduction.jl")
 
 """
     computeFrobeniusMatrix(n,d,Reductions,T)
@@ -115,16 +116,16 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         println("There are $num_BasisT basis elements in H^$n")
     end 
 
-    fLift = ControlledReduction.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
+    fLift = Utils.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp, ControlledReduction.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp, Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
-    T = ControlledReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
+    T = FinalReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -134,7 +135,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
             push!(Basis,[j,i])
         end
     end
-    FBasis = ControlledReduction.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
+    FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
     psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
     psuedoInverseMat = zeros(PrecisionRing, nrows(psuedoInverseMatTemp), ncols(psuedoInverseMatTemp))
     for i in 1:nrows(psuedoInverseMat)
@@ -142,7 +143,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
             psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ, psuedoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.computeReductionOfTransformLA1(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
+    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T) 
 
