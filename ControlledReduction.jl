@@ -109,10 +109,9 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 """
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     #chain = 0
-    println(I)
-    println(tweak(I,n*d-n))
+    J = copy(I)
+    V = chooseV(Array{Int}(I/p),d)
     gVec = I - tweak(I,n*d-n)
-    println(gVec)
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
     gMat = zeros(R,length(ev))
     for j in axes(gMat,1)
@@ -121,7 +120,6 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
             break
         end
     end
-    println(gMat)
     I = I - gVec
     if m - n < p
         nend = m - n
@@ -129,60 +127,57 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         nend = p
     end
 
-    V = chooseV(I,d)
     #U = I - V
     #=
     K = 0
     mins = I
-        while true
-            temp = mins - V
-            isLessThanZero = false
-            for j in temp
-                if j < 0
-                    isLessThanZero = true
-                    break
-                end
-            end
-            if isLessThanZero == true
+    while true
+        temp = mins - V
+        isLessThanZero = false
+        for j in temp
+            if j < 0
+                isLessThanZero = true
                 break
             end
-            mins = temp
-            K = K+1
         end
-        =#
-        A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
-        i = 1
-        while i <= (nend-(d*n-n))
-            gMat = (A+B*(nend-(d*n-n)-i))*gMat
-            println(gMat)
-            i = i+1
+        if isLessThanZero == true
+            break
         end
-        while i <= nend
-            y = tweak(I - i*V,d*n-n) - tweak(I - (i+1)*V,d*n-n)
-            A,B = computeRPolyLAOneVar(y,tweak(I - i*V,d*n-n) - y,S,n,d,f,psuedoInverseMat,R,PR)
-            println(A+B)
-            gMat = (A+B)*gMat
-            println(gMat)
-            i = i+1
-        end
-        I = I - nend*V
-        println(I)
-        println(gMat)
-        #=
-        MK = A + B*K
-        MK1 = A + B*(K-1)
-        h = MK1*MK*gMat
-        A1 = MK - MK1
-        j = 2
-        while K-j >= 0
-            MKj = MK - A1*j
-            h = MKj*h
-            j = j + 1
-        end
-                m = m - K
-        I = mins
-        =# 
-        #throw(error)
+        mins = temp
+        K = K+1
+    end
+    =#
+    A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
+    i = 1
+    while i <= (nend-(d*n-n))
+        gMat = (A+B*(nend-(d*n-n)-i))*gMat
+        i = i+1
+    end
+    I = I - (nend-(d*n-n))*V
+    i = i-1
+    while i <= nend-1
+        y = tweak(J - i*V,d*n-n) - tweak(J - (i+1)*V,d*n-n)
+        A,B = computeRPolyLAOneVar(y,tweak(J - i*V,d*n-n) - y,S,n,d,f,psuedoInverseMat,R,PR)
+        gMat = (A+B)*gMat
+        i = i+1
+        I = I - y
+    end
+    println(I)
+    #=
+    MK = A + B*K
+    MK1 = A + B*(K-1)
+    h = MK1*MK*gMat
+    A1 = MK - MK1
+    j = 2
+    while K-j >= 0
+        MKj = MK - A1*j
+        h = MKj*h
+        j = j + 1
+    end
+            m = m - K
+    I = mins
+    =# 
+    #throw(error)
     return [gMat, I]
 end
 
@@ -219,8 +214,11 @@ function computeReductionOfTransformLA(FT,n,d,p,N,S,f,psuedoInverseMat,R,PR)
         temp = 0
         for j in axes(i,1)
             #t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
-            t = computeReductionOfPolyLA([i[length(i)-j+1][1],i[length(i)-j+1][2]],n,d,p,S,f,psuedoInverseMat,R,PR)[1]
-            temp = temp + t
+            t = i[j]
+            while t[2] > n
+                t = computeReductionOfPolyLA(t,n,d,p,S,f,psuedoInverseMat,R,PR)
+            end
+            temp = temp + t[1]
         end
         #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
         push!(result,[temp,n,Utils.Factorial(R(i[length(i)][2]),R(n))])

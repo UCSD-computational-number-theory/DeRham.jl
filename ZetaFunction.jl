@@ -145,7 +145,8 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, psuedoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
-    FM = computeFrobeniusMatrix(n, d, Reductions, T) 
+    FM = computeFrobeniusMatrix(n, d, Reductions, T)
+    println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")
