@@ -279,33 +279,35 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
 end
 
 function computeRPolyLAOneVar1(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
-    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
-    YRing, y = polynomial_ring(URing, "y")
-    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
-    #=
+    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:(n+1)])
+    PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     yV = []
     for i in axes(V,1)
-        push!(yV, y*V[i])
+        push!(yV, UVars[1]*V[i])
     end
-    =#
-    UVars = mins + y*V
+    U = UVars[2:(n+2)] + yV
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
-    monomials = AutomatedScript.gen_mon(ev,YRing,PYRing)
+    monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
+        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
-    A = matSpace()
-    B = matSpace()
-    for i in 1:nrows(polyMatrix)
-        for j in 1:ncols(polyMatrix)
-            A[i,j] = coeff(polyMatrix[i,j],0)
-            B[i,j] = coeff(polyMatrix[i,j],1)
+    matrices = []
+    for k in 1:(n+2)
+        tempMat = matSpace()
+        tempExpVec = zeros(Int,n+2)
+        tempExpVec[k] = 1
+        for i in 1:nrows(polyMatrix)
+            for j in 1:ncols(polyMatrix)
+                tempMat[i,j] = coeff(polyMatrix[i,j], tempExpVec)
+            end
         end
+        push!(matrices, tempMat)
     end
-    return [A,B]
+    println(matrices)
+    return matrices
 end
 #----------------------------------
 #=
