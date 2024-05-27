@@ -278,7 +278,10 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
     return [A,B]
 end
 
-function computeRPolyLAOneVar1(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
+"""
+Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
+"""
+function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:(n+1)])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     yV = []
