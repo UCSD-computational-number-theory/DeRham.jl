@@ -148,6 +148,13 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     end
     =#
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
+    matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
+    A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
+    println(A)
+    println(B)
+    println(A1)
+    println(B1)
+    throw(error)
     i = 1
     while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
@@ -309,7 +316,6 @@ function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
         end
         push!(matrices, tempMat)
     end
-    println(matrices)
     return matrices
 end
 
@@ -325,11 +331,11 @@ INPUTS:
 """
 
 function computeRPolyLAOneVar2(matrices, U, R)
-    B = matrices[length(matrices)]
+    B = matrices[1]
     matSpace = matrix_space(R, nrows(B), ncols(B))
     A = matSpace()
-    for k in 1:(length(matrices)-1)
-        A += matrices[k] * U[k]
+    for k in 2:(length(matrices))
+        A += matrices[k] * U[k-1]
     end 
 
     return [A, B]
