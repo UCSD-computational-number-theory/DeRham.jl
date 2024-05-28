@@ -312,6 +312,29 @@ function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
     println(matrices)
     return matrices
 end
+
+"""
+    computeRPolyLAOneVar2(matrices, U)
+
+Takes a list of n+2 matrices and ouputs a list two matrices [A,B] corresponding to R_{(x0,...,xn)+yv, v} = Ay + B
+
+INPUTS: 
+* "matrices" -- list, output of computeRPolyLAOneVar1
+* "U" -- vector, U =(x0, ..., xn)
+* "R" -- ring, base ring of f
+"""
+
+function computeRPolyLAOneVar2(matrices, U, R)
+    B = matrices[length(matrices)]
+    matSpace = matrix_space(R, nrows(B), ncols(B))
+    A = matSpace()
+    for k in 1:(length(matrices)-1)
+        A += matrices[k] * U[k]
+    end 
+
+    return [A, B]
+end
+
 #----------------------------------
 #=
 """
