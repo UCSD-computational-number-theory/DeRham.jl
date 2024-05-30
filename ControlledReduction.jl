@@ -151,10 +151,18 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
-    while i <= (nend-(d*n-n))
+    
+    fastevaluation = false
+    if fastevaluation
+      gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
+    else
+      while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
         i = i+1
+      end
     end
+    # TODO: test how much of a difference the fast evaluation actually makes
+
     I = I - (nend-(d*n-n))*V
     i = i-1
     while i <= nend-1
@@ -181,6 +189,50 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     =# 
     #throw(error)
     return [gMat, I]
+end
+
+"""
+finitediff_prodeval_linear(a,b,start,stop,g)
+
+Generic function that evaluates 
+the function F(x) = a*x + b at 
+start, ..., stop and 
+computes
+F(start)*...*F(stop)*g
+
+Since it's a generic function, it'll work if
+a and b and g are numbers, but the intended 
+use is for a and b to be matrices and g
+to be a vector.
+
+My hope is that since this is generic, we'll
+be able to replace arrays with CuArrays for large examples
+and it'll still work.
+
+a - linear term coefficient
+b - constant term coefficient
+start - lowest value to evaluate at (should be an integer)
+stop - highest value to evaluate at (should be an integer)
+g - the value into which the answer is accumulated.
+
+"""
+function finitediff_prodeval_linear(a,b,start,stop,g)
+  if start == stop
+    return (a .* stop .+ b) * g
+  end
+
+  Fk = a .* stop .+ b # Fk = F(k), here k = stop
+
+  g = Fstop*g
+
+  for k = stop-1:-1:start
+    # right now, Fk = F(k+1)
+    Fk = Fk .- a
+    # now, Fk = F(k)
+    g = Fk * g
+  end
+
+  g
 end
 
 """
@@ -324,7 +376,6 @@ INPUTS:
 * "U" -- vector, U =(x0, ..., xn)
 * "R" -- ring, base ring of f
 """
-
 function computeRPolyLAOneVar2(matrices, U, R)
     B = matrices[1]
     matSpace = matrix_space(R, nrows(B), ncols(B))
