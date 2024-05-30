@@ -150,11 +150,6 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
-    printMat(A)
-    printMat(B)
-    printMat(A1)
-    printMat(B1)
-    throw(error)
     i = 1
     while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
@@ -273,7 +268,6 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
         push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
-    printMat(polyMatrix)
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     A = matSpace()
     B = matSpace()
@@ -304,7 +298,6 @@ function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
         push!(reductions, computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
-    printMat(polyMatrix)
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     matrices = []
     for k in 1:(n+2)
