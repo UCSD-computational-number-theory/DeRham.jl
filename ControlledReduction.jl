@@ -108,6 +108,28 @@ end
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 """
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
+    #=
+    psuedoInverseMat = [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
+    0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
+    225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 114 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 114;
+    0 0 0 1 0 0 172 0 0 0 0 0 0 0 0;
+    59 0 0 0 1 94 0 172 0 166 0 0 61 0 188;
+    0 0 0 0 0 0 0 0 172 0 0 0 0 286 0;
+    0 57 0 173 0 0 0 0 0 0 172 0 0 114 0;
+    83 0 57 0 173 59 0 0 0 94 0 172 166 0 61;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    114 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 114 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
+    11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;]
+    I = [28,7,28]
+    gCoeff = R(2)
+    =#
     #chain = 0
     J = copy(I)
     V = chooseV(Array{Int}(I/p),d)
@@ -149,6 +171,12 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     =#
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
+    #=
+    for i in axes(matrices,1)
+        printMat(matrices[i])
+    end
+    throw(error)
+    =#
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
@@ -158,6 +186,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     else
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
+        #println(gMat)
         i = i+1
       end
     end
@@ -172,7 +201,6 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         i = i+1
         I = I - y
     end
-    println(I)
     #=
     MK = A + B*K
     MK1 = A + B*(K-1)
