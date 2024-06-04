@@ -150,5 +150,21 @@ function Factorial(x,y)
 end
 
 
+"""
+    henselLift(precision, A, T)
+Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision
+
+INPUTS: 
+* "A" -- matrix, integer coefficients
+* "T" -- matrix, integer coefficients, satisfies AT-I=0 mod p
+"""
+function henselLift(precision, A, T)
+    i = 1 
+    while i < precision
+        T = 2*T - T * (A*T)
+        i *= 2 
+    end
+    return T
+end
 
 end
