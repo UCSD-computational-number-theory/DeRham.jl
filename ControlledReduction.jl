@@ -109,7 +109,7 @@ end
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 """
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
-    #=
+    
     psuedoInverseMat = [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
     0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
     0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
@@ -130,7 +130,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;]
     I = [28,7,28]
     gCoeff = R(2)
-    =#
+    
     #chain = 0
     J = copy(I)
     V = chooseV(Array{Int}(I/p),d)
@@ -172,12 +172,12 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     =#
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
-    #=
+
     for i in axes(matrices,1)
         printMat(matrices[i])
     end
     throw(error)
-    =#
+    
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
@@ -365,26 +365,31 @@ end
 Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
 """
 function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
-    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:(n+1)])
+    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
+    #=
     yV = []
     for i in axes(V,1)
         push!(yV, UVars[1]*V[i])
     end
     U = UVars[2:(n+2)] + yV
+    =#
     ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
     monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
+        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,psuedoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(AutomatedScript.convert_p_to_m(reductions,ev)))
+    printMat(polyMatrix)
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     matrices = []
-    for k in 1:(n+2)
+    for k in 0:(n+1)
         tempMat = matSpace()
-        tempExpVec = zeros(Int,n+2)
-        tempExpVec[k] = 1
+        tempExpVec = zeros(Int,n+1)
+        if k >= 1
+            tempExpVec[k] = 1
+        end
         for i in 1:nrows(polyMatrix)
             for j in 1:ncols(polyMatrix)
                 tempMat[i,j] = coeff(polyMatrix[i,j], tempExpVec)
