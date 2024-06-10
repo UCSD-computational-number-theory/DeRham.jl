@@ -166,7 +166,7 @@ function testRedOfTerms()
     f = y^2*z - x^3 - x*z^2 - z^3
     N = 6
     M = 15
-    PrecisionRing = residue_ring(ZZ,p^M)
+    PrecisionRing, _ = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)

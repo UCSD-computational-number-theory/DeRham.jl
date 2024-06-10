@@ -28,35 +28,59 @@ partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 # TODO: Ensure partials are not all zero.
 
 """
-    gen_exp_vec(n,d)
+    gen_exp_vec(n, d, order)
 
 Returns all nonnegative integer lists of length n who entires sum to d
 
 INPUTS: 
 * "n" -- integer
-* "d" -- integer 
+* "d" -- integer
+* "order" -- string, monomial ordering, defaulted to lexicographic ordering. Also supports neglex 
 """
-function gen_exp_vec(n,d)
+function gen_exp_vec(n, d, order="lex")
     @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
     result = Any[]
     if n == 1
         return [[d]]
     end
-    if d == 1
-        for i in 1:n
-            s = zeros(Int64,n)
-            s[i] = 1
-            push!(result,s)
+
+    if order == "lex"
+        if d == 1
+            for i in 1:n
+                s = zeros(Int64,n)
+                s[end-i+1] = 1
+                push!(result,s)
+            end
+            return result
         end
-        return result
-    end
-    for i in 0:d
-        y = gen_exp_vec(n-1,d-i)
-        for j in axes(y,1)
-            prepend!(y[j],i)
+
+        for i in 0:d
+            y = gen_exp_vec(n-1,d-i,order)
+            for j in axes(y,1)
+                prepend!(y[j],i)
+            end
+            append!(result,y)
         end
-        prepend!(result,y)
-    end
+
+    elseif order == "neglex"
+        if d == 1
+            for i in 1:n
+                s = zeros(Int64,n)
+                s[i] = 1
+                push!(result,s)
+            end
+            return result
+        end
+
+        for i in 0:d
+            y = gen_exp_vec(n-1,d-i,order)
+            for j in axes(y,1)
+                prepend!(y[j],i)
+            end
+            prepend!(result,y)
+        end
+    end 
+
     return result
 end
 
@@ -132,7 +156,7 @@ end
 
 # Computes the basis vectors associated with case h. Columns of
 # returned matrix will be linearly independent vectors.
-function basis_vectors(n, d, p, precision, polynomial, R, PR)
+function basis_vectors(n, d, p, precision, polynomial, R, PR, order="lex")
     Qp = PadicField(p,precision)
     result = []
     partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
@@ -143,7 +167,7 @@ function basis_vectors(n, d, p, precision, polynomial, R, PR)
             push!(result,[PR(1), h]) 
         else
             # compute all monomials of degree `hd - n - 1`
-            expvec = gen_exp_vec(n+1, h*d - n - 1)
+            expvec = gen_exp_vec(n+1, h*d - n - 1, order)
 
             if h*d - n - d <= 0
                 B = gen_mon(expvec,R,PR)
@@ -151,7 +175,7 @@ function basis_vectors(n, d, p, precision, polynomial, R, PR)
                 # TODO: compute all distinct products between the partial derivatives
                 # and monomials(n+1, hd - n - d). These are our relations.
                 #rmonomials = compute_monomials(n+1, h*d - n - d)
-                rexpvec = gen_exp_vec(n+1,h*d - n - d)
+                rexpvec = gen_exp_vec(n+1,h*d - n - d, order)
                 rmonomials = gen_mon(rexpvec,R,PR)
                 relations = compute_relations(rmonomials, partials)
 
