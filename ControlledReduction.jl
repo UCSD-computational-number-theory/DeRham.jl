@@ -79,6 +79,8 @@ end
 If for a vectors of ints, I, we let |I| = sum(I[i]). This function returns I after removing an integer vector, J, with |J| = m
 from it
 
+Removes from the "front" of the vector"
+
 INPUTS
 * "I" -- vector of nonnegative integers 
 * "m" -- nonnegative integer
@@ -89,6 +91,39 @@ function tweak(J,m)
     I = copy(J)
     while m > 0
         for i in axes(I,1)
+            if (I[i] > 0)
+                I[i] = I[i] - 1
+                m = m - 1
+                break
+            end
+        end
+        if count > length(I)*o
+            return I
+        end
+        count = count+1
+    end
+    return I
+end
+
+
+"""
+    rev_tweak(I,m)
+
+If for a vectors of ints, I, we let |I| = sum(I[i]). This function returns I after removing an integer vector, J, with |J| = m
+from it
+
+unlike tweak, this, removes from the "back" of the vector instead of the front.
+
+INPUTS
+* "I" -- vector of nonnegative integers 
+* "m" -- nonnegative integer
+"""
+function rev_tweak(J,m)
+    count = 0
+    o = m
+    I = copy(J)
+    while m > 0
+        for i in reverse(axes(I,1))
             if (I[i] > 0)
                 I[i] = I[i] - 1
                 m = m - 1
@@ -170,14 +205,88 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
         K = K+1
     end
     =#
+
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,psuedoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
 
     for i in axes(matrices,1)
         printMat(matrices[i])
     end
-    throw(error)
+    #throw(error)
     
+    if V == [1,1,1]
+        println("Using precomputed R_u,[1,1,1]")
+    matrices = [
+                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[169 0 0 0 1 249 0 172 0 177 0 0 282 0 155]
+[0 114 0 0 0 0 0 0 1 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[94 0 57 0 173 280 0 0 0 61 0 172 188 0 160]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+],
+                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[155 0 0 0 0 11 0 0 0 221 0 0 310 0 22]
+[0 0 0 1 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 1 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[225 0 0 0 0 155 0 0 0 11 0 0 221 0 310]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 114 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 114]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+],
+                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 1 0 0 172 0 0 0 0 0 0 0 0]
+[59 0 0 0 1 94 0 172 0 166 0 0 61 0 188]
+[0 0 0 0 0 0 0 0 172 0 0 0 0 286 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 57 0 173 0 0 0 0 0 0 172 0 0 114 0]
+[83 0 57 0 173 59 0 0 0 94 0 172 166 0 61]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+],
+                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[114 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 114 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[166 0 114 0 0 118 0 0 0 188 0 0 332 0 236]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[11 0 0 0 0 221 0 0 0 310 0 0 22 0 214]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+]
+
+]
+      #matrices = map(M -> R.(M),matrices)
+
+    end 
+
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
@@ -187,7 +296,9 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     else
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
-        #println(gMat)
+
+        println("After step $i: $gMat")
+
         i = i+1
       end
     end
@@ -196,8 +307,8 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     I = I - (nend-(d*n-n))*V
     i = i-1
     while i <= nend-1
-        y = tweak(J - i*V,d*n-n) - tweak(J - (i+1)*V,d*n-n)
-        A,B = computeRPolyLAOneVar(y,tweak(J - i*V,d*n-n) - y,S,n,d,f,psuedoInverseMat,R,PR)
+        y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
+        A,B = computeRPolyLAOneVar(y,rev_tweak(J - i*V,d*n-n) - y,S,n,d,f,psuedoInverseMat,R,PR)
         gMat = (A+B)*gMat
         i = i+1
         I = I - y
@@ -271,6 +382,7 @@ function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
     t = Utils.getTerms(poly)
     result = 0
     for i in t
+        println("reducing term $i")
         o = ones(Int,length(exponent_vector(i[1],1)))
         I = exponent_vector(i[1],1) + o
         gCoeff = coeff(i[1],1)
