@@ -30,13 +30,16 @@ function computeReductionLA(U,V,S,n,d,f,psuedoInverseMat,g,ev,R,PR,Vars)
     end
     # get gi's using psuedoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = AutomatedScript.convert_p_to_m([div(XV*(g[1]),XS)],AutomatedScript.gen_exp_vec(n+1,n*d-n+d-length(S)))
+    gVec = AutomatedScript.convert_p_to_m([div(XV*(g[1]),XS)],AutomatedScript.gen_exp_vec(n+1,n*d-n+d-length(S),"invlex"))
     gJS = psuedoInverseMat*transpose(gVec)
     gc = []
     for i in 1:(n+1)
-        push!(gc, AutomatedScript.convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),AutomatedScript.gen_exp_vec(n+1,n*d-n-length(S)+1),R,PR)[1])
+        push!(gc, AutomatedScript.convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),AutomatedScript.gen_exp_vec(n+1,n*d-n-length(S)+1,"invlex"),R,PR)[1])
     end
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
+    
+    gcpartials = reverse(gcpartials) # in Costa's code, 
+
     #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
     return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
 
@@ -170,7 +173,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     J = copy(I)
     V = chooseV(Array{Int}(I/p),d)
     gVec = I - tweak(I,n*d-n)
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n,"invlex")
     gMat = zeros(R,length(ev))
     for j in axes(gMat,1)
         if gVec == ev[j]
@@ -212,7 +215,7 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,psuedoInverseMat,R,PR)
     for i in axes(matrices,1)
         printMat(matrices[i])
     end
-    #throw(error)
+    throw(error)
     
     if V == [1,1,1]
         println("Using precomputed R_u,[1,1,1]")
@@ -393,7 +396,7 @@ function computeReductionOfPolyLA(poly,n,d,p,S,f,psuedoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), o)
         XS = finish(B)
-        ev = AutomatedScript.gen_exp_vec(n+1,d*n - n)
+        ev = AutomatedScript.gen_exp_vec(n+1,d*n - n,"invlex")
         gReduction = div(XU*AutomatedScript.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
         result = result + gReduction
     end
@@ -454,7 +457,7 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,psuedoInverseMat,R,PR)
         push!(yV, y*V[i])
     end
     UVars = mins + yV
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n,"invlex")
     monomials = AutomatedScript.gen_mon(ev,YRing,PYRing)
     reductions = []
     for m in monomials
@@ -486,7 +489,7 @@ function computeRPolyLAOneVar1(V,S,n,d,f,psuedoInverseMat,R,PR)
     end
     U = UVars[2:(n+2)] + yV
     =#
-    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n)
+    ev = AutomatedScript.gen_exp_vec(n+1,n*d-n,"invlex")
     monomials = AutomatedScript.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials

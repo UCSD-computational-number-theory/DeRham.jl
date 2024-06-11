@@ -32,6 +32,14 @@ partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 
 Returns all nonnegative integer lists of length n who entires sum to d
 
+These are the exponent vectors for all the homogeneous monomials of
+degree d, in n variables.
+
+TODO: give this function @memoize. perhaps for some big examples the 
+storage required to store the result isn't worth it. However, for 
+tests where we're running many similar examples of medium size,
+I think it'll be nicer.
+
 INPUTS: 
 * "n" -- integer
 * "d" -- integer
@@ -79,9 +87,13 @@ function gen_exp_vec(n, d, order="lex")
             end
             prepend!(result,y)
         end
+
+    elseif order == "invlex"
+        vecs = gen_exp_vec(n,d,"lex")
+        result = reverse.(vecs)
     end 
 
-    return result
+    result
 end
 
 function gen_mon(exp_vec, R, PR)
@@ -92,7 +104,7 @@ function gen_mon(exp_vec, R, PR)
         monomial = finish(B)
         push!(result,monomial)
     end
-    return result
+    result
 end
 
 # Computes all monomials of degree `d` in `n` variables.
@@ -114,7 +126,7 @@ function compute_monomials(n, d)
 
     backtrack(1, [])
 
-    return result
+    result
 end
 
 # Computes the relations
@@ -125,7 +137,7 @@ function compute_relations(monomials, partials)
             push!(result, monomials[i]*partials[j])
         end
     end
-    return result
+    result
 end
 
 # Converts vector of homogeneous polynomials to a matrix of their coefficents
@@ -138,7 +150,7 @@ function convert_p_to_m(polys, expvec)
         end
         push!(result, transpose(temp))
     end
-    return vcat(result...)
+    vcat(result...)
 end
 
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial
@@ -151,7 +163,7 @@ function convert_m_to_p(mat, expvec, R, PR)
         end
         push!(result,finish(B))
     end
-    return result
+    result
 end
 
 # Computes the basis vectors associated with case h. Columns of
@@ -196,7 +208,7 @@ function basis_vectors(n, d, p, precision, polynomial, R, PR, order="lex")
             append!(result, Bh)
         end
     end
-    return result
+    result
 end
 
 # TODO: Compute Omega in terms of differential symbol and exterior
