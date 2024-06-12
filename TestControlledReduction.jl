@@ -6,7 +6,6 @@ using Oscar
 include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
-include("AutomatedScript.jl")
 include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
 include("ZetaFunction.jl")
@@ -56,7 +55,7 @@ function testLinAlgProb()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     S = [0,1,2]
-    @test CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR) == [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
+    @test CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR) == [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
                                                                           0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
                                                                           0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
                                                                           225 0 0 0 0 155 0 0 0 11 0 0 221 0 310; 
@@ -186,14 +185,14 @@ function testRedOfTerms()
         end
     end
     FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
-    psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
-    psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
-    for i in 1:nrows(psuedoInverseMat)
-        for j in 1:ncols(psuedoInverseMat)
-            psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
+    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
+    pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
+    for i in 1:nrows(pseudoInverseMat)
+        for j in 1:ncols(pseudoInverseMat)
+            pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
         end
     end
-    @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
+    @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testT()
@@ -251,14 +250,14 @@ function testFrobMat()
         end
     end
     FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
-    psuedoInverseMatTemp = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,S,R,PR)
-    psuedoInverseMat = zeros(PrecisionRing,nrows(psuedoInverseMatTemp),ncols(psuedoInverseMatTemp))
-    for i in 1:nrows(psuedoInverseMat)
-        for j in 1:ncols(psuedoInverseMat)
-            psuedoInverseMat[i,j] = PrecisionRing(lift(ZZ,psuedoInverseMatTemp[i,j]))
+    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
+    pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
+    for i in 1:nrows(pseudoInverseMat)
+        for j in 1:ncols(pseudoInverseMat)
+            pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,psuedoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
     @test ZetaFunction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 

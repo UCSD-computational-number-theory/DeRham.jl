@@ -8,7 +8,6 @@ using Combinatorics
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 #include("FindMonomialBasis.jl")
-include("AutomatedScript.jl")
 include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 include("StandardReduction.jl")
@@ -61,7 +60,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
         e = j + m
         factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
         println("e=$e,factorial_e=$factorial_e")
-        ev = AutomatedScript.gen_exp_vec(n+1,d*j)
+        ev = Utils.gen_exp_vec(n+1,d*j)
         fj = f^j
         sum = 0
         for alpha in ev

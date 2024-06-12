@@ -3,7 +3,6 @@ module CopiedFindMonomialBasis
 using Oscar
 
 include("Utils.jl")
-include("AutomatedScript.jl")
 
 # Polynomial Setup
 
@@ -41,7 +40,7 @@ function compute_basis_matrix(f, l, m, R, PR)
     @assert(0 <= m && m <= n)
 
     section = binomial(n + l - (d-1), n)
-    domain_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,vars)
+    domain_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,:invlex)
 
     if length(domain_mons) <= 0
         return []
@@ -76,8 +75,8 @@ function compute_controlled_matrix(f, l, S, R, PR)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
-    in_set_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,vars)
-    not_in_set_mons = Utils.compute_monomials(n+1, l - d, PR,vars)
+    in_set_mons = Utils.compute_monomials(n+1, l - (d - 1), PR,:invlex)
+    not_in_set_mons = Utils.compute_monomials(n+1, l - d, PR,:invlex)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -117,8 +116,8 @@ function compute_monomial_basis(f, m, R, PR)
     d = total_degree(f)
     vars = gens(PR)
 
-    ev = AutomatedScript.gen_exp_vec(n + 1, m*d - n - 1)
-    row_monomials = AutomatedScript.gen_mon(ev,R,PR)
+    ev = Utils.gen_exp_vec(n + 1, m*d - n - 1)
+    row_monomials = Utils.gen_mon(ev,R,PR)
 
     M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
     if isempty(M)
@@ -146,8 +145,8 @@ function compute_monomial_bases(f, R, PR)
 end
 
 
-# Computes the psuedo_inverse for the controlled case.
-function psuedo_inverse_controlled(f, S, R, PR)
+# Computes the pseudo_inverse for the controlled case.
+function pseudo_inverse_controlled(f, S, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     
@@ -162,13 +161,13 @@ function psuedo_inverse_controlled(f, S, R, PR)
     end
 end
 
-# Computes the psuedo_inverse for the classical case.
-function psuedo_inverse_classical(f, R, PR)
-    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
+# Computes the pseudo_inverse for the classical case.
+function pseudo_inverse_classical(f, R, PR)
+    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end
 
-function psuedo_inverse_classicalm(f, m, R, PR)
-    return psuedo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
+function pseudo_inverse_classicalm(f, m, R, PR)
+    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end
 
 end

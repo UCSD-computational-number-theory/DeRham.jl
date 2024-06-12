@@ -7,7 +7,7 @@ using LinearAlgebra
 include("PrecisionEstimate.jl")
 include("FindMonomialBasis.jl")
 include("CopiedFindMonomialBasis.jl")
-include("AutomatedScript.jl")
+include("Utils.jl")
 include("CopiedFindMonomialBasis.jl")
 
 """
@@ -28,15 +28,15 @@ function stdRed_step(f, poly, f_tilde_exp, denom)
        PR = parent(f)
        R = coefficient_ring(parent(f))
        #=
-       polyMat = AutomatedScript.convert_p_to_m([poly],AutomatedScript.gen_exp_vec(n+1,d*f_tilde_exp - n - 1))
+       polyMat = Utils.convert_p_to_m([poly],Utils.gen_exp_vec(n+1,d*f_tilde_exp - n - 1))
 
        # Groebner basis G_i
-       psuedoInverseMat = CopiedFindMonomialBasis.psuedo_inverse_controlled(f,[],R,PR)
+       pseudoInverseMat = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,[],R,PR)
 
-       polycTemp = psuedoInverseMat*transpose(polyMat)
+       polycTemp = pseudoInverseMat*transpose(polyMat)
        polyc = []
        for i in 1:(n+1)
-              push!(polyc, AutomatedScript.convert_m_to_p(transpose(polycTemp[Int((i-1)*(length(polycTemp)/(n+1))+1):Int(i*(length(polycTemp)/(n+1)))]),AutomatedScript.gen_exp_vec(n+1,n*d-n),R,PR)[1])
+              push!(polyc, Utils.convert_m_to_p(transpose(polycTemp[Int((i-1)*(length(polycTemp)/(n+1))+1):Int(i*(length(polycTemp)/(n+1)))]),Utils.gen_exp_vec(n+1,n*d-n),R,PR)[1])
        end
        partials = [ derivative(polyc[i], i) for i in 1:(n+1) ]
 
@@ -65,8 +65,8 @@ function stdandardReduction(f, poly, f_tilde_exp, denom)
        return (poly, f_tilde_exp, denom)
 end
 #
-# psuedo_inverse_classical(f, R, PR), where R is the field and PR associated poly ring
-#CopiedFindMonomialBasis.psuedo_inverse_classical(f, R, PR)
+# pseudo_inverse_classical(f, R, PR), where R is the field and PR associated poly ring
+#CopiedFindMonomialBasis.pseudo_inverse_classical(f, R, PR)
 
 end
 

@@ -8,14 +8,13 @@ using Combinatorics
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 #include("FindMonomialBasis.jl")
-include("AutomatedScript.jl")
 include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 include("StandardReduction.jl")
 
 function computeT(Basis,f,n,d,R,PR)
-    ev = AutomatedScript.gen_exp_vec(n+1,d*n-n-1)
-    mons = AutomatedScript.gen_mon(ev,R,PR)
+    ev = Utils.gen_exp_vec(n+1,d*n-n-1)
+    mons = Utils.gen_mon(ev,R,PR)
     T = []
     for m in mons
         temp = []
