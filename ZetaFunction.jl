@@ -162,9 +162,9 @@ include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("FindMonomialBasis.jl")
 include("Utils.jl")
-include("Utils.jl")
 include("SmallestSubsetSmooth.jl")
 include("ZetaFunction.jl")
+include("TestControlledReduction.jl")
 n = 2
 d = 3
 p = 7
@@ -172,5 +172,6 @@ R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x0,x1,x2 = Vars
 f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+S = [0,1,2]
 Test = ZetaFunction.computeAll(n,d,f,7,p,R,PR,Vars)
 =#
