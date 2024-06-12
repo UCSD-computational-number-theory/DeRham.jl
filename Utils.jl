@@ -162,9 +162,12 @@ R - the base ring
 PR - the polynomial ring, i.e. it is parent(f)
 order - a symbol which denotes the term order
 """
-function polynomial_to_vector(f, n, R, PR; order=:lex)
+function polynomial_to_vector(f, n, R, PR, order=:lex)
     vars = gens(PR)
 
+    #TODO: if f turns out to be zero, we don't know what the degree should be.
+    #
+    #How best to fix this?
     d = total_degree(f)
 
     mon = compute_monomials(n, d,PR,order)
