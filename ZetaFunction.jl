@@ -137,6 +137,13 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
     pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
     pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
+
+    PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
+    fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
+    controlledMatrixZZ = CopiedFindMonomialBasis.compute_controlled_matrix(fLift, d * n - n + d - len_S, S, ZZ, PRZZ)
+    pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
+    pseudoInverseMatNew = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
+    
     for i in 1:nrows(pseudoInverseMat)
         for j in 1:ncols(pseudoInverseMat)
             pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))

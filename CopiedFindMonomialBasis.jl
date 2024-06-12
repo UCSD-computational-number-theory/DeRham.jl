@@ -93,6 +93,7 @@ function compute_controlled_matrix(f, l, S, R, PR)
     M = U()
 
     partials = [ derivative(f, i) for i in 1:n+1 ]
+    partials = reverse(partials)
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
