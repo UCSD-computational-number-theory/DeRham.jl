@@ -53,7 +53,7 @@ function compute_basis_matrix(f, l, m, R, PR)
 
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
-            M[:, section * (i-1) + monomial] = Utils.polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, order=:lex)
+            M[:, section * (i-1) + monomial] = Utils.polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, :invlex)
         end
     end
     
@@ -96,13 +96,13 @@ function compute_controlled_matrix(f, l, S, R, PR)
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
-            M[:, in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, order=:invlex)
+            M[:, in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, :invlex)
         end
     end
 
     for i in (len_S+1):n+1
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, order=:invlex)
+            M[:, not_in_set_section * (i-1) + monomial] = Utils.polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, :invlex)
         end
     end
     return M
