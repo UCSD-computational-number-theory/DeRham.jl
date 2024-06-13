@@ -37,7 +37,7 @@ function computeReductionLA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
     end
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
     
-    gcpartials = reverse(gcpartials) # in Costa's code, 
+    gcpartials = reverse(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
 
     #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
     return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
