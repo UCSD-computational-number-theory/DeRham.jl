@@ -35,6 +35,7 @@ function computeReductionLA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
     for i in 1:(n+1)
         push!(gc, Utils.convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),Utils.gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
     end
+    gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
     
     gcpartials = reverse(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
@@ -495,14 +496,13 @@ function computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
         push!(reductions, computeReductionLA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
-    printMat(polyMatrix)
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     matrices = []
     for k in 0:(n+1)
         tempMat = matSpace()
         tempExpVec = zeros(Int,n+1)
         if k >= 1
-            tempExpVec[k] = 1
+            tempExpVec[n+1-k+1] = 1
         end
         for i in 1:nrows(polyMatrix)
             for j in 1:ncols(polyMatrix)
