@@ -55,24 +55,26 @@ function testLinAlgProb()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     S = [0,1,2]
-    @test CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR) == [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
-                                                                          0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
-                                                                          0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
-                                                                          225 0 0 0 0 155 0 0 0 11 0 0 221 0 310; 
-                                                                          0 0 0 0 0 0 0 0 0 0 0 0 0 114 0; 
-                                                                          0 0 0 0 0 0 0 0 0 0 0 0 0 0 114; 
-                                                                          0 0 0 1 0 0 172 0 0 0 0 0 0 0 0; 
-                                                                          59 0 0 0 1 94 0 172 0 166 0 0 61 0 188; 
-                                                                          0 0 0 0 0 0 0 0 172 0 0 0 0 286 0; 
-                                                                          0 57 0 173 0 0 0 0 0 0 172 0 0 114 0; 
-                                                                          83 0 57 0 173 59 0 0 0 94 0 172 166 0 61; 
-                                                                          0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
-                                                                          114 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
-                                                                          0 114 0 0 0 0 0 0 0 0 0 0 0 0 0; 
-                                                                          166 0 114 0 0 118 0 0 0 188 0 0 332 0 236; 
-                                                                          11 0 0 0 0 221 0 0 0 310 0 0 22 0 214; 
-                                                                          0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
-                                                                          0 0 0 0 0 0 0 0 0 0 0 0 0 0 0] 
+    M = 3
+    @test CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M) == 
+      [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
+       0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
+       0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
+       225 0 0 0 0 155 0 0 0 11 0 0 221 0 310; 
+       0 0 0 0 0 0 0 0 0 0 0 0 0 114 0; 
+       0 0 0 0 0 0 0 0 0 0 0 0 0 0 114; 
+       0 0 0 1 0 0 172 0 0 0 0 0 0 0 0; 
+       59 0 0 0 1 94 0 172 0 166 0 0 61 0 188; 
+       0 0 0 0 0 0 0 0 172 0 0 0 0 286 0; 
+       0 57 0 173 0 0 0 0 0 0 172 0 0 114 0; 
+       83 0 57 0 173 59 0 0 0 94 0 172 166 0 61; 
+       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
+       114 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
+       0 114 0 0 0 0 0 0 0 0 0 0 0 0 0; 
+       166 0 114 0 0 118 0 0 0 188 0 0 332 0 236; 
+       11 0 0 0 0 221 0 0 0 310 0 0 22 0 214; 
+       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 
+       0 0 0 0 0 0 0 0 0 0 0 0 0 0 0] 
 end
 
 function testFrobTrans()
@@ -165,7 +167,12 @@ function testRedOfTerms()
     f = y^2*z - x^3 - x*z^2 - z^3
     N = 2
     M = 3
-    PrecisionRing, = residue_ring(ZZ,p^M)
+    
+    # TODO: change other instances of pseudo_inverse_controlled in this file and ZetaFunction.jl to this method
+    S = [0,1,2]
+    pseudoInverseMat = Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M))
+
+    PrecisionRing = parent(pseudoInverseMat[1])
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -177,7 +184,6 @@ function testRedOfTerms()
         end
         push!(BasisTLift,temp)
     end
-    S = [0,1,2]
     Basis = []
     for i in 1:n
         for j in BasisTLift[i]
@@ -185,13 +191,12 @@ function testRedOfTerms()
         end
     end
     FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
-    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
-    pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
-    for i in 1:nrows(pseudoInverseMat)
-        for j in 1:ncols(pseudoInverseMat)
-            pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
-        end
-    end
+    #pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
+    #for i in 1:nrows(pseudoInverseMat)
+    #    for j in 1:ncols(pseudoInverseMat)
+    #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
+    #    end
+    #end
     @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
 end
 

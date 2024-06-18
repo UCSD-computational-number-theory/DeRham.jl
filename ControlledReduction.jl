@@ -148,7 +148,11 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 """
 function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     
-    pseudoInverseMat = [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
+    #println(pseudoInverseMat)
+
+    # @assert pseudoInverseMat ==
+    pseudoInverseMat = 
+    [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
     0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
     0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
     225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
@@ -165,9 +169,9 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
     11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;]
-    I = [28,7,28]
-    gCoeff = R(2)
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] #"seems to have the wrong pseudo-invers"
+    #I = [28,7,28]
+    #gCoeff = R(2)
     
     #chain = 0
     J = copy(I)
@@ -212,14 +216,13 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,pseudoInverseMat,R,PR)
     matrices = computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
 
-    for i in axes(matrices,1)
-        printMat(matrices[i])
-    end
-    throw(error)
+    #for i in axes(matrices,1)
+    #    printMat(matrices[i])
+    #end
     
     if V == [1,1,1]
-        println("Using precomputed R_u,[1,1,1]")
-    matrices = [
+        #println("Using precomputed R_u,[1,1,1]")
+    matrices_precomputed = [
                 R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
@@ -288,11 +291,16 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 ]
       #matrices = map(M -> R.(M),matrices)
 
+      for i in 1:4
+          @assert matrices[i] == matrices_precomputed[i] "the $i-th R_u,v matrix seems to have been computed wrong"
+      end
+
     end 
 
     A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
+    println("Before reduction chunk: $gMat")
     fastevaluation = false
     if fastevaluation
       gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
@@ -313,6 +321,8 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
         A,B = computeRPolyLAOneVar(y,rev_tweak(J - i*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         gMat = (A+B)*gMat
+        println("After step $(i+1): $gMat")
+
         i = i+1
         I = I - y
     end

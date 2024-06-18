@@ -369,6 +369,15 @@ function Factorial(x,y)
 end
 
 """
+Performs a mathematical mod (in julia if you mod a negative number, it stays negative). 
+Was using for debugging.
+
+"""
+function julia_signed_mod(x,n)
+    ((x % n) + n) % n
+end
+
+"""
     henselLift(p, precision, A, T)
 Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision
 
@@ -382,10 +391,12 @@ function henselLift(p, precision, A, T)
     i = 1
     while i < precision
         T = 2*T - T * (A*T)
+        println("After step $i: $(julia_signed_mod.(T,p^(i+1)))")
         i *= 2
     end
     R, pi = residue_ring(ZZ, p^precision)
-    return matrix(R,[pi(x) for x in Array(T)])
+    stuff = [R(x) for x in Array(T)]
+    return matrix(R,stuff)
 end
 
 

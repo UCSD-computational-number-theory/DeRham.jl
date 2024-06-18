@@ -135,7 +135,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         end
     end
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
-    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
+    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M)
     pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
@@ -144,11 +144,11 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
     pseudoInverseMatNew = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
     
-    for i in 1:nrows(pseudoInverseMat)
-        for j in 1:ncols(pseudoInverseMat)
-            pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
-        end
-    end
+    #for i in 1:nrows(pseudoInverseMat)
+    #    for j in 1:ncols(pseudoInverseMat)
+    #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
+    #    end
+    #end
     Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis, n, d, p, N, S, fLift, pseudoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T)

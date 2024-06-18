@@ -147,6 +147,20 @@ end
 
 
 # Computes the pseudo_inverse for the controlled case.
+"""
+Solves the linear algebra problem in section 1.5.2 of Costa's thesis, 
+top of page 23. 
+In other words, finds a pseudo-inverse to the linear map described
+there.
+The map is constructed as a matrix from the polynomial f and the set S.
+
+f - the polynomial defining the hypersurface
+S - the set in [0..n] to be used for the linear algebra problem
+
+I think these are correct: (TODO)
+R - coefficient_ring(parent(f))
+PR- paren(f)
+"""
 function pseudo_inverse_controlled(f, S, R, PR)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -158,11 +172,28 @@ function pseudo_inverse_controlled(f, S, R, PR)
     flag, B = is_invertible_with_inverse(M, side=:right)
     
     if flag
-        return Array(B)
+        return (M,B)
+    else 
+        throw(ArgumentError("matrix from f is not right invertible"))
     end
 end
 
+function pseudo_inverse_controlled_lifted(f,S,R,PR,m)
+    (Mfp, Sol_fp) = pseudo_inverse_controlled(f,S,R,PR)
+    lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
+
+    M_int = lift_to_int64(Mfp)
+    Sol_mod_p_int = lift_to_int64(Sol_fp)
+
+    println("Solution mod p: $Sol_fp")
+
+    p = characteristic(parent(f))
+    Utils.henselLift(p,m,Array(M_int),Array(Sol_mod_p_int))
+end
+
 # Computes the pseudo_inverse for the classical case.
+#TODO: update this to reflex changes to pseudo_inverse_controlled
+#it's used in standard reduction, I'll plan to take care of it then
 function pseudo_inverse_classical(f, R, PR)
     return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
 end

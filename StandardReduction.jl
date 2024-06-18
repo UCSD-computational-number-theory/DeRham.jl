@@ -31,7 +31,7 @@ function stdRed_step(f, poly, f_tilde_exp, denom)
        polyMat = Utils.convert_p_to_m([poly],Utils.gen_exp_vec(n+1,d*f_tilde_exp - n - 1))
 
        # Groebner basis G_i
-       pseudoInverseMat = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,[],R,PR)
+       pseudoInverseMat = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,[],R,PR)[2]
 
        polycTemp = pseudoInverseMat*transpose(polyMat)
        polyc = []
