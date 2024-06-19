@@ -434,6 +434,48 @@ function finitediff_prodeval_linear(a,b,start,stop,g)
 end
 
 """
+Returns the data used by costa's code given a polynomial term.
+
+Note: this only works with a single term, so it should
+only be used at the beginning of reduction
+"""
+function costa_data_of_initial_term(term,n,d,p)
+
+    o = ones(Int,length(exponent_vector(i[1],1)))
+    II = exponent_vector(i[1],1) + o # doh't use I since it's overloaded with the id matrix
+    gCoeff = coeff(i[1],1)
+    
+
+    V = chooseV(Array{Int}(divexact.(II,p)),d)
+    u = I - rev_tweak(I,n*d-n)
+    ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
+    g = zeros(R,length(ev))
+    for j in axes(gMat,1)
+        if u == ev[j]
+            g[j] = gCoeff
+            break
+        end
+    end
+
+
+    (II,g)
+end
+
+function terms_highestpoleorder(poly)
+
+    # returnns the  bggerr pole order poly
+    function cmp_poleorder(p1,p2)
+        if p1[2] ≤ p2[2]
+            p2
+        else
+            p1
+        end
+    end
+
+    collect(terms(reduce(cmp_poleorder,poly)))
+end
+
+"""
 given polynomial, splits into terms and applies reduction to each term
 """
 function reducepoly_LA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
