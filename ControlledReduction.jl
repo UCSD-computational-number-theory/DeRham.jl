@@ -11,12 +11,12 @@ include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 
 """
-    computeReductionLA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
+    reduce_LA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
 
 applies reduction formula from Prop 1.15 in Costa's thesis to 
 basis elements of Homog(dn-d), returns them as polynomials
 """
-function computeReductionLA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
+function reduce_LA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
     SC = []
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), V)
@@ -142,11 +142,40 @@ function rev_tweak(J,m)
 end
 
 """
-    computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+    undo_rev_tweak(I,p)
+
+gives the unique vector J containing only
+multiples of p such that tweak(J, |J-I|) = I
+
+We're assuming that |J-I| < p here.
+
+"""
+function undo_rev_tweak(I,p)
+
+    # is this correct for large d and n?
+    J = copy(I)
+
+    k = 1
+    #accumulator = 0
+    while k ≤ length(J)
+        while (J[k] % p) != 0
+            J[k] = J[k] + 1
+            #accumulator += 1
+        end
+        k = k + 1
+    end
+
+    # @assert accumulator == m
+
+    J
+end
+
+"""
+    reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 """
-function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+function reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     
     #println(pseudoInverseMat)
 
@@ -174,9 +203,10 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     #gCoeff = R(2)
     
     #chain = 0
+    println("This is I: $I")
     J = copy(I)
-    V = chooseV(Array{Int}(I/p),d)
-    gVec = I - tweak(I,n*d-n)
+    V = chooseV(Array{Int}(divexact.(I,p)),d)
+    gVec = I - rev_tweak(I,n*d-n)
     ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
     gMat = zeros(R,length(ev))
     for j in axes(gMat,1)
@@ -213,8 +243,8 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     end
     =#
 
-    A,B = computeRPolyLAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,pseudoInverseMat,R,PR)
-    matrices = computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
+    A,B = computeRPoly_LAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,pseudoInverseMat,R,PR)
+    matrices = computeRPoly_LAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
 
     #for i in axes(matrices,1)
     #    printMat(matrices[i])
@@ -297,10 +327,11 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
     end 
 
-    A1,B1 = computeRPolyLAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
+    A1,B1 = computeRPoly_LAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
     println("Before reduction chunk: $gMat")
+    println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
       gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
@@ -316,15 +347,17 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     # TODO: test how much of a difference the fast evaluation actually makes
 
     I = I - (nend-(d*n-n))*V
+    println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
-        A,B = computeRPolyLAOneVar(y,rev_tweak(J - i*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
+        A,B = computeRPoly_LAOneVar(y,rev_tweak(J - i*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         gMat = (A+B)*gMat
         println("After step $(i+1): $gMat")
 
         i = i+1
         I = I - y
+        println("After step $(i+1), I is $I")
     end
     #=
     MK = A + B*K
@@ -341,7 +374,19 @@ function computeReductionChainLA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     I = mins
     =# 
     #throw(error)
-    return [gMat, I]
+    
+    
+    #if nend == p
+    #    newI = J - p*V
+    #    @assert undo_rev_tweak(I,p) == newI
+
+    #    return [gMat, newI]
+    #else
+    #    return [gMat, I]
+    #end
+
+    return [gMat,I]
+
 end
 
 """
@@ -391,16 +436,18 @@ end
 """
 given polynomial, splits into terms and applies reduction to each term
 """
-function computeReductionOfPolyLA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
+function reducepoly_LA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
     t = Utils.getTerms(poly)
     result = 0
     for i in t
         println("reducing term $i")
         o = ones(Int,length(exponent_vector(i[1],1)))
-        I = exponent_vector(i[1],1) + o
+#        I = exponent_vector(i[1],1) + o
+        I = undo_rev_tweak(exponent_vector(i[1],1),p)
         gCoeff = coeff(i[1],1)
-        RChain = computeReductionChainLA(I,gCoeff,n,d,p,i[2],S,f,pseudoInverseMat,R,PR)
+        RChain = reducechain_LA(I,gCoeff,n,d,p,i[2],S,f,pseudoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
+        println("Result of reduction chunk: $RChain")
         push_term!(B, R(1), Int.(RChain[2]))
         XU = finish(B)
         B = MPolyBuildCtx(PR)
@@ -408,6 +455,7 @@ function computeReductionOfPolyLA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
         XS = finish(B)
         ev = Utils.gen_exp_vec(n+1,d*n - n,:invlex)
         gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
+        println("Polynomial obtained from reduction: $gReduction")
         result = result + gReduction
     end
     return [result,poly[2] - min(p,poly[2]-n)]
@@ -416,15 +464,15 @@ end
 """
 naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
 """
-function computeReductionOfTransformLA(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
+function reducetransform_LA(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
     result = []
     for i in FT
         temp = 0
         for j in axes(i,1)
-            #t = computeReductionOfPolyLA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,pseudoInverseMat,R,PR)[1]
+            #t = reducepoly_LA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,pseudoInverseMat,R,PR)[1]
             t = i[j]
             while t[2] > n
-                t = computeReductionOfPolyLA(t,n,d,p,S,f,pseudoInverseMat,R,PR)
+                t = reducepoly_LA(t,n,d,p,S,f,pseudoInverseMat,R,PR)
             end
             temp = temp + t[1]
         end
@@ -437,7 +485,7 @@ end
 """
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 """
-function computeReductionOfTransformLADescending(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
+function reducetransform_LA_descending(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
     result = []
     for i in FT
         omega = [PR(0),i[length(i)][2]]
@@ -448,7 +496,7 @@ function computeReductionOfTransformLADescending(FT,n,d,p,N,S,f,pseudoInverseMat
             println(length(i))
             omegae = i[2][1]
             omega[1] = omega[1] + omegae
-            omega = computeReductionOfPolyLA(omega,n,d,p,S,f,pseudoInverseMat,R,PR)
+            omega = reducepoly_LA(omega,n,d,p,S,f,pseudoInverseMat,R,PR)
         end
         #push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
         push!(result,omega)
@@ -459,7 +507,7 @@ end
 """
 computes reduction matrices
 """
-function computeRPolyLAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
+function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
     YRing, y = polynomial_ring(R, "y")
     PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
     yV = []
@@ -471,7 +519,7 @@ function computeRPolyLAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
     monomials = Utils.gen_mon(ev,YRing,PYRing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
+        push!(reductions, reduce_LA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],YRing,PYRing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
@@ -489,7 +537,7 @@ end
 """
 Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
 """
-function computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
+function computeRPoly_LAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     #=
@@ -503,7 +551,7 @@ function computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
     monomials = Utils.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
+        push!(reductions, reduce_LA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     polyMatrix = Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
@@ -525,16 +573,16 @@ function computeRPolyLAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
 end
 
 """
-    computeRPolyLAOneVar2(matrices, U)
+    computeRPoly_LAOneVar2(matrices, U)
 
 Takes a list of n+2 matrices and ouputs a list two matrices [A,B] corresponding to R_{(x0,...,xn)+yv, v} = Ay + B
 
 INPUTS: 
-* "matrices" -- list, output of computeRPolyLAOneVar1
+* "matrices" -- list, output of computeRPoly_LAOneVar1
 * "U" -- vector, U =(x0, ..., xn)
 * "R" -- ring, base ring of f
 """
-function computeRPolyLAOneVar2(matrices, U, R)
+function computeRPoly_LAOneVar2(matrices, U, R)
     B = matrices[1]
     matSpace = matrix_space(R, nrows(B), ncols(B))
     A = matSpace()
@@ -662,7 +710,7 @@ end
 =#
 
 #=
-function computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+function reduce(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     SC = []
     gensJS = copy(parts)
     B = MPolyBuildCtx(PR)
@@ -691,7 +739,7 @@ end
 #=
 function reduceToBasis(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     while g[2] > n
-        g = computeReduction(U,V,S,n,d,g,parts,ev,R,PR,Vars)
+        g = reduce(U,V,S,n,d,g,parts,ev,R,PR,Vars)
     end
     return g
 end
@@ -710,7 +758,7 @@ end
 =#
 
 #=
-function computeReductionChain(I,n,d,m,S,parts,R,PR,ResRing)
+function reducechain(I,n,d,m,S,parts,R,PR,ResRing)
     chain = 0
     ev = Utils.gen_exp_vec(n+1,n*d-n)
     gVec = chooseV(I,n*d - n)
@@ -742,7 +790,7 @@ end
 =#
 
 #=
-function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,pseudoInverseMat,R,PR)
+function reducechain_LA1(I,gCoeff,l,n,d,m,S,f,pseudoInverseMat,R,PR)
     #chain = 0
     gVec = chooseV(I,n*d - n)
     ev = Utils.gen_exp_vec(n+1,n*d-n)
@@ -786,7 +834,7 @@ function computeReductionChainLA1(I,gCoeff,l,n,d,m,S,f,pseudoInverseMat,R,PR)
             RPoly = RUVs[l[1]]
         else
         =#
-        A,B = computeRPolyLAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
+        A,B = computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
         #push!(Vs,V)
         #push!(RUVs,RPoly)
         #RNums = evaluateRUV(RPoly,U,R)
@@ -818,7 +866,7 @@ end
 =#
 #-----------------------------
 #=
-function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
+function reducepoly(poly,n,d,S,parts,R,PR,ResRing)
     t = getTerms(poly)
     result = 0
     for i in t
@@ -833,7 +881,7 @@ function computeReductionOfPoly(poly,n,d,S,parts,R,PR,ResRing)
                 break
             end
         end
-        RChain = computeReductionChain(I,n,d,i[2],S,parts,R,PR,ResRing)
+        RChain = reducechain(I,n,d,i[2],S,parts,R,PR,ResRing)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), RChain[2])
         XU = finish(B)
@@ -848,14 +896,14 @@ end
 =#
 
 #=
-function computeReductionOfPolyLA1(poly,l,n,d,S,f,pseudoInverseMat,R,PR)
+function reducepoly_LA1(poly,l,n,d,S,f,pseudoInverseMat,R,PR)
     t = getTerms(poly)
     result = 0
     for i in t
         o = ones(Int,length(exponent_vector(i[1],1)))
         I = exponent_vector(i[1],1) + o
         gCoeff = coeff(i[1],1)
-        RChain = computeReductionChainLA1(I,gCoeff,l,n,d,i[2],S,f,pseudoInverseMat,R,PR)
+        RChain = reducechain_LA1(I,gCoeff,l,n,d,i[2],S,f,pseudoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), Int.(RChain[2]))
         XU = finish(B)
@@ -877,7 +925,7 @@ function computeR(u,v,s,n,d,R,PR,vars)
     monomials = Utils.gen_mon(ev,R,PR)
     reductions = []
     for m in monomials
-        push!(reductions,computeReduction(u,v,s,n,d,m,ev,R,PR,vars))
+        push!(reductions,reduce(u,v,s,n,d,m,ev,R,PR,vars))
     end
     return transpose(Utils.convert_p_to_m(reductions,ev))
 end
@@ -894,7 +942,7 @@ function computeRPoly(V,S,n,d,parts,R,PR)
     monomials = Utils.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReduction(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
+        push!(reductions, reduce(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
     end
     return Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
 end
@@ -902,27 +950,27 @@ end
 
 #LA test ------------------------
 #=
-function computeRPolyLA(V,S,n,d,f,pseudoInverseMat,R,PR)
+function computeRPoly_LA(V,S,n,d,f,pseudoInverseMat,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
     ev = Utils.gen_exp_vec(n+1,d*n-n)
     monomials = Utils.gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
-        push!(reductions, computeReductionLA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
+        push!(reductions, reduce_LA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
     return Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
 end
 =#
 #-----------------------------------
 #=
-function computeReductionOfTransform(FT,n,d,p,N,S,parts,R,PR)
+function reducetransform(FT,n,d,p,N,S,parts,R,PR)
     result = 0
     for i in FT
         for j in i
             s = N + j[2] - 1
             ResRing = residue_ring(ZZ,Int1024(p)^s)
-            result = computeReductionOfPoly(j,n,d,S,parts,R,PR,ResRing)[1]
+            result = reducepoly(j,n,d,S,parts,R,PR,ResRing)[1]
         end
     end
     return [result,n]

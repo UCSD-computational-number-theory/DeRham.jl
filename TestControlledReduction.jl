@@ -197,7 +197,7 @@ function testRedOfTerms()
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    @test ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
+    @test ControlledReduction.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testT()
@@ -262,7 +262,7 @@ function testFrobMat()
             pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.computeReductionOfTransformLA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = ControlledReduction.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
     @test ZetaFunction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 
