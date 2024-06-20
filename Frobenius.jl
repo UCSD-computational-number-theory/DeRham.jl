@@ -11,6 +11,7 @@ include("CopiedFindMonomialBasis.jl")
 include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
 include("StandardReduction.jl")
+include("PolynomialWithPole.jl")
 
 """
     computeD(N, m)
@@ -78,7 +79,7 @@ end
 
 #=
 function applyFrobenius(n,d,f,N,p,poly,R,PR)
-    t = getTerms(poly)
+    t = terms(poly)
     temp = []
     for i in t
         ev = exponent_vector(i[1],1)

@@ -8,6 +8,7 @@ using Combinatorics
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("Utils.jl")
+include("PolynomialWithPole.jl")
 #include("SmallestSubsetSmooth.jl")
 
 """
@@ -171,11 +172,15 @@ function undo_rev_tweak(I,p)
 end
 
 """
-    reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+    reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
+
+
+if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
+(i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     
     #println(pseudoInverseMat)
 
@@ -198,23 +203,25 @@ function reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
     11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] #"seems to have the wrong pseudo-invers"
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] #"seems to have the wrong pseudo-inverse"
     #I = [28,7,28]
     #gCoeff = R(2)
     
+    I = u
+    gMat = g
     #chain = 0
     println("This is I: $I")
     J = copy(I)
     V = chooseV(Array{Int}(divexact.(I,p)),d)
     gVec = I - rev_tweak(I,n*d-n)
     ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
-    gMat = zeros(R,length(ev))
-    for j in axes(gMat,1)
-        if gVec == ev[j]
-            gMat[j] = gCoeff
-            break
-        end
-    end
+    #gMat = zeros(R,length(ev))
+    #for j in axes(gMat,1)
+    #    if gVec == ev[j]
+    #        gMat[j] = gCoeff
+    #        break
+    #    end
+    #end
     I = I - gVec
     if m - n < p
         nend = m - n
@@ -317,14 +324,11 @@ function reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
 [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
 ]
-
 ]
       #matrices = map(M -> R.(M),matrices)
-
       for i in 1:4
           @assert matrices[i] == matrices_precomputed[i] "the $i-th R_u,v matrix seems to have been computed wrong"
       end
-
     end 
 
     A1,B1 = computeRPoly_LAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
@@ -376,16 +380,14 @@ function reducechain_LA(I,gCoeff,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     #throw(error)
     
     
-    #if nend == p
-    #    newI = J - p*V
-    #    @assert undo_rev_tweak(I,p) == newI
+    if nend == p
+        newI = J - p*V
+        @assert undo_rev_tweak(I,p) == newI
 
-    #    return [gMat, newI]
-    #else
-    #    return [gMat, I]
-    #end
-
-    return [gMat,I]
+        return (newI, gMat)
+    else
+        return (I,gMat) # gives the "true" u
+    end
 
 end
 
@@ -439,7 +441,10 @@ Returns the data used by costa's code given a polynomial term.
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costa_data_of_initial_term(term,n,d,p)
+function costadata_of_initial_term(term,n,d,p)
+
+    R = base_ring(parent(term[1])) 
+    i = term
 
     o = ones(Int,length(exponent_vector(i[1],1)))
     II = exponent_vector(i[1],1) + o # doh't use I since it's overloaded with the id matrix
@@ -447,10 +452,10 @@ function costa_data_of_initial_term(term,n,d,p)
     
 
     V = chooseV(Array{Int}(divexact.(II,p)),d)
-    u = I - rev_tweak(I,n*d-n)
+    u = II - rev_tweak(II,n*d-n)
     ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
     g = zeros(R,length(ev))
-    for j in axes(gMat,1)
+    for j in axes(g,1)
         if u == ev[j]
             g[j] = gCoeff
             break
@@ -458,90 +463,181 @@ function costa_data_of_initial_term(term,n,d,p)
     end
 
 
+    println("creation: u is type $(typeof(II))")
     (II,g)
 end
 
-function terms_highestpoleorder(poly)
+"""
+Takes an array of Costa's data tuples, and a new term
+to be added. If the new term already exists, it is 
+added, if not then it concatenates.
 
-    # returnns the  bggerr pole order poly
-    function cmp_poleorder(p1,p2)
-        if p1[2] ≤ p2[2]
-            p2
-        else
-            p1
+Note: perhaps this would be better served by a custom struct?
+
+Note: right now, we don't have a method that just
+takes an array of Costa's data tuples and consolodates it. 
+Perhaps this also would be well suited by a custom struct?
+
+^^ such concerns have speed implications, so better to wait
+until we're really trying to optimize this.
+
+"""
+function incorporate_initial_term!(costadata_arr,costadata)
+    ind_already = false
+
+    # if the u is already there, just add the vectors
+    for i in eachindex(costadata_arr)
+        (u,g) = costadata_arr[i]
+        if all(u[1] .== costadata[1])
+            costadata_arr[i] = (u, g .+ costadata[2])
+            ind_already = true
         end
     end
 
-    collect(terms(reduce(cmp_poleorder,poly)))
-end
-
-"""
-given polynomial, splits into terms and applies reduction to each term
-"""
-function reducepoly_LA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
-    t = Utils.getTerms(poly)
-    result = 0
-    for i in t
-        println("reducing term $i")
-        o = ones(Int,length(exponent_vector(i[1],1)))
-#        I = exponent_vector(i[1],1) + o
-        I = undo_rev_tweak(exponent_vector(i[1],1),p)
-        gCoeff = coeff(i[1],1)
-        RChain = reducechain_LA(I,gCoeff,n,d,p,i[2],S,f,pseudoInverseMat,R,PR)
-        B = MPolyBuildCtx(PR)
-        println("Result of reduction chunk: $RChain")
-        push_term!(B, R(1), Int.(RChain[2]))
-        XU = finish(B)
-        B = MPolyBuildCtx(PR)
-        push_term!(B, R(1), o)
-        XS = finish(B)
-        ev = Utils.gen_exp_vec(n+1,d*n - n,:invlex)
-        gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
-        println("Polynomial obtained from reduction: $gReduction")
-        result = result + gReduction
+    # otherwise, push on a new term
+    if !ind_already
+        println("incorporation: u has type $(typeof(costadata[1]))")
+        push!(costadata_arr,costadata)
     end
-    return [result,poly[2] - min(p,poly[2]-n)]
 end
 
 """
-naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
+Converts a Costa's data tuple to a polynomial with pole
+after reduction.
+
+Thus, the pole order is n.
 """
-function reducetransform_LA(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
-    result = []
-    for i in FT
-        temp = 0
-        for j in axes(i,1)
-            #t = reducepoly_LA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,pseudoInverseMat,R,PR)[1]
-            t = i[j]
-            while t[2] > n
-                t = reducepoly_LA(t,n,d,p,S,f,pseudoInverseMat,R,PR)
-            end
-            temp = temp + t[1]
+function poly_of_end_costadata(costadata,PR,p,d,n)
+    (u,g_vec) = costadata
+    vars = gens(PR)
+
+    g = Utils.vector_to_polynomial(g_vec,n,d*n-n,PR,:invlex)
+
+    # no need to do rev_tweak since reducechain_LA returns the "true" u
+    # on the last run
+    [prod(vars .^ u) * g, n]
+end
+
+
+"""
+Converts an array of Costa's data tuples to an array of polynomials with pole
+after reduction.
+
+Thus, the pole order is always n.
+
+"""
+function poly_of_end_costadatas(costadatas,PR,p,d,n)
+    res = PR(0)
+    for costadata in costadatas
+        res += poly_of_end_costadata(costadata,PR,p,d,n)[1]
+    end
+   
+    [[res, n]]
+end
+
+#"""
+#given polynomial, splits into terms and applies reduction to each term
+#"""
+#function reducepoly_LA(poly,n,d,p,S,f,pseudoInverseMat,R,PR)
+#    t = PolynomialWithPole.terms(poly)
+#    result = 0
+#    for i in t
+#        println("reducing term $i")
+#        o = ones(Int,length(exponent_vector(i[1],1)))
+##        I = exponent_vector(i[1],1) + o
+#        I = undo_rev_tweak(exponent_vector(i[1],1),p)
+#        gCoeff = coeff(i[1],1)
+#        RChain = reducechain_LA(I,gCoeff,n,d,p,i[2],S,f,pseudoInverseMat,R,PR)
+#        B = MPolyBuildCtx(PR)
+#        println("Result of reduction chunk: $RChain")
+#        push_term!(B, R(1), Int.(RChain[2]))
+#        XU = finish(B)
+#        B = MPolyBuildCtx(PR)
+#        push_term!(B, R(1), o)
+#        XS = finish(B)
+#        ev = Utils.gen_exp_vec(n+1,d*n - n,:invlex)
+#        gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
+#        println("Polynomial obtained from reduction: $gReduction")
+#        result = result + gReduction
+#    end
+#    return [result,poly[2] - min(p,poly[2]-n)]
+#end
+#
+#"""
+#naive controlled reduction, takes as input the array of frobenius transforms of basis elements and reduces each polynomial
+#
+#NOTE: what is big N and why isn't it used here?
+#"""
+#function reducetransform_LA(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
+#    result = []
+#    for i in FT
+#        temp = 0
+#        for j in axes(i,1)
+#            #t = reducepoly_LA([Factorial(R(i[length(i)][2]),R(j[2]))p^(j[2]-n-1)*(j[1]),j[2]],n,d,p,S,f,pseudoInverseMat,R,PR)[1]
+#            t = i[j]
+#            while t[2] > n
+#                t = reducepoly_LA(t,n,d,p,S,f,pseudoInverseMat,R,PR)
+#            end
+#            temp = temp + t[1]
+#        end
+#        #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
+#        push!(result,[temp,n,Utils.Factorial(R(i[length(i)][2]),R(n))])
+#    end
+#    return result
+#end
+
+"""
+Implements Costa's algorithm for controlled reduction,
+sweeping down the terms of the series expansion by the pole order.
+"""
+function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
+    println(pol)
+
+    i = pol
+    highpoleorder = i[length(i)][2]
+
+    # this is the omega from section 1.5.5 of Costa's thesis.
+    ω = [] # this will be an array of costa data
+
+    poleorder = highpoleorder
+    while n < poleorder
+        # this is an array of polynomials
+        ωₑ = PolynomialWithPole.termsoforder(pol,poleorder)
+
+        println("ωₑ: $ωₑ")
+
+        for term in ωₑ
+            println("term: $term")
+            term_costadata = costadata_of_initial_term(term,n,d,p)
+            println("term, in Costa's format: $term_costadata")
+            #ω = ω + ωₑ
+            incorporate_initial_term!(ω,term_costadata)
         end
-        #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
-        push!(result,[temp,n,Utils.Factorial(R(i[length(i)][2]),R(n))])
+
+        println("ω: $ω")
+        #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
+        for i in eachindex(ω)
+            #ω[i] = reducechain...
+            println("u is type $(typeof(ω[i][1]))")
+            ω[i] = reducechain_LA(ω[i]...,n,d,p,poleorder,S,f,pseudoInverseMat,R,PR)
+        end
+
+        poleorder = poleorder - p
     end
-    return result
+
+    poly_of_end_costadatas(ω,PR,p,d,n)
 end
 
 """
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
+
+TODO: what exactly is big N?? Why isn't is used?
 """
 function reducetransform_LA_descending(FT,n,d,p,N,S,f,pseudoInverseMat,R,PR)
     result = []
-    for i in FT
-        omega = [PR(0),i[length(i)][2]]
-        m = Int(i[1][2]/p)
-        for j in 1:length(i)
-            i = FT[2]
-            #omegae = i[length(i)-j+1][1]
-            println(length(i))
-            omegae = i[2][1]
-            omega[1] = omega[1] + omegae
-            omega = reducepoly_LA(omega,n,d,p,S,f,pseudoInverseMat,R,PR)
-        end
-        #push!(result,[omega[1],n,Factorial(R(p*(m+N-1)-1),R(1))])
-        push!(result,omega)
+    for pol in FT
+        reduction = reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
+        push!(result, reduction)
     end
     return result
 end

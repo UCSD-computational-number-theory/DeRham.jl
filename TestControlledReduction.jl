@@ -197,7 +197,7 @@ function testRedOfTerms()
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    @test ControlledReduction.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
+    @test ControlledReduction.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
 end
 
 function testT()

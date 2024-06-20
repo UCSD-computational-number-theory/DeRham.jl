@@ -194,6 +194,7 @@ order - a symbol which denotes the term order
 function vector_to_polynomial(vect, n, d, PR, order=:lex)
     res = PR()
     mon = compute_monomials(n + 1, d, PR,order)
+    @assert length(vect) == length(mon) "vector has incorrect length for the specified degree"
     for i in eachindex(vect)
         res += PR(vect[i]) * mon[i]
     end
@@ -344,15 +345,6 @@ function liftCoefficients(R, PR, f, positiveLift=true)
         sum = sum + finish(B)
     end
     return sum
-end
-
-function getTerms(poly)
-    t = terms(poly[1])
-    result = []
-    for i in t
-        push!(result,[i,poly[2]])
-    end
-    return result
 end
 
 function Factorial(x,y)
