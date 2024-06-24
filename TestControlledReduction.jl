@@ -54,9 +54,10 @@ function testLinAlgProb()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
+    
     S = [0,1,2]
     M = 3
-    @test CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M) == 
+    @test Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 

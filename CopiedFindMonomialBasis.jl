@@ -166,29 +166,31 @@ function pseudo_inverse_controlled(f, S, R, PR)
     d = total_degree(f)
     
     len_S = length(S)
+
+    PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
+    fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
     
-    M = compute_controlled_matrix(f, d * n - n + d - len_S, S, R, PR)
+    U = compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
     
-    flag, B = is_invertible_with_inverse(M, side=:right)
+    flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
     if flag
-        return (M,B)
+        return (U,B)
     else 
         throw(ArgumentError("matrix from f is not right invertible"))
     end
 end
 
 function pseudo_inverse_controlled_lifted(f,S,R,PR,m)
-    (Mfp, Sol_fp) = pseudo_inverse_controlled(f,S,R,PR)
+    (U, Sol_fp) = pseudo_inverse_controlled(f,S,R,PR)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
-    M_int = lift_to_int64(Mfp)
     Sol_mod_p_int = lift_to_int64(Sol_fp)
 
     println("Solution mod p: $Sol_fp")
 
     p = characteristic(parent(f))
-    Utils.henselLift(p,m,Array(M_int),Array(Sol_mod_p_int))
+    return Utils.henselLift(p,m,U,Sol_mod_p_int)
 end
 
 # Computes the pseudo_inverse for the classical case.
