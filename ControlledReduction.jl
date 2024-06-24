@@ -245,13 +245,17 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     
     I = u
 
-    I = reverse(I) # parity issue due to Costa's code being reverse from ours
+    #TODO?
+    #I = reverse(I) # parity issue due to Costa's code being reverse from ours
 
     gMat = g
     #chain = 0
     println("This is I: $I")
     J = copy(I)
-    V = rev_chooseV(Array{Int}(divexact.(I,p)),d)
+
+    #TODO?
+    #V = rev_chooseV(Array{Int}(divexact.(I,p)),d)
+    V = chooseV(Array{Int}(divexact.(I,p)),d)
 
 
 
@@ -399,9 +403,9 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
-        println("Getting reduction matrix for V = $(y)") 
+        println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and edgar's
-        A,B = computeRPoly_LAOneVar(y,rev_tweak(J - i*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
+        A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         gMat = (A+B)*gMat
         println("After step $(i+1): $gMat")
 
