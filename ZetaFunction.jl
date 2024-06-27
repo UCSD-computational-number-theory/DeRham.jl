@@ -149,7 +149,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA(FBasis, n, d, p, N, S, fLift, pseudoInverseMat, PrecisionRing, PrecisionRingPoly)
+    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T)
     println(FM)
