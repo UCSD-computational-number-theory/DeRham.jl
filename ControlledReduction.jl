@@ -538,7 +538,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
     # if the u is already there, just add the vectors
     for i in eachindex(costadata_arr)
         (u,g) = costadata_arr[i]
-        if all(u[1] .== costadata[1])
+        if all(u .== costadata[1])
             costadata_arr[i] = (u, g .+ costadata[2])
             ind_already = true
         end
@@ -676,6 +676,7 @@ function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
     end
 
     poly_of_end_costadatas(ω,PR,p,d,n)
+    println(poly_of_end_costadatas(ω,PR,p,d,n))
 end
 
 """
