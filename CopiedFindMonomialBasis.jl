@@ -161,16 +161,13 @@ I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
 PR- paren(f)
 """
-function pseudo_inverse_controlled(f, S, R, PR)
+function pseudo_inverse_controlled(f, S, l, R, PR)
     n = nvars(parent(f)) - 1
-    d = total_degree(f)
     
-    len_S = length(S)
-
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
     
-    U = compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
+    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ)
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
@@ -181,8 +178,10 @@ function pseudo_inverse_controlled(f, S, R, PR)
     end
 end
 
-function pseudo_inverse_controlled_lifted(f,S,R,PR,m)
-    (U, Sol_fp) = pseudo_inverse_controlled(f,S,R,PR)
+function pseudo_inverse_controlled_lifted(f,S,l,M)
+    PR = parent(f)
+    R = coefficient_ring(PR)
+    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)
@@ -190,7 +189,7 @@ function pseudo_inverse_controlled_lifted(f,S,R,PR,m)
     println("Solution mod p: $Sol_fp")
 
     p = characteristic(parent(f))
-    return Utils.henselLift(p,m,U,Sol_mod_p_int)
+    return Utils.henselLift(p,M,U,Sol_mod_p_int)
 end
 
 # Computes the pseudo_inverse for the classical case.

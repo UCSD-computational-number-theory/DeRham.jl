@@ -383,7 +383,7 @@ function henselLift(p, precision, A, T)
     i = 1
     while i < precision
         T = 2*T - T * (A*T)
-        println("After step $i: $(julia_signed_mod.(T,p^(i+1)))")
+        #println("After step $i: $(julia_signed_mod.(T,p^(i+1)))")
         i *= 2
     end
     R, pi = residue_ring(ZZ, p^precision)

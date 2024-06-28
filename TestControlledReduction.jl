@@ -56,8 +56,9 @@ function testLinAlgProb()
     f = y^2*z - x^3 - x*z^2 - z^3
     
     S = [0,1,2]
+    l = d * n - n + d - length(S)
     M = 3
-    @test Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M)) == 
+    @test Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,R,PR,M)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -207,10 +208,11 @@ function testT()
     p = 7
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
+    PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    M = 15
-    PrecisionRing = residue_ring(ZZ,p^M)
+    M = 3
+    PrecisionRing, = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -218,7 +220,7 @@ function testT()
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,Utils.liftCoefficients(ZZ,PRZZ,j,false))
         end
         push!(BasisTLift,temp)
     end
