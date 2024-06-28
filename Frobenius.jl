@@ -49,6 +49,8 @@ INPUTS:
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
+    #FIXME reversed to match Costa's code
+    beta = reverse(beta)
     println("N=$N, m=$m")
     Factorial = factorial(big(p * (N + m - 1) - 1))
     o = ones(Int64, n+1)
@@ -61,7 +63,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
         e = j + m
         factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
         println("e=$e,factorial_e=$factorial_e")
-        ev = Utils.gen_exp_vec(n+1,d*j)
+        ev = Utils.gen_exp_vec(n+1,d*j,:invlex)
         fj = f^j
         sum = 0
         for alpha in ev

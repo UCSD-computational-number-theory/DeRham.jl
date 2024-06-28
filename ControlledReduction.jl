@@ -58,9 +58,11 @@ INPUTS:
 function chooseV(I, d)
     V = zeros(Int,length(I))
     i = 0
-    s = 1
+    #s = 1
+    s = length(I)
     foundNonZero = false
     while i < d
+        #=
         if s > length(I) && foundNonZero == false
             return V
         elseif s > length(I)
@@ -72,7 +74,21 @@ function chooseV(I, d)
             i = i + 1
             foundNonZero = true
         end
-        s = s + 1
+        =#
+        #FIXME reversed to match Costa's
+        if s == 0 && foundNonZero == false
+            return V
+        elseif s == 0
+            s = length(I)
+            foundNonZero = false
+        end
+        if (I - V)[s] > 0
+            V[s] = V[s] + 1
+            i = i + 1
+            foundNonZero = true
+        end
+        #s = s + 1
+        s = s-1
     end
     return V
 end
@@ -538,7 +554,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
     # if the u is already there, just add the vectors
     for i in eachindex(costadata_arr)
         (u,g) = costadata_arr[i]
-        if all(u[1] .== costadata[1])
+        if all(u .== costadata[1])
             costadata_arr[i] = (u, g .+ costadata[2])
             ind_already = true
         end
@@ -676,6 +692,7 @@ function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
     end
 
     poly_of_end_costadatas(ω,PR,p,d,n)
+    println(poly_of_end_costadatas(ω,PR,p,d,n))
 end
 
 """
