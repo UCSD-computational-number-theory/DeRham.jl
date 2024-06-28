@@ -49,6 +49,7 @@ INPUTS:
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
+    #FIXME reversed to match Costa's code
     beta = reverse(beta)
     println("N=$N, m=$m")
     Factorial = factorial(big(p * (N + m - 1) - 1))

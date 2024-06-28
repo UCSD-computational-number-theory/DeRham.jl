@@ -75,6 +75,7 @@ function chooseV(I, d)
             foundNonZero = true
         end
         =#
+        #FIXME reversed to match Costa's
         if s == 0 && foundNonZero == false
             return V
         elseif s == 0
