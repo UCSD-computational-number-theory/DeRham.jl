@@ -124,7 +124,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         end
         push!(BasisTLift,temp)
     end
-    T = FinalReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
+    #T = FinalReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -135,6 +135,7 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         end
     end
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
+    #=
     pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M)
     pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
@@ -143,14 +144,36 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
     controlledMatrixZZ = CopiedFindMonomialBasis.compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
     pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
     pseudoInverseMatNew = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
+    =#
     
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
+    pseudoInverseMat = 
+    [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
+    0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
+    225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 114 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 114;
+    0 0 0 1 0 0 172 0 0 0 0 0 0 0 0;
+    59 0 0 0 1 94 0 172 0 166 0 0 61 0 188;
+    0 0 0 0 0 0 0 0 172 0 0 0 0 286 0;
+    0 57 0 173 0 0 0 0 0 0 172 0 0 114 0;
+    83 0 57 0 173 59 0 0 0 94 0 172 166 0 61;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    114 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 114 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
+    11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;]
     Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudoInverseMat, PrecisionRing, PrecisionRingPoly)
     println(Reductions)
+    ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
+    println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = computeFrobeniusMatrix(n, d, Reductions, T)
     println(FM)
 

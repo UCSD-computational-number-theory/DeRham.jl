@@ -592,13 +592,14 @@ after reduction.
 Thus, the pole order is always n.
 
 """
-function poly_of_end_costadatas(costadatas,PR,p,d,n)
+function poly_of_end_costadatas(costadatas,PR,p,d,n,S)
     res = PR(0)
+    vars = gens(PR)
     for costadata in costadatas
         res += poly_of_end_costadata(costadata,PR,p,d,n)[1]
     end
-   
-    [[res, n]]
+    XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
+    [[div(res,XS), n]]
 end
 
 #"""
@@ -691,8 +692,8 @@ function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
         poleorder = poleorder - p
     end
 
-    poly_of_end_costadatas(ω,PR,p,d,n)
-    println(poly_of_end_costadatas(ω,PR,p,d,n))
+    println(poly_of_end_costadatas(ω,PR,p,d,n,S))
+    return poly_of_end_costadatas(ω,PR,p,d,n,S)
 end
 
 """
