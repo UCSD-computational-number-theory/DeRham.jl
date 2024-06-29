@@ -43,7 +43,7 @@ function testMonomialBasis()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR) == [[1],[z^3]]
+    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR,:invlex) == [[1],[z^3]]
 end
 
 function testLinAlgProb()
@@ -212,19 +212,12 @@ function testT()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     M = 3
-    PrecisionRing, = residue_ring(ZZ,p^M)
-    PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
-    BasisTLift = []
-    for i in BasisT
-        temp = []
-        for j in i
-            push!(temp,Utils.liftCoefficients(ZZ,PRZZ,j,false))
-        end
-        push!(BasisTLift,temp)
-    end
-    @test FinalReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly) == 1
+    precisionring, pi = residue_ring(ZZ,p^M)
+    precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
+    basis = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR,:invlex)
+    @test Array(FinalReduction.computeT(f,basis,M)) == 
+    [257 0 85 0 0 0 172 257 0 0;
+     172 0 52 0 114 0 0 170 0 1]
 end
 
 function testFrobMat()
