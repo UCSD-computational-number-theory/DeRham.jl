@@ -112,12 +112,12 @@ end
 # Computes the monomial basis of $H_{dR}^n(U_{\QQ_p})$. In particular, we find the monomials
 # of degree $l = dm - n - 1$ in $F_p[x_0, \dots, x_n]$ that project onto a basis of the cokernel
 # of the map computed in `compute_classical_mat()`.
-function compute_monomial_basis(f, m, R, PR)
+function compute_monomial_basis(f, m, R, PR, order=:lex)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
 
-    ev = Utils.gen_exp_vec(n + 1, m*d - n - 1)
+    ev = Utils.gen_exp_vec(n + 1, m*d - n - 1,order)
     row_monomials = Utils.gen_mon(ev,R,PR)
 
     M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
@@ -134,13 +134,13 @@ end
 
 # Computes the the monomial bases for different `m`. That is,
 # `compute_monomial_bases(f, R, PR)[m]` will give the `m`-th case.
-function compute_monomial_bases(f, R, PR)
+function compute_monomial_bases(f, R, PR,order=:lex)
     n = nvars(parent(f)) - 1
 
     res = []
 
     for m in 1:n
-        push!(res, compute_monomial_basis(f, m, R, PR))
+        push!(res, compute_monomial_basis(f, m, R, PR,order))
     end
     return res
 end
