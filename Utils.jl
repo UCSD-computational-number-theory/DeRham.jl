@@ -48,6 +48,10 @@ INPUTS:
 function gen_exp_vec(n, d, order=:lex)
     @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
     result = Any[]
+    if d == 0
+        return [1]
+    end 
+
     if n == 1
         return [[d]]
     end

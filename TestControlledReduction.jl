@@ -163,18 +163,38 @@ function testRedOfTerms()
     n = 2
     d = 3
     p = 7
-    R = GF(p)
+    R = GF(p,1)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-    x,y,z = Vars
-    f = y^2*z - x^3 - x*z^2 - z^3
+    x0,x1,x2 = Vars
+    f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+    S = [0,1,2]
     N = 2
     M = 3
     
     # TODO: change other instances of pseudo_inverse_controlled in this file and ZetaFunction.jl to this method
     S = [0,1,2]
-    pseudoInverseMat = Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M))
+    #pseudoInverseMat = Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M))
+    pseudoInverseMat = 
+    [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
+    0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
+    225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 114 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 114;
+    0 0 0 1 0 0 172 0 0 0 0 0 0 0 0;
+    59 0 0 0 1 94 0 172 0 166 0 0 61 0 188;
+    0 0 0 0 0 0 0 0 172 0 0 0 0 286 0;
+    0 57 0 173 0 0 0 0 0 0 172 0 0 114 0;
+    83 0 57 0 173 59 0 0 0 94 0 172 166 0 61;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    114 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 114 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
+    11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;]
 
-    PrecisionRing = parent(pseudoInverseMat[1])
+    PrecisionRing, = residue_ring(ZZ, p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
     fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
@@ -199,7 +219,9 @@ function testRedOfTerms()
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    @test ControlledReduction.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly) == 1
+    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
+    ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
+    @test Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev) == [86 0 98 0 226 0 329 236 0 272; 133 0 224 0 203 0 238 91 0 322]
 end
 
 function testT()

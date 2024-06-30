@@ -158,6 +158,8 @@ function compute_all(f, precision, verbose=false)
     #end
     Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat_new, precisionring, precisionringpoly)
     println(Reductions)
+    ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
+    println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = computeFrobeniusMatrix(n, d, Reductions, T)
     println(FM)
 
