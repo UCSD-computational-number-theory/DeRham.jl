@@ -24,14 +24,16 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function computeFrobeniusMatrix(n,d,Reductions,T)
+function computeFrobeniusMatrix(n,d,Reductions,T,R)
     FrobMatTemp = []
     denomArray = []
-    println(Reductions)
+    ev = Utils.gen_exp_vec(n+1,d*n-n-1,:invlex)
     for i in 1:length(Reductions)
+        println(Utils.convert_p_to_m([Reductions[i][1][1]],ev))
+        println(transpose(Utils.convert_p_to_m([Reductions[i][1][1]],ev)))
         #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
-        push!(FrobMatTemp,T*transpose(Utils.convert_p_to_m([Reductions[i][1]],Utils.gen_exp_vec(n+1,d*n-n-1))))
+        push!(FrobMatTemp,T*transpose(Utils.convert_p_to_m([Reductions[i][1][1]],ev)))
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
     end
     FrobMat = hcat(FrobMatTemp...)
@@ -160,7 +162,7 @@ function compute_all(f, precision, verbose=false)
     println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
     println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = computeFrobeniusMatrix(n, d, Reductions, T)
+    FM = computeFrobeniusMatrix(n, d, Reductions, T,precisionring)
     println(FM)
 
     if verbose
@@ -189,5 +191,5 @@ PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x0,x1,x2 = Vars
 f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
 S = [0,1,2]
-Test = ZetaFunction.computeAll(n,d,f,1,p,R,PR,var)
+Test = ZetaFunction.compute_all(f,3)
 =#

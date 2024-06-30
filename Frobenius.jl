@@ -50,7 +50,7 @@ INPUTS:
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     #FIXME reversed to match Costa's code
-    #beta = reverse(beta)
+    beta = reverse(beta)
     println("N=$N, m=$m")
     Factorial = factorial((p * (N + m - 1) - 1))
     o = ones(Int64, n+1)
