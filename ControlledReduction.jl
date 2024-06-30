@@ -314,7 +314,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
     println("Getting reduction matrix for V = $V")
 
-    A,B = computeRPoly_LAOneVar(V,I - (nend-(d*n-n))*V,S,n,d,f,pseudoInverseMat,R,PR)
+    A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
     matrices = computeRPoly_LAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
 
     #for i in axes(matrices,1)

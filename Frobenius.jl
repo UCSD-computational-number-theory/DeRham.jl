@@ -50,9 +50,9 @@ INPUTS:
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     #FIXME reversed to match Costa's code
-    beta = reverse(beta)
+    #beta = reverse(beta)
     println("N=$N, m=$m")
-    Factorial = factorial(big(p * (N + m - 1) - 1))
+    Factorial = factorial((p * (N + m - 1) - 1))
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -61,14 +61,14 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     result = []
     for j in 0:(N-1)
         e = j + m
-        factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
+        factorial_e = R(ZZ(Factorial/factorial((p * e - 1))))
         println("e=$e,factorial_e=$factorial_e")
         ev = Utils.gen_exp_vec(n+1,d*j,:invlex)
         fj = f^j
         sum = 0
         for alpha in ev
             B = MPolyBuildCtx(PR)
-            push_term!(B, R(1), p * (beta + alpha + o))
+            push_term!(B, R(1),Int64(p) * (beta + alpha + o))
             monomial = div(finish(B), X1)
             sum = sum + R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p))) * monomial
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))

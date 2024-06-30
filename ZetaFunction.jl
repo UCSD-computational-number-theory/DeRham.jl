@@ -88,7 +88,12 @@ INPUTS:
 * "PR" -- parent(f)
 * "vars" -- generators of PR
 """
-function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
+function compute_all(f, precision, verbose=false)
+    p = Int64(characteristic(parent(f)))
+    n = nvars(parent(f)) - 1
+    d = degree(f,1)
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
     #Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
     #N = max(Nm...)
     if verbose
@@ -104,52 +109,54 @@ function computeAll(n, d, f, precision, p, R, PR, var, verbose=false)
         println("We work modulo $p^$M, and compute up to the $N-th term of the Frobenius power series")
     end 
 
-    #PrecisionRing = PadicField(p,M)
-    PrecisionRing, = residue_ring(ZZ, p^M)
-    println(typeof(PrecisionRing))
-    PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
-    num_BasisT = length(BasisT)
+    precisionring, = residue_ring(ZZ, p^M)
+    precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
+    basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR) # basis of cohomology 
+    num_BasisT = length(basis)
 
     if verbose
         println("There are $num_BasisT basis elements in H^$n")
     end 
 
-    fLift = Utils.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
-    BasisTLift = []
-    for i in BasisT
-        temp = []
-        for j in i
-            push!(temp, Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
-        end
-        push!(BasisTLift,temp)
-    end
-    T = FinalReduction.computeT(BasisTLift, fLift, n, d, PrecisionRing, PrecisionRingPoly)
+    T = FinalReduction.computeT(f, basis, M)
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
+
+    BasisTLift = []
+    for i in basis
+        temp = []
+        for j in i
+            push!(temp, Utils.liftCoefficients(precisionring,precisionringpoly,j))
+        end
+        push!(BasisTLift,temp)
+    end
+
     Basis = []
     for i in 1:n
         for j in BasisTLift[i]
             push!(Basis,[j,i])
         end
     end
-    FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, PrecisionRing, PrecisionRingPoly)
-    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M)
-    pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
-    PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
-    fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
-    controlledMatrixZZ = CopiedFindMonomialBasis.compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
-    pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
-    pseudoInverseMatNew = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
+    fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
+    FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
+    l = d * n - n + d - length(S)
+    pseudo_inverse_mat_new = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,M)
+    #pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
+
+    #PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
+    #fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
+    #controlledMatrixZZ = CopiedFindMonomialBasis.compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
+    #pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
+    #pseudo_inverse_mat_new = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
     
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudoInverseMat, PrecisionRing, PrecisionRingPoly)
+    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat_new, precisionring, precisionringpoly)
     println(Reductions)
     FM = computeFrobeniusMatrix(n, d, Reductions, T)
     println(FM)
