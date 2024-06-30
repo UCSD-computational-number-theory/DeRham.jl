@@ -25,15 +25,20 @@ INPUTS:
 * "T" -- output of computeT
 """
 function computeFrobeniusMatrix(n,d,Reductions,T,R)
+    R = parent(T[1,1])
     FrobMatTemp = []
     denomArray = []
     ev = Utils.gen_exp_vec(n+1,d*n-n-1,:invlex)
+    VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
-        println(Utils.convert_p_to_m([Reductions[i][1][1]],ev))
-        println(transpose(Utils.convert_p_to_m([Reductions[i][1][1]],ev)))
+        temp = VS()
+        temp2 = Utils.convert_p_to_m([Reductions[i][1][1]],ev)
+        for i in 1:length(ev)
+            temp[i,1] = R(temp2[i])
+        end
         #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
-        push!(FrobMatTemp,T*transpose(Utils.convert_p_to_m([Reductions[i][1][1]],ev)))
+        push!(FrobMatTemp,T*temp)
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
     end
     FrobMat = hcat(FrobMatTemp...)
