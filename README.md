@@ -1,12 +1,21 @@
 # DeRham.jl
 
-Given a homogenous, irreducible polynomial in $\mathbb{Q}_p[x_1, ... x_n]$, this script will generate the basis vectors for the $n$-th de Rham cohomology of $(X, Z)/\mathbb{Q}_p$ by following the Griffiths-Dwork construction algorithm.
+This package aims to implement cutting-edge-speed algorithms that calculate the cohomology of algebraic varieties and the extra structure on them. Longer term goals include having fast versions of all the various forms of Kedlaya's algorithm, Harvey's algorithm, Moonen's algorithm, etc.
+
+**This package is a work-in-progress.** PRs and contributions are welcome. 
+
+## Current functionality
+
+All that is currently implemented is Kedlaya's algorithm with controlled reduction, without the nondegeneracy optimization (see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf)).
+
+### Getting Started
 
 Dependencies: Need to install Julia and Oscar [ToDo: Add installation guides]. Within Julia, require the BigIntegers, LinearAlgebra, and Combinatorics package.
 
-Here is an example for how to use the code. Execute the following lines in command line:  
+### Sample code
+
+Here is an example for how to use the code. Execute the following lines in Julia REPL:  
 ```
-julia
 include("ZetaFunction.jl")
 using Oscar
 n = 2
