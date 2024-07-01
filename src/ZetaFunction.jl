@@ -21,31 +21,45 @@ Computes Frobenius Matrix
 INPUTS: 
 * "n" -- dimension of ambient projective space 
 * "d" -- degree of the polynomial f2
+* "N" -- integer, series precision
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, d, Reductions, T)
+function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     R = parent(T[1,1])
-    FrobMatTemp = []
+    frob_mat_temp = []
     denomArray = []
     ev = Utils.gen_exp_vec(n+1,d*n-n-1,:invlex)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
+        e = Basis[i][2] # pole order of basis element 
+        println(p*(e+N-1)-1)
+        scalar_T = QQ(p^(n-1), ZZ(factorial(p*(e+N-1)-1)))
         temp = VS()
         temp2 = Utils.convert_p_to_m([Reductions[i][1][1]],ev)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
+        temp = T * temp
+        for i in 1:length(temp)
+            println(temp[i])
+            ele = scalar_T * lift(ZZ, temp[i])
+            println((numerator(ele), denominator(ele)))
+            temp[i] = R(numerator(ele)) * inv(R(denominator(ele)))
+        end 
+        
+        push!(frob_mat_temp, temp)
         #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
         #push!(denomArray,lift(ZZ,Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1))/(p^(n-1))))
-        push!(FrobMatTemp,T*temp)
+        #push!(FrobMatTemp,T*temp)
         #(p^(n-1)/Factorial(PrecisionRing(p*(Basis[i][2]+N-1)-1),PrecisionRing(1)))
     end
-    FrobMat = hcat(FrobMatTemp...)
+    frob_mat = hcat(frob_mat_temp...)
     #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
     #FM = MS()
-    println(FrobMat)
-   
+    #println(FrobMat)
+    
+    #=
     @assert nrows(FrobMat) == ncols(FrobMat) "Frobenius matrix is not a square matrix."
     R = matrix_space(R, nrows(FrobMat), ncols(FrobMat))
     FM = Array{ZZModRingElem}(undef, nrows(FrobMat), ncols(FrobMat))
@@ -58,8 +72,9 @@ function compute_frobenius_matrix(n, d, Reductions, T)
             FM = FrobMat[i,j]
         end
     end
+    =#
 
-    return R(FM)
+    return frob_mat
 end
 
 """
@@ -119,7 +134,8 @@ function compute_all(f, precision, verbose=false)
 
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR) # basis of cohomology 
+    basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
+    println("Basis of cohomology is $basis")
     num_BasisT = length(basis)
 
     if verbose
@@ -127,6 +143,7 @@ function compute_all(f, precision, verbose=false)
     end 
 
     T = FinalReduction.computeT(f, basis, M)
+    println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -146,6 +163,8 @@ function compute_all(f, precision, verbose=false)
             push!(Basis,[j,i])
         end
     end
+
+    println(Basis)
 
     fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
@@ -168,7 +187,7 @@ function compute_all(f, precision, verbose=false)
     println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
     println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, d, Reductions, T)
+    FM = compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     println(FM)
 
     if verbose
