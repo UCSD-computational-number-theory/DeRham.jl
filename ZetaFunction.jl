@@ -14,7 +14,7 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 
 """
-    computeFrobeniusMatrix(n,d,Reductions,T)
+    compute_frobenius_matrix(n,d,Reductions,T)
 
 Computes Frobenius Matrix
 
@@ -24,7 +24,7 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function computeFrobeniusMatrix(n,d,Reductions,T,R)
+function compute_frobenius_matrix(n, d, Reductions, T)
     R = parent(T[1,1])
     FrobMatTemp = []
     denomArray = []
@@ -44,16 +44,18 @@ function computeFrobeniusMatrix(n,d,Reductions,T,R)
     FrobMat = hcat(FrobMatTemp...)
     #MS = matrix_space(ZZ,nrows(FrobMat),ncols(FrobMat))
     #FM = MS()
+    println(FrobMat)
    
     @assert nrows(FrobMat) == ncols(FrobMat) "Frobenius matrix is not a square matrix."
-    R = matrix_space(QQ, nrows(FrobMat), ncols(FrobMat))
-    FM = Array{QQFieldElem}(undef, nrows(FrobMat), ncols(FrobMat))
+    R = matrix_space(R, nrows(FrobMat), ncols(FrobMat))
+    FM = Array{ZZModRingElem}(undef, nrows(FrobMat), ncols(FrobMat))
     for i in axes(FrobMat, 1)
         for j in axes(FrobMat, 2)
-            println(lift(ZZ,FrobMat[i,j]))
+            #println(lift(ZZ,FrobMat[i,j]))
             #println(denomArray[i])
             #FM[i,j] = lift(ZZ,FrobMat[i,j])/denomArray[i]
-            FM[i,j] = lift(ZZ,FrobMat[i,j])
+            #FM[i,j] = lift(ZZ,FrobMat[i,j])
+            FM = FrobMat[i,j]
         end
     end
 
@@ -67,13 +69,12 @@ Given the Frobenius matrix, computes the corresponding L-polynomial det(1-tq^{-1
 
 INPUT: 
 * "FM" -- Frobenius matrix 
-* "q" -- size of the base field 
 """
 
-function LPolynomial(FM, q)
+function LPolynomial(FM)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
-    P, T = polynomial_ring(QQ, "T")
+    P, T = polynomial_ring(parent(FM[1,1]), "T")
     f = charpoly(P, FM)
 
     return reverse(f)
@@ -167,14 +168,14 @@ function compute_all(f, precision, verbose=false)
     println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
     println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = computeFrobeniusMatrix(n, d, Reductions, T,precisionring)
+    FM = compute_frobenius_matrix(n, d, Reductions, T)
     println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")
     end
 
-    return LPolynomial(FM, p)
+    return LPolynomial(FM)
 end
 
 end 
