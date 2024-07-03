@@ -32,7 +32,10 @@ function testEllCurve1_7()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test ZetaFunction.computeAll(n,d,f,precision,7,R,PR,vars) == [84 48; 294 17]
+    frobmat = ZetaFunction.compute_all(f,precision,true,true)[1]
+    println(eltype(frobmat))
+    R = parent(frobmat[1,1])
+    @test frobmat == R[231 11; 294 17]
 end
 
 function testMonomialBasis()

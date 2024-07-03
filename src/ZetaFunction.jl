@@ -26,6 +26,7 @@ INPUTS:
 * "T" -- output of computeT
 """
 function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
+    println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -33,19 +34,35 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
+        println("e: $e")
+
         println(p*(e+N-1)-1)
-        scalar_T = QQ(p^(n-1), ZZ(factorial(p*(e+N-1)-1)))
+
+        ff = factorial(ZZ(p*(e+N-1)-1)) 
+        val_ff = valuation(ff,p)
+        final_val = (n-1) - val_ff  
+        ff_invertible = ff / p^val_ff
+
+        inverse_ff = inv(R(ff_invertible))
+
+
         temp = VS()
         temp2 = Utils.convert_p_to_m([Reductions[i][1][1]],ev)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
+        println("temp: $temp")
         for i in 1:length(temp)
-            println(temp[i])
-            ele = scalar_T * lift(ZZ, temp[i])
-            println((numerator(ele), denominator(ele)))
-            temp[i] = R(numerator(ele)) * inv(R(denominator(ele)))
+#            println(temp[i])
+            ele = inverse_ff * temp[i]
+            if 0 ≤ final_val
+                ele *= p^final_val
+            else
+                lifted = lift(ZZ,ele)
+                ele = divexact(ele,p^(-final_val)) 
+            end
+            temp[i] = ele
         end 
         
         push!(frob_mat_temp, temp)
@@ -111,7 +128,7 @@ INPUTS:
 * "PR" -- parent(f)
 * "vars" -- generators of PR
 """
-function compute_all(f, precision, verbose=false)
+function compute_all(f, precision, verbose=false,givefrobmat=false)
     p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -194,7 +211,11 @@ function compute_all(f, precision, verbose=false)
         println("The Frobenius matrix is $FM")
     end
 
-    return LPolynomial(FM)
+    if givefrobmat
+        (FM,LPolynomial(FM))
+    else
+        LPolynomial(FM)
+    end
 end
 
 end 
