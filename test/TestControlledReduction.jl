@@ -1,28 +1,5 @@
-module TestControlledReduction
+#module TestControlledReduction
 
-using Test
-using Oscar
-
-include("ControlledReduction.jl")
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-include("Utils.jl")
-include("SmallestSubsetSmooth.jl")
-include("ZetaFunction.jl")
-include("Frobenius.jl")
-include("FinalReduction.jl")
-
-function runTests()
-    @testset "All tests" begin
-        testEllCurve1_7()
-        testMonomialBasis()
-        testLinAlgProb()
-        testFrobTrans()
-        testRedOfTerms()
-        testT()
-        testFrobMat()
-    end
-end
 
 function testEllCurve1_7()
     n = 2
@@ -287,4 +264,4 @@ function testFrobMat()
     @test ZetaFunction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 
-end
+#end
