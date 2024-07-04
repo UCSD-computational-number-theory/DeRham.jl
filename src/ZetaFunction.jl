@@ -13,6 +13,8 @@ include("SmallestSubsetSmooth.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
 
+verbose = false
+
 """
     compute_frobenius_matrix(n,d,Reductions,T)
 
@@ -26,7 +28,7 @@ INPUTS:
 * "T" -- output of computeT
 """
 function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
-    println("Terms after controlled reduction: $Reductions")
+    verbose && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -34,9 +36,9 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
-        println("e: $e")
+        verbose && println("e: $e")
 
-        println(p*(e+N-1)-1)
+        verbose && println(p*(e+N-1)-1)
 
         ff = factorial(ZZ(p*(e+N-1)-1)) 
         val_ff = valuation(ff,p)
@@ -52,7 +54,7 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
-        println("temp: $temp")
+        verbose && println("temp: $temp")
         for i in 1:length(temp)
 #            println(temp[i])
             ele = inverse_ff * temp[i]
@@ -152,7 +154,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
-    println("Basis of cohomology is $basis")
+    verbose && println("Basis of cohomology is $basis")
     num_BasisT = length(basis)
 
     if verbose
@@ -160,7 +162,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     end 
 
     T = FinalReduction.computeT(f, basis, M)
-    println("T matrix is $T")
+    verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -181,7 +183,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
         end
     end
 
-    println(Basis)
+    verbose && println(Basis)
 
     fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
@@ -201,11 +203,11 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     #    end
     #end
     Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat_new, precisionring, precisionringpoly)
-    println(Reductions)
+    verbose && println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
-    println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
+    verbose && println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
-    println(FM)
+    verbose && println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")

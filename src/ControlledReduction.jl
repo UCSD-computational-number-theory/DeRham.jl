@@ -11,6 +11,9 @@ include("Utils.jl")
 include("PolynomialWithPole.jl")
 #include("SmallestSubsetSmooth.jl")
 
+
+verbose = false
+
 """
     reduce_LA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
 
@@ -266,7 +269,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
     gMat = g
     #chain = 0
-    println("This is I: $I")
+    verbose && println("This is I: $I")
     J = copy(I)
 
     #TODO?
@@ -312,7 +315,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     end
     =#
 
-    println("Getting reduction matrix for V = $V")
+    verbose && println("Getting reduction matrix for V = $V")
 
     A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
     matrices = computeRPoly_LAOneVar1(V,S,n,d,f,pseudoInverseMat,R,PR)
@@ -398,8 +401,8 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     A1,B1 = computeRPoly_LAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
     i = 1
     
-    println("Before reduction chunk: $gMat")
-    println("Before reduction chunk, I is $I")
+    verbose && println("Before reduction chunk: $gMat")
+    verbose && println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
       gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
@@ -407,7 +410,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
-        println("After step $i: $gMat")
+        verbose && println("After step $i: $gMat")
 
         i = i+1
       end
@@ -415,19 +418,19 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     # TODO: test how much of a difference the fast evaluation actually makes
 
     I = I - (nend-(d*n-n))*V
-    println("After steps 1-$i, I is $I")
+    verbose && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
-        println("Getting y direction reduction matrix for V = $(y)") 
+        verbose && println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and edgar's
         A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         gMat = (A+B)*gMat
-        println("After step $(i+1): $gMat")
+        verbose && println("After step $(i+1): $gMat")
 
         i = i+1
         I = I - y
-        println("After step $(i+1), I is $I")
+        verbose && println("After step $(i+1), I is $I")
     end
     #=
     MK = A + B*K
@@ -529,7 +532,7 @@ function costadata_of_initial_term(term,n,d,p)
     end
 
 
-    println("creation: u is type $(typeof(II))")
+    verbose && println("creation: u is type $(typeof(II))")
     (II,g)
 end
 
@@ -562,7 +565,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
 
     # otherwise, push on a new term
     if !ind_already
-        println("incorporation: u has type $(typeof(costadata[1]))")
+        verbose && println("incorporation: u has type $(typeof(costadata[1]))")
         push!(costadata_arr,costadata)
     end
 end
@@ -658,7 +661,7 @@ Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
 function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
-    println(pol)
+    verbose && println(pol)
 
     i = pol
     highpoleorder = i[length(i)][2]
@@ -671,28 +674,28 @@ function reducepoly_LA_descending(pol,n,d,p,S,f,pseudoInverseMat,R,PR)
         # this is an array of polynomials
         ωₑ = PolynomialWithPole.termsoforder(pol,poleorder)
 
-        println("ωₑ: $ωₑ")
+        verbose && println("ωₑ: $ωₑ")
 
         for term in ωₑ
-            println("term: $term")
+            verbose && println("term: $term")
             term_costadata = costadata_of_initial_term(term,n,d,p)
-            println("term, in Costa's format: $term_costadata")
+            verbose && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
         end
 
-        println("ω: $ω")
+        verbose && println("ω: $ω")
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
-            println("u is type $(typeof(ω[i][1]))")
+            verbose && println("u is type $(typeof(ω[i][1]))")
             ω[i] = reducechain_LA(ω[i]...,n,d,p,poleorder,S,f,pseudoInverseMat,R,PR)
         end
 
         poleorder = poleorder - p
     end
 
-    println(poly_of_end_costadatas(ω,PR,p,d,n,S))
+    verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S))
     return poly_of_end_costadatas(ω,PR,p,d,n,S)
 end
 

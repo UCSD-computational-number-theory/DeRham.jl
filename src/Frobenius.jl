@@ -13,6 +13,8 @@ include("Utils.jl")
 include("StandardReduction.jl")
 include("PolynomialWithPole.jl")
 
+verbose = false
+
 """
     computeD(N, m)
 
@@ -51,7 +53,7 @@ INPUTS:
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
-    println("N=$N, m=$m")
+    verbose && println("N=$N, m=$m")
     Factorial = factorial((p * (N + m - 1) - 1))
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
@@ -62,7 +64,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     for j in 0:(N-1)
         e = j + m
         factorial_e = R(ZZ(Factorial/factorial((p * e - 1))))
-        println("e=$e,factorial_e=$factorial_e")
+        verbose && println("e=$e,factorial_e=$factorial_e")
         ev = Utils.gen_exp_vec(n+1,d*j,:invlex)
         fj = f^j
         sum = 0
@@ -110,7 +112,7 @@ function applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
     result = []
     for b in Basis
         Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
-        println(Fmon)
+        verbose && println(Fmon)
         push!(result, Fmon)
     end
     return result
