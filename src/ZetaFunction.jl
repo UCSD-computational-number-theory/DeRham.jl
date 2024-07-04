@@ -13,6 +13,8 @@ include("SmallestSubsetSmooth.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
 
+verbose = false
+
 """
     compute_frobenius_matrix(n,d,Reductions,T)
 
@@ -26,6 +28,7 @@ INPUTS:
 * "T" -- output of computeT
 """
 function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
+    verbose && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -33,19 +36,35 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
-        println(p*(e+N-1)-1)
-        scalar_T = QQ(p^(n-1), ZZ(factorial(p*(e+N-1)-1)))
+        verbose && println("e: $e")
+
+        verbose && println(p*(e+N-1)-1)
+
+        ff = factorial(ZZ(p*(e+N-1)-1)) 
+        val_ff = valuation(ff,p)
+        final_val = (n-1) - val_ff  
+        ff_invertible = ff / p^val_ff
+
+        inverse_ff = inv(R(ff_invertible))
+
+
         temp = VS()
         temp2 = Utils.convert_p_to_m([Reductions[i][1][1]],ev)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
+        verbose && println("temp: $temp")
         for i in 1:length(temp)
-            println(temp[i])
-            ele = scalar_T * lift(ZZ, temp[i])
-            println((numerator(ele), denominator(ele)))
-            temp[i] = R(numerator(ele)) * inv(R(denominator(ele)))
+#            println(temp[i])
+            ele = inverse_ff * temp[i]
+            if 0 ≤ final_val
+                ele *= p^final_val
+            else
+                lifted = lift(ZZ,ele)
+                ele = divexact(ele,p^(-final_val)) 
+            end
+            temp[i] = ele
         end 
         
         push!(frob_mat_temp, temp)
@@ -111,7 +130,7 @@ INPUTS:
 * "PR" -- parent(f)
 * "vars" -- generators of PR
 """
-function compute_all(f, precision, verbose=false)
+function compute_all(f, precision, verbose=false,givefrobmat=false)
     p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -135,7 +154,7 @@ function compute_all(f, precision, verbose=false)
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
-    println("Basis of cohomology is $basis")
+    verbose && println("Basis of cohomology is $basis")
     num_BasisT = length(basis)
 
     if verbose
@@ -143,7 +162,7 @@ function compute_all(f, precision, verbose=false)
     end 
 
     T = FinalReduction.computeT(f, basis, M)
-    println("T matrix is $T")
+    verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
     #S = []
@@ -164,7 +183,7 @@ function compute_all(f, precision, verbose=false)
         end
     end
 
-    println(Basis)
+    verbose && println(Basis)
 
     fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
@@ -184,17 +203,21 @@ function compute_all(f, precision, verbose=false)
     #    end
     #end
     Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat_new, precisionring, precisionringpoly)
-    println(Reductions)
+    verbose && println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
-    println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
+    verbose && println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
-    println(FM)
+    verbose && println(FM)
 
     if verbose
         println("The Frobenius matrix is $FM")
     end
 
-    return LPolynomial(FM)
+    if givefrobmat
+        (FM,LPolynomial(FM))
+    else
+        LPolynomial(FM)
+    end
 end
 
 end 

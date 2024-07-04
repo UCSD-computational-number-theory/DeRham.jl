@@ -186,7 +186,7 @@ function pseudo_inverse_controlled_lifted(f,S,l,M)
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)
 
-    println("Solution mod p: $Sol_fp")
+    #println("Solution mod p: $Sol_fp")
 
     p = characteristic(parent(f))
     return Utils.henselLift(p,M,U,Sol_mod_p_int)
