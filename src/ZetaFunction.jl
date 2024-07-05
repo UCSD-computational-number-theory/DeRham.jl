@@ -105,13 +105,26 @@ INPUT:
 * "FM" -- Frobenius matrix 
 """
 
-function LPolynomial(FM)
+function LPolynomial(FM,q,n)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
     P, T = polynomial_ring(parent(FM[1,1]), "T")
     f = charpoly(P, FM)
 
-    return reverse(f)
+    k = degree(f)
+    bound = binomial(k,Int(ceil(k/2)))*(q^(n/2))*ceil(k/2)
+    R, t = polynomial_ring(ZZ,"t")
+    result = R(0)
+    for i in 0:k
+        if abs(ZZ(coeff(f,i))) > bound
+            result = result + (ZZ(coeff(f,i)) - characteristic(P))*t^(k-i)
+        else
+            result = result + (ZZ(coeff(f,i)))*t^(k-i)
+        end
+    end
+
+
+    return reverse(f), result
 end 
 
 
@@ -132,6 +145,7 @@ INPUTS:
 """
 function compute_all(f, precision, verbose=false,givefrobmat=false)
     p = Int64(characteristic(parent(f)))
+    q = p
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
@@ -189,6 +203,12 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,M)
+    pseudo_inverse_mat = zeros(Int, nrows(pseudo_inverse_mat_new),ncols(pseudo_inverse_mat_new))
+    for i in 1:nrows(pseudo_inverse_mat_new)
+        for j in 1:ncols(pseudo_inverse_mat_new)
+            pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
+        end
+    end
     #pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
     #PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
@@ -202,7 +222,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat_new, precisionring, precisionringpoly)
+    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat, precisionring, precisionringpoly)
     verbose && println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
     verbose && println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
@@ -214,23 +234,23 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     end
 
     if givefrobmat
-        (FM,LPolynomial(FM))
+        (FM,LPolynomial(FM,q,n))
     else
-        LPolynomial(FM)
+        LPolynomial(FM,q,n)
     end
 end
 
 end 
 
 #=
-include("ControlledReduction.jl")
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-include("FindMonomialBasis.jl")
-include("Utils.jl")
-include("SmallestSubsetSmooth.jl")
-include("ZetaFunction.jl")
-include("TestControlledReduction.jl")
+include("src/ControlledReduction.jl")
+include("src/PrecisionEstimate.jl")
+include("src/CopiedFindMonomialBasis.jl")
+include("src/FindMonomialBasis.jl")
+include("src/Utils.jl")
+include("src/SmallestSubsetSmooth.jl")
+include("src/ZetaFunction.jl")
+include("src/TestControlledReduction.jl")
 n = 2
 d = 3
 p = 7
