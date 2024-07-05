@@ -12,7 +12,7 @@ include("../src/ZetaFunction.jl")
 include("../src/Frobenius.jl")
 include("../src/FinalReduction.jl")
 
-include("TestControlledReduction.jl")
+include("FirstEllipticCurveExample.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     testEllCurve1_7()
