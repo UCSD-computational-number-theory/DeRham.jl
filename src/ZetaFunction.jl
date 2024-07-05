@@ -200,7 +200,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     verbose && println(Basis)
 
     fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = Frobenius.applyFrobeniusToBasis(Basis, n, d, fLift, N, p, precisionring, precisionringpoly)
+    FBasis = Frobenius.applyFrobeniusToBasis(Basis,fLift, N)
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,M)
     pseudo_inverse_mat = zeros(Int, nrows(pseudo_inverse_mat_new),ncols(pseudo_inverse_mat_new))
@@ -222,7 +222,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, n, d, p, N, S, fLift, pseudo_inverse_mat, precisionring, precisionringpoly)
+    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, N, S, fLift, pseudo_inverse_mat)
     verbose && println(Reductions)
     ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
     verbose && println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
