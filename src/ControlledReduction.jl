@@ -239,7 +239,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     
     #println(pseudoInverseMat)
 
-    # @assert pseudoInverseMat ==
+    #= @assert pseudoInverseMat ==
     pseudoInverseMat = 
     [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
     0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
@@ -258,7 +258,7 @@ function reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
     166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
     11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] #"seems to have the wrong pseudo-inverse"
+    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] "seems to have the wrong pseudo-inverse" =#
     #I = [28,7,28]
     #gCoeff = R(2)
     
