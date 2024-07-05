@@ -10,7 +10,6 @@ function testEllCurve1_7()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     frobmat = ZetaFunction.compute_all(f,precision,true,true)[1]
-    println(eltype(frobmat))
     R = parent(frobmat[1,1])
     @test frobmat == R[231 11; 294 17]
 end
