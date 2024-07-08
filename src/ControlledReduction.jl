@@ -326,9 +326,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
 
     verbose && println("Getting reduction matrix for V = $V")
 
-    A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
-    #printMat(A)
-    #printMat(B)
+    #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
     matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat)
     #=
     for i in axes(matrices,1)
@@ -414,12 +412,9 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
       end
     end 
     =#
-    #=
-    B1,A1 = computeRPoly_LAOneVar2(matrices,I - (nend-(d*n-n))*V,R)
-    printMat(A1)
-    printMat(B1)
-    throw(error)
-    =#
+    
+    B,A = computeRPoly_LAOneVar2(matrices,reverse(I - (nend-(d*n-n))*V),reverse(V),R)
+    
     i = 1
     
     verbose && println("Before reduction chunk: $gMat")
@@ -445,11 +440,11 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
         verbose && println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and edgar's
-        A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
-        #=
+        #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
+        
         matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat)
-        #B,A = computeRPoly_LAOneVar2(matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,R)
-        =#
+        B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
+        
         gMat = (A+B)*gMat
         verbose && println("After step $(i+1): $gMat")
 
@@ -827,12 +822,13 @@ INPUTS:
 * "U" -- vector, U =(x0, ..., xn)
 * "R" -- ring, base ring of f
 """
-function computeRPoly_LAOneVar2(matrices, U, R)
+function computeRPoly_LAOneVar2(matrices, U, V, R)
     B = matrices[1]
     matSpace = matrix_space(R, nrows(B), ncols(B))
     A = matSpace()
     for k in 2:(length(matrices))
-        A += matrices[k] * U[k-1]
+        B += matrices[k] * U[k-1]
+        A += matrices[k] * V[k-1]
     end 
 
     return [A, B]
