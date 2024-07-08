@@ -1,8 +1,8 @@
-module SmallestSubsetSmooth
-
-using Oscar
-using Combinatorics
-using Printf
+#module SmallestSubsetSmooth
+#
+#using Oscar
+#using Combinatorics
+#using Printf
 
 #=
 n = 2
@@ -45,4 +45,4 @@ else
 end
 =#
 
-end
+#end

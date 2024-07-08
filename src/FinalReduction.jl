@@ -1,15 +1,12 @@
-module FinalReduction
+#module FinalReduction
 
-using Oscar
-using BitIntegers
-using LinearAlgebra
-using Combinatorics
+#using Oscar
+#using BitIntegers
+#using LinearAlgebra
+#using Combinatorics
 
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-include("Utils.jl")
-#include("SmallestSubsetSmooth.jl")
-include("StandardReduction.jl")
+#include("Utils.jl")
+#include("StandardReduction.jl")
 
 function computeT(f, Basis, M)
     p = characteristic(parent(f))
@@ -22,10 +19,10 @@ function computeT(f, Basis, M)
 
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    f_lift = Utils.liftCoefficients(precisionring,precisionringpoly,f)
+    f_lift = liftCoefficients(precisionring,precisionringpoly,f)
 
-    exp_vec = Utils.gen_exp_vec(n+1, d*n-n-1, :invlex)
-    monomials = Utils.gen_mon(exp_vec, precisionring, precisionringpoly)
+    exp_vec = gen_exp_vec(n+1, d*n-n-1, :invlex)
+    monomials = gen_mon(exp_vec, precisionring, precisionringpoly)
     #len = binomial(n+(d*n-n-1), n)
     len = length(monomials)
 
@@ -36,18 +33,18 @@ function computeT(f, Basis, M)
     for i in 0:n-1
         l = d*(n-i) - n - 1
         if l > 0
-            exp_vec = Utils.gen_exp_vec(n+1,l,:invlex)
+            exp_vec = gen_exp_vec(n+1,l,:invlex)
             if (l-(d-1)) >= 0
-                monomials_domain = Utils.compute_monomials(n+1, l-(d-1), precisionringpoly,:invlex)
+                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,:invlex)
                 len_domain = length(monomials_domain)
                 basis = Basis[n-i]
                 len_basis = length(basis)
-                change_basis,change_basis_inverse = StandardReduction.monomial_change_basis_inverse_lifted(f,l,basis,M)
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = []
                 for j in 1:len # indexing over monomials 
                     # row vector for monomials[j] with respect to standard monomial basis
-                    row_vec = matrix(precisionring, 1, length(exp_vec), Utils.convert_p_to_m([monomials[j]],exp_vec))
+                    row_vec = matrix(precisionring, 1, length(exp_vec), convert_p_to_m([monomials[j]],exp_vec))
                     vec = change_basis_inverse * transpose(row_vec)
                     for k in 1:length(basis)
                         #push!(tmp, precisionring(ZZ(factorial(n-1-i)))*vec[length(exp_vec)-len_basis+k,1])
@@ -71,6 +68,7 @@ function computeT(f, Basis, M)
     T = vcat(matrix(precisionring,1,len,[trailing_coefficient(x) for x in monomials]), T)
     return T 
 end 
-end 
+
+#end 
 
 

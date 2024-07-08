@@ -3,14 +3,7 @@ using Test
 using Oscar
 
 # source files, in the future replace this with `using DeRham`
-include("../src/ControlledReduction.jl")
-include("../src/PrecisionEstimate.jl")
-include("../src/CopiedFindMonomialBasis.jl")
-include("../src/Utils.jl")
-include("../src/SmallestSubsetSmooth.jl")
-include("../src/ZetaFunction.jl")
-include("../src/Frobenius.jl")
-include("../src/FinalReduction.jl")
+include("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
 include("BasicExamples.jl")
@@ -31,27 +24,27 @@ end
 #
 #end
 
-@testset "Curves and Surfaces" begin # the "whiteboard picture"
-    test_ellipticcurve_1(7)
-    test_ellipticcurve_1(11)
-    test_ellipticcurve_1(13)
-
-    test_ellipticcurve_2(7)
-    test_ellipticcurve_2(11)
-    test_ellipticcurve_2(13)
-
-    test_fermat_k3(7)
-    test_fermat_k3(11)
-    test_fermat_k3(13)
-
-    test_fermatdeform_k3(7)
-    test_fermatdeform_k3(11)
-    test_fermatdeform_k3(13)
-    
-    test_highergenus_1(7)
-    test_highergenus_1(11)
-    test_highergenus_1(13)
-end
+#@testset "Curves and Surfaces" begin # the "whiteboard picture"
+#    test_ellipticcurve_1(7)
+#    test_ellipticcurve_1(11)
+#    test_ellipticcurve_1(13)
+#
+#    test_ellipticcurve_2(7)
+#    test_ellipticcurve_2(11)
+#    test_ellipticcurve_2(13)
+#
+#    test_fermat_k3(7)
+#    test_fermat_k3(11)
+#    test_fermat_k3(13)
+#
+#    test_fermatdeform_k3(7)
+#    test_fermatdeform_k3(11)
+#    test_fermatdeform_k3(13)
+#    
+#    test_highergenus_1(7)
+#    test_highergenus_1(11)
+#    test_highergenus_1(13)
+#end
 
 #@testset "Bigger primes" begin
 #

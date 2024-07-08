@@ -1,6 +1,6 @@
-module Utils
+#module Utils
 
-using Oscar
+#using Oscar
 
 ##################################################################
 # Given a homogenous, irreducible polynomial in Q_p[x1, ... xn],
@@ -400,4 +400,4 @@ end
 
 
 
-end
+#end

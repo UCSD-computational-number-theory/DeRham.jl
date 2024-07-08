@@ -1,6 +1,6 @@
-module PolynomialWithPole
+#module PolynomialWithPole
 
-using Oscar
+#using Oscar
 
 """
 A polynomial with (a) pole is mathematically
@@ -37,7 +37,7 @@ including their pole information
 
 polpol - a PolynomialWithPole
 """
-function terms(polpol)
+function wholeterms(polpol)
     t = Oscar.terms(polpol[1])
     result = []
     for i in t
@@ -81,11 +81,11 @@ function termsoforder(polpols,order)
     result = []
     for polpol in polpols
         if polpol[2] == order
-            append!(result,terms(polpol)) 
+            append!(result,wholeterms(polpol)) 
         end
     end
 
     result
 end
 
-end
+#end

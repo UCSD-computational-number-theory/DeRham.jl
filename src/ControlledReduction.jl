@@ -1,18 +1,18 @@
-module ControlledReduction
+#module ControlledReduction
 
-using Oscar
-using BitIntegers
-using LinearAlgebra
-using Combinatorics
+#using Oscar
+#using BitIntegers
+#using LinearAlgebra
+#using Combinatorics
 
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-include("Utils.jl")
-include("PolynomialWithPole.jl")
+#include("PrecisionEstimate.jl")
+#include("CopiedFindMonomialBasis.jl")
+#include("Utils.jl")
+#include("PolynomialWithPole.jl")
 #include("SmallestSubsetSmooth.jl")
 
 
-verbose = false
+#verbose = false
 
 """
     reduce_LA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
@@ -37,11 +37,11 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     end
     # get gi's using pseudoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = Utils.convert_p_to_m([div(XV*(g[1]),XS)],Utils.gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
+    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
     gJS = pseudoInverseMat*transpose(gVec)
     gc = []
     for i in 1:(n+1)
-        push!(gc, Utils.convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),Utils.gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
+        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
     end
     gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
@@ -239,8 +239,8 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(u,g,m,S,f,pseudoInverseMat)
-    p = Int64(characteristic(parent(f)))
+function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
+    #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
@@ -288,7 +288,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat)
 
 
     gVec = I - rev_tweak(I,n*d-n)
-    ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n,:invlex)
     #gMat = zeros(R,length(ev))
     #for j in axes(gMat,1)
     #    if gVec == ev[j]
@@ -523,6 +523,8 @@ only be used at the beginning of reduction
 """
 function costadata_of_initial_term(term,n,d,p)
 
+    verbose && println("p: $p")
+
     R = base_ring(parent(term[1])) 
     i = term
 
@@ -533,7 +535,7 @@ function costadata_of_initial_term(term,n,d,p)
 
     V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
-    ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n,:invlex)
     g = zeros(R,length(ev))
     for j in axes(g,1)
         if u == ev[j]
@@ -591,7 +593,7 @@ function poly_of_end_costadata(costadata,PR,p,d,n)
     (u,g_vec) = costadata
     vars = gens(PR)
 
-    g = Utils.vector_to_polynomial(g_vec,n,d*n-n,PR,:invlex)
+    g = vector_to_polynomial(g_vec,n,d*n-n,PR,:invlex)
 
     # no need to do rev_tweak since reducechain_LA returns the "true" u
     # on the last run
@@ -636,8 +638,8 @@ end
 #        B = MPolyBuildCtx(PR)
 #        push_term!(B, R(1), o)
 #        XS = finish(B)
-#        ev = Utils.gen_exp_vec(n+1,d*n - n,:invlex)
-#        gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
+#        ev = gen_exp_vec(n+1,d*n - n,:invlex)
+#        gReduction = div(XU*convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
 #        println("Polynomial obtained from reduction: $gReduction")
 #        result = result + gReduction
 #    end
@@ -662,7 +664,7 @@ end
 #            temp = temp + t[1]
 #        end
 #        #push!(result,[temp,n,Factorial(Int1024(i[length(i)][2]),n)])
-#        push!(result,[temp,n,Utils.Factorial(R(i[length(i)][2]),R(n))])
+#        push!(result,[temp,n,Factorial(R(i[length(i)][2]),R(n))])
 #    end
 #    return result
 #end
@@ -671,8 +673,8 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_LA_descending(pol,S,f,pseudoInverseMat)
-    p = Int64(characteristic(parent(f)))
+function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
+    #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
@@ -688,9 +690,10 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat)
     poleorder = highpoleorder
     while n < poleorder
         # this is an array of polynomials
-        ωₑ = PolynomialWithPole.termsoforder(pol,poleorder)
+        ωₑ = termsoforder(pol,poleorder)
 
         verbose && println("ωₑ: $ωₑ")
+        
 
         for term in ωₑ
             verbose && println("term: $term")
@@ -705,7 +708,7 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat)
         for i in eachindex(ω)
             #ω[i] = reducechain...
             verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat)
+            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p)
         end
 
         poleorder = poleorder - p
@@ -720,10 +723,10 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 
 TODO: what exactly is big N?? Why isn't is used?
 """
-function reducetransform_LA_descending(FT,N,S,f,pseudoInverseMat)
+function reducetransform_LA_descending(FT,N,S,f,pseudoInverseMat,p)
     result = []
     for pol in FT
-        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat)
+        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
         push!(result, reduction)
     end
     return result
@@ -740,13 +743,13 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
         push!(yV, y*V[i])
     end
     UVars = mins + yV
-    ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
-    monomials = Utils.gen_mon(ev,YRing,PYRing)
+    ev = gen_exp_vec(n+1,n*d-n,:invlex)
+    monomials = gen_mon(ev,YRing,PYRing)
     reductions = []
     for m in monomials
         push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PYRing)[1])
     end
-    polyMatrix = Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
+    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     A = matSpace()
     B = matSpace()
@@ -775,13 +778,13 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat)
     end
     U = UVars[2:(n+2)] + yV
     =#
-    ev = Utils.gen_exp_vec(n+1,n*d-n,:invlex)
-    monomials = Utils.gen_mon(ev,URing,PURing)
+    ev = gen_exp_vec(n+1,n*d-n,:invlex)
+    monomials = gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
         push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing)[1])
     end
-    polyMatrix = Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
+    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
     matrices = []
     for k in 0:(n+1)
@@ -884,7 +887,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
         e = j + m
         factorial_e = R(ZZ(Factorial/factorial(big(p * e - 1))))
         println("e=$e,factorial_e=$factorial_e")
-        ev = Utils.gen_exp_vec(n+1,d*j)
+        ev = gen_exp_vec(n+1,d*j)
         fj = f^j
         sum = 0
         for alpha in ev
@@ -988,7 +991,7 @@ end
 #=
 function reducechain(I,n,d,m,S,parts,R,PR,ResRing)
     chain = 0
-    ev = Utils.gen_exp_vec(n+1,n*d-n)
+    ev = gen_exp_vec(n+1,n*d-n)
     gVec = chooseV(I,n*d - n)
     I = I - gVec
     Vs = []
@@ -1021,7 +1024,7 @@ end
 function reducechain_LA1(I,gCoeff,l,n,d,m,S,f,pseudoInverseMat,R,PR)
     #chain = 0
     gVec = chooseV(I,n*d - n)
-    ev = Utils.gen_exp_vec(n+1,n*d-n)
+    ev = gen_exp_vec(n+1,n*d-n)
     gMat = zeros(R,length(ev))
     for j in axes(gMat,1)
         if gVec == ev[j]
@@ -1101,7 +1104,7 @@ function reducepoly(poly,n,d,S,parts,R,PR,ResRing)
         o = ones(Int,length(exponent_vector(i[1],1)))
         I = exponent_vector(i[1],1) + o
         gVec = chooseV(I,n*d - n)
-        ev = Utils.gen_exp_vec(n+1,n*d-n)
+        ev = gen_exp_vec(n+1,n*d-n)
         gMat = zeros(Int,length(ev))
         for j in axes(gMat,1)
             if gVec == ev[j]
@@ -1116,7 +1119,7 @@ function reducepoly(poly,n,d,S,parts,R,PR,ResRing)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), o)
         XS = finish(B)
-        gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]*gMat),ev,R,PR)[1],XS)
+        gReduction = div(XU*convert_m_to_p(transpose(RChain[1]*gMat),ev,R,PR)[1],XS)
         result = result + gReduction
     end
     return [result,n]
@@ -1138,8 +1141,8 @@ function reducepoly_LA1(poly,l,n,d,S,f,pseudoInverseMat,R,PR)
         B = MPolyBuildCtx(PR)
         push_term!(B, R(1), o)
         XS = finish(B)
-        ev = Utils.gen_exp_vec(n+1,n*d-n)
-        gReduction = div(XU*Utils.convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
+        ev = gen_exp_vec(n+1,n*d-n)
+        gReduction = div(XU*convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
         result = result + gReduction
     end
     return [result,l]
@@ -1149,13 +1152,13 @@ end
 
 #=
 function computeR(u,v,s,n,d,R,PR,vars)
-    ev = Utils.gen_exp_vec(n+1,d*n-n)
-    monomials = Utils.gen_mon(ev,R,PR)
+    ev = gen_exp_vec(n+1,d*n-n)
+    monomials = gen_mon(ev,R,PR)
     reductions = []
     for m in monomials
         push!(reductions,reduce(u,v,s,n,d,m,ev,R,PR,vars))
     end
-    return transpose(Utils.convert_p_to_m(reductions,ev))
+    return transpose(convert_p_to_m(reductions,ev))
 end
 =#
 #=
@@ -1166,13 +1169,13 @@ function computeRPoly(V,S,n,d,parts,R,PR)
     polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
     parts = [ derivative(polynomial, i) for i in 1:(n+1) ]
     #
-    ev = Utils.gen_exp_vec(n+1,d*n-n)
-    monomials = Utils.gen_mon(ev,URing,PURing)
+    ev = gen_exp_vec(n+1,d*n-n)
+    monomials = gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
         push!(reductions, reduce(UVars,V,S,n,d,[m,1],parts,[],URing,PURing,Vars)[1])
     end
-    return Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
+    return Matrix(transpose(convert_p_to_m(reductions,ev)))
 end
 =#
 
@@ -1181,13 +1184,13 @@ end
 function computeRPoly_LA(V,S,n,d,f,pseudoInverseMat,R,PR)
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
-    ev = Utils.gen_exp_vec(n+1,d*n-n)
-    monomials = Utils.gen_mon(ev,URing,PURing)
+    ev = gen_exp_vec(n+1,d*n-n)
+    monomials = gen_mon(ev,URing,PURing)
     reductions = []
     for m in monomials
         push!(reductions, reduce_LA(UVars,V,S,n,d,f,pseudoInverseMat,[m,1],[],URing,PURing,Vars)[1])
     end
-    return Matrix(transpose(Utils.convert_p_to_m(reductions,ev)))
+    return Matrix(transpose(convert_p_to_m(reductions,ev)))
 end
 =#
 #-----------------------------------
@@ -1207,8 +1210,8 @@ end
 
 #=
 function computeT(Basis,f,n,d,R,PR)
-    ev = Utils.gen_exp_vec(n+1,d*n-n-1)
-    mons = Utils.gen_mon(ev,R,PR)
+    ev = gen_exp_vec(n+1,d*n-n-1)
+    mons = gen_mon(ev,R,PR)
     T = []
     for m in mons
         temp = []
@@ -1270,15 +1273,15 @@ function liftCoefficients(R, PR, f, positiveLift=true)
 end
 =#
     
-end
+#end
 
 #=
 include("ControlledReduction.jl")
 include("PrecisionEstimate.jl")
 include("CopiedFindMonomialBasis.jl")
 include("FindMonomialBasis.jl")
-include("Utils.jl")
-include("Utils.jl")
+include("jl")
+include("jl")
 include("SmallestSubsetSmooth.jl")
 include("ZetaFunction.jl")
 n = 2

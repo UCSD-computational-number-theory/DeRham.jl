@@ -1,19 +1,19 @@
-module Frobenius
+#module Frobenius
 
-using Oscar
-using BitIntegers
-using LinearAlgebra
-using Combinatorics
+#using Oscar
+#using BitIntegers
+#using LinearAlgebra
+#using Combinatorics
 
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
+#include("PrecisionEstimate.jl")
+#include("CopiedFindMonomialBasis.jl")
 #include("FindMonomialBasis.jl")
-include("Utils.jl")
+#include("Utils.jl")
 #include("SmallestSubsetSmooth.jl")
-include("StandardReduction.jl")
-include("PolynomialWithPole.jl")
+#include("StandardReduction.jl")
+#include("PolynomialWithPole.jl")
 
-verbose = false
+#verbose = false
 
 """
     computeD(N, m)
@@ -54,7 +54,9 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
     verbose && println("N=$N, m=$m")
-    Factorial = factorial((p * (N + m - 1) - 1))
+    Factorial = factorial(ZZ(p * (N + m - 1) - 1))
+    verbose && println("Factorial: $Factorial")
+    verbose && println("p: $p")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -63,9 +65,9 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     result = []
     for j in 0:(N-1)
         e = j + m
-        factorial_e = R(ZZ(Factorial/factorial((p * e - 1))))
+        factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
         verbose && println("e=$e,factorial_e=$factorial_e")
-        ev = Utils.gen_exp_vec(n+1,d*j,:invlex)
+        ev = gen_exp_vec(n+1,d*j,:invlex)
         fj = f^j
         sum = 0
         for alpha in ev
@@ -108,8 +110,7 @@ INPUTS:
 * "R" -- basering(parent(f))
 * "PR" -- parent(f)
 """
-function applyFrobeniusToBasis(Basis,f,N)
-    p = Int64(characteristic(parent(f)))
+function applyFrobeniusToBasis(Basis,f,N,p)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
@@ -122,4 +123,5 @@ function applyFrobeniusToBasis(Basis,f,N)
     end
     return result
 end
-end
+
+#end

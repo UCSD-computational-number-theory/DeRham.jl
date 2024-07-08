@@ -1,8 +1,8 @@
-module PrecisionEstimate
+#module PrecisionEstimate
 
-p = 41
-r = 7 # p-adic precision
-n = 2
+#p = 41
+#r = 7 # p-adic precision
+#n = 2
 
 function compute_N(p, r, m, n)
     num = n * log(n + r)
@@ -18,6 +18,6 @@ function compute_precisions_each(p, r, n)
     return result
 end
 
-compute_precisions_each(p, r, n)
+#compute_precisions_each(p, r, n)
 
-end
+#end

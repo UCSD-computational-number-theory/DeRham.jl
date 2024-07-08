@@ -1,19 +1,24 @@
-module ZetaFunction 
-
-using Oscar
-using BitIntegers
-using LinearAlgebra
-using Combinatorics
-
-include("ControlledReduction.jl")
-include("PrecisionEstimate.jl")
-include("CopiedFindMonomialBasis.jl")
-include("Utils.jl")
-include("SmallestSubsetSmooth.jl")
-include("Frobenius.jl")
-include("FinalReduction.jl")
-
-verbose = false
+#module ZetaFunction 
+#
+#using Oscar
+#using BitIntegers
+#using LinearAlgebra
+#using Combinatorics
+#
+#
+#include("Utils.jl")
+#include("FindMonomialBasis.jl")
+#include("PrecisionEstimate.jl")
+#include("SmallestSubsetSmooth.jl")
+#include("PolynomialWithPole.jl")
+#
+#include("StandardReduction.jl")
+#
+#include("ControlledReduction.jl")
+#include("Frobenius.jl")
+#include("FinalReduction.jl")
+#
+#verbose = false
 
 """
     compute_frobenius_matrix(n,d,Reductions,T)
@@ -32,7 +37,7 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
-    ev = Utils.gen_exp_vec(n+1,d*n-n-1,:invlex)
+    ev = gen_exp_vec(n+1,d*n-n-1,:invlex)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
@@ -49,7 +54,7 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
 
 
         temp = VS()
-        temp2 = Utils.convert_p_to_m([Reductions[i][1][1]],ev)
+        temp2 = convert_p_to_m([Reductions[i][1][1]],ev)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
@@ -167,7 +172,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
 
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    basis = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
+    basis = compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
     verbose && println("Basis of cohomology is $basis")
     num_BasisT = length(basis)
 
@@ -175,7 +180,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
         println("There are $num_BasisT basis elements in H^$n")
     end 
 
-    T = FinalReduction.computeT(f, basis, M)
+    T = computeT(f, basis, M)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = [0,1,2]
@@ -185,7 +190,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     for i in basis
         temp = []
         for j in i
-            push!(temp, Utils.liftCoefficients(precisionring,precisionringpoly,j))
+            push!(temp, liftCoefficients(precisionring,precisionringpoly,j))
         end
         push!(BasisTLift,temp)
     end
@@ -199,10 +204,10 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
 
     verbose && println(Basis)
 
-    fLift = Utils.liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = Frobenius.applyFrobeniusToBasis(Basis,fLift, N)
+    fLift = liftCoefficients(precisionring, precisionringpoly, f)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N,p)
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,M)
+    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M)
     pseudo_inverse_mat = zeros(Int, nrows(pseudo_inverse_mat_new),ncols(pseudo_inverse_mat_new))
     for i in 1:nrows(pseudo_inverse_mat_new)
         for j in 1:ncols(pseudo_inverse_mat_new)
@@ -212,20 +217,20 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     #pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
     #PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
-    #fLift = Utils.liftCoefficients(ZZ,PRZZ,f)
-    #controlledMatrixZZ = CopiedFindMonomialBasis.compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
+    #fLift = liftCoefficients(ZZ,PRZZ,f)
+    #controlledMatrixZZ = compute_controlled_matrix(fLift, d * n - n + d - length(S), S, ZZ, PRZZ)
     #pseudoInverseMatModP = matrix(ZZ, [lift(ZZ,x) for x in Array(pseudoInverseMatTemp)])
-    #pseudo_inverse_mat_new = Utils.henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
+    #pseudo_inverse_mat_new = henselLift(p,M,controlledMatrixZZ, pseudoInverseMatModP)
     
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis, N, S, fLift, pseudo_inverse_mat)
+    Reductions = reducetransform_LA_descending(FBasis, N, S, fLift, pseudo_inverse_mat,p)
     verbose && println(Reductions)
-    ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
-    verbose && println(Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
+    ev = gen_exp_vec(n+1,n*d-n-1,:invlex)
+    verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     verbose && println(FM)
 
@@ -240,7 +245,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
     end
 end
 
-end 
+#end 
 
 #=
 include("src/ControlledReduction.jl")
