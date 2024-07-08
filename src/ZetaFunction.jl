@@ -214,6 +214,7 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
             pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
         end
     end
+    printMat(pseudo_inverse_mat)
     #pseudoInverseMat = zeros(PrecisionRing, nrows(pseudoInverseMatTemp), ncols(pseudoInverseMatTemp))
 
     #PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
@@ -248,14 +249,18 @@ end
 #end 
 
 #=
-include("src/ControlledReduction.jl")
-include("src/PrecisionEstimate.jl")
-include("src/CopiedFindMonomialBasis.jl")
-include("src/FindMonomialBasis.jl")
-include("src/Utils.jl")
-include("src/SmallestSubsetSmooth.jl")
-include("src/ZetaFunction.jl")
-include("src/TestControlledReduction.jl")
+include("DeRham.jl")
+include("Utils.jl")
+include("FindMonomialBasis.jl")
+include("PrecisionEstimate.jl")
+include("SmallestSubsetSmooth.jl")
+include("PolynomialWithPole.jl")
+include("StandardReduction.jl")
+include("ControlledReduction.jl")
+include("Frobenius.jl")
+include("FinalReduction.jl")
+include("ZetaFunction.jl")
+verbose = true
 n = 2
 d = 3
 p = 7
@@ -264,5 +269,5 @@ PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x0,x1,x2 = Vars
 f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
 S = [0,1,2]
-Test = ZetaFunction.compute_all(f,3)
+Test = compute_all(f,3)
 =#
