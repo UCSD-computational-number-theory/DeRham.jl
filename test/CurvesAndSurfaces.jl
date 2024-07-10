@@ -156,7 +156,7 @@ function test_highergenus_1(p)
 
     f = x^5 + y^5 + z^5 +x*z*y^3
 
-    zeta = DeRham.compute_all(f,precision,false,true)[2]
+    zeta = DeRham.compute_all(f,4,absolute_precision,false,true)[2]
 
     t = gen(parent(zeta))
     ts = (t .^ (21:-1:0))
