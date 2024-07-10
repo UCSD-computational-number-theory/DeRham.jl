@@ -44,7 +44,8 @@ function computeT(f, Basis, M)
                 tmp = []
                 for j in 1:len # indexing over monomials 
                     # row vector for monomials[j] with respect to standard monomial basis
-                    row_vec = matrix(precisionring, 1, length(exp_vec), convert_p_to_m([monomials[j]],exp_vec))
+                    #row_vec = matrix(precisionring, 1, length(exp_vec), convert_p_to_m([monomials[j]],exp_vec))
+                    row_vec = convert_p_to_m([monomials[j]],exp_vec)
                     vec = change_basis_inverse * transpose(row_vec)
                     for k in 1:length(basis)
                         #push!(tmp, precisionring(ZZ(factorial(n-1-i)))*vec[length(exp_vec)-len_basis+k,1])

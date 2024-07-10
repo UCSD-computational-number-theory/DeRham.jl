@@ -221,6 +221,16 @@ end
 
 # Converts vector of homogeneous polynomials to a matrix of their coefficents
 function convert_p_to_m(polys, expvec)
+    R = coefficient_ring(parent(polys[1]))
+    MS = matrix_space(R, length(polys), length(expvec))
+    result = MS()
+    for i in axes(polys,1)
+        for j in axes(expvec,1)
+            result[i,j] = coeff(polys[i], expvec[j])
+        end
+    end
+    return result
+    #=
     result = []
     for i in axes(polys,1)
         temp = []
@@ -230,6 +240,7 @@ function convert_p_to_m(polys, expvec)
         push!(result, transpose(temp))
     end
     vcat(result...)
+    =#
 end
 
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial

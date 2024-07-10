@@ -5,7 +5,7 @@ using BitIntegers
 using LinearAlgebra
 using Combinatorics
 
-verbose = true 
+verbose = false 
 
 include("Utils.jl")
 include("FindMonomialBasis.jl")

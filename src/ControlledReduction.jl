@@ -38,10 +38,12 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     # get gi's using pseudoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
     gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
+    MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
+    gJS = MS()
     gJS = pseudoInverseMat*transpose(gVec)
     gc = []
     for i in 1:(n+1)
-        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1)))]),gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
+        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
     end
     gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]

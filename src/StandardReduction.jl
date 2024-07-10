@@ -41,7 +41,7 @@ function monomial_change_basis(f, l, basis)
        change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ)
        
        # column vectors corresponding to monomials in the basis of cohomology 
-       basis_columns = transpose(matrix(ZZ,convert_p_to_m(basis_lift,exp_vec)))
+       basis_columns = transpose(convert_p_to_m(basis_lift,exp_vec))
        
        #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns); 
        change_basis_matrix_aug = hcat(basis_columns,change_basis_matrix); 
