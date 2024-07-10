@@ -148,7 +148,7 @@ INPUTS:
 * "PR" -- parent(f)
 * "vars" -- generators of PR
 """
-function compute_all(f, precision, verbose=false,givefrobmat=false)
+function compute_all(f, series_precision, absolute_precision, verbose=false,givefrobmat=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -161,10 +161,10 @@ function compute_all(f, precision, verbose=false,givefrobmat=false)
         println("Working with a degree $d hypersurface in P^$n")
     end 
 
-    N = 2 # series precision 
+    N = series_precision # series precision 
     s = N + n - 1
     #M = Int(precision + floor((p*s-1)/(p-1) + 1))
-    M = 3 # Absolute precision
+    M = absolute_precision # Absolute precision
 
     if verbose
         println("We work modulo $p^$M, and compute up to the $N-th term of the Frobenius power series")
