@@ -6,7 +6,7 @@ using Oscar
 include("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
-include("BasicExamples.jl")
+include("CurvesAndSurfaces.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     testEllCurve1_7()
