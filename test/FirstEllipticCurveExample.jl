@@ -9,7 +9,7 @@ function testEllCurve1_7()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    frobmat = ZetaFunction.compute_all(f,precision,true,true)[1]
+    frobmat = DeRham.compute_all(f,precision,true,true)[1]
     R = parent(frobmat[1,1])
     @test frobmat == R[231 11; 294 17]
 end
@@ -22,7 +22,7 @@ function testMonomialBasis()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR,:invlex) == [[1],[z^3]]
+    @test DeRham.compute_monomial_bases(f,R,PR,:invlex) == [[1],[z^3]]
 end
 
 function testLinAlgProb()
@@ -37,7 +37,7 @@ function testLinAlgProb()
     S = [0,1,2]
     l = d * n - n + d - length(S)
     M = 3
-    @test Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,l,R,PR,M)) == 
+    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,R,PR,M)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -73,8 +73,8 @@ function testFrobTrans()
     PrecisionRing, = residue_ring(ZZ, p^M)
     println(eltype(PrecisionRing))
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
-    fLift = Utils.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
+    BasisT = DeRham.compute_monomial_bases(f, R, PR)
+    fLift = DeRham.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
         temp = []
@@ -91,7 +91,7 @@ function testFrobTrans()
     end
     #M = 15
 
-    frobterms = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    frobterms = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
 
     x0,x1,x2 = PVars
 
@@ -175,13 +175,13 @@ function testRedOfTerms()
 
     PrecisionRing, = residue_ring(ZZ, p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    BasisT = DeRham.compute_monomial_bases(f,R,PR)
+    fLift = DeRham.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,DeRham.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
@@ -191,16 +191,16 @@ function testRedOfTerms()
             push!(Basis,[j,i])
         end
     end
-    FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
     #pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat) 
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = ControlledReduction.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
-    ev = Utils.gen_exp_vec(n+1,n*d-n-1,:invlex)
-    @test Utils.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev) == [86 0 98 0 226 0 329 236 0 272; 133 0 224 0 203 0 238 91 0 322]
+    Reductions = DeRham.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
+    ev = DeRham.gen_exp_vec(n+1,n*d-n-1,:invlex)
+    @test DeRham.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev) == [86 0 98 0 226 0 329 236 0 272; 133 0 224 0 203 0 238 91 0 322]
 end
 
 function testT()
@@ -215,8 +215,8 @@ function testT()
     M = 3
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    basis = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR,:invlex)
-    @test Array(FinalReduction.computeT(f,basis,M)) == 
+    basis = DeRham.compute_monomial_bases(f,R,PR,:invlex)
+    @test Array(DeRham.computeT(f,basis,M)) == 
     [257 0 85 0 0 0 172 257 0 0;
      172 0 52 0 114 0 0 170 0 1]
 end
@@ -233,17 +233,17 @@ function testFrobMat()
     M = 15
     PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = CopiedFindMonomialBasis.compute_monomial_bases(f,R,PR)
-    fLift = Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
+    BasisT = DeRham.compute_monomial_bases(f,R,PR)
+    fLift = DeRham.liftCoefficients(PrecisionRing,PrecisionRingPoly,f)
     BasisTLift = []
     for i in BasisT
         temp = []
         for j in i
-            push!(temp, Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp, DeRham.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
-    T = FinalReduction.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
+    T = DeRham.computeT(BasisTLift,fLift,n,d,PrecisionRing,PrecisionRingPoly)
     S = [0,1,2]
     Basis = []
     for i in 1:n
@@ -251,16 +251,16 @@ function testFrobMat()
             push!(Basis,[j,i])
         end
     end
-    FBasis = Frobenius.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
-    pseudoInverseMatTemp = CopiedFindMonomialBasis.pseudo_inverse_controlled(f,S,R,PR)
+    FBasis = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    pseudoInverseMatTemp = DeRham.pseudo_inverse_controlled(f,S,R,PR)
     pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
     for i in 1:nrows(pseudoInverseMat)
         for j in 1:ncols(pseudoInverseMat)
             pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
         end
     end
-    Reductions = ControlledReduction.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
-    @test ZetaFunction.computeFrobeniusMatrix(n,d,Reductions,T) == 1
+    Reductions = DeRham.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
+    @test DeRham.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
 
 #end
