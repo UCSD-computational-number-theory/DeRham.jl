@@ -54,7 +54,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
     verbose && println("N=$N, m=$m")
-    println(p * (N + m - 1) - 1)
+    verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
     verbose && println("Factorial: $Factorial")
     verbose && println("p: $p")
