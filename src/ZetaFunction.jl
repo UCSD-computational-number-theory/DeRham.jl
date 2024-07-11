@@ -32,7 +32,7 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
     verbose && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
@@ -41,6 +41,7 @@ function compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
+        N = N_m[e]
         verbose && println("e: $e")
 
         verbose && println(p*(e+N-1)-1)
@@ -134,57 +135,44 @@ end
 
 
 """
-    computeAll(n, d, f, precision, p, R, PR, vars)
+    computeAll(f, verbose=false, givefrobmat=false)
 
 Wrapper function that outputs the Frobenius Matrix
 
 INPUTS: 
-* "n" -- number of variables - 1
-* "d" -- degree of f
 * "f" -- Oscar polynomial
-* "precision" -- not in use
-* "p" -- prime number
-* "R" -- basefield(parent(f))
-* "PR" -- parent(f)
-* "vars" -- generators of PR
 """
-function compute_all(f, series_precision, absolute_precision, verbose=false,givefrobmat=false)
+function compute_all(f, verbose=false, givefrobmat=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    #Nm = PrecisionEstimate.compute_precisions_each(p,precision,n)
-    #N = max(Nm...)
-    if verbose
-        println("Working with a degree $d hypersurface in P^$n")
-    end 
 
-    N = series_precision # series precision 
-    s = N + n - 1
-    #M = Int(precision + floor((p*s-1)/(p-1) + 1))
-    M = absolute_precision # Absolute precision
+    verbose && println("Working with a degree $d hypersurface in P^$n")
 
-    if verbose
-        println("We work modulo $p^$M, and compute up to the $N-th term of the Frobenius power series")
-    end 
+    basis = compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
 
+    verbose && println("Basis of cohomology is $basis")
+
+    k = sum([length(tmp) for tmp in basis]) # dimension of H^n
+
+    verbose && println("There are $k basis elements in H^$n")
+
+    r_m = relative_precision(k, p)
+    N_m = series_precision(r_m, p, n) # series precision 
+    M = algorithm_precision(r_m, N_m, p)
+
+    verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
+     
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    basis = compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
-    verbose && println("Basis of cohomology is $basis")
-    num_BasisT = length(basis)
-
-    if verbose
-        println("There are $num_BasisT basis elements in H^$n")
-    end 
 
     T = computeT(f, basis, M)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
-    S = [0,1,2]
-    #S = []
+    S = collect(0:n)
 
     BasisTLift = []
     for i in basis
@@ -205,7 +193,7 @@ function compute_all(f, series_precision, absolute_precision, verbose=false,give
     verbose && println(Basis)
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N,p)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p)
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M)
     MS = matrix_space(ZZ, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
@@ -237,11 +225,11 @@ function compute_all(f, series_precision, absolute_precision, verbose=false,give
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = reducetransform_LA_descending(FBasis, N, S, fLift, pseudo_inverse_mat,p)
+    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat,p)
     verbose && println(Reductions)
     ev = gen_exp_vec(n+1,n*d-n-1,:invlex)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N, Reductions, T, Basis)
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
     verbose && println(FM)
 
     if verbose

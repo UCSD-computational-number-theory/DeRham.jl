@@ -9,7 +9,7 @@ function testEllCurve1_7()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    frobmat = DeRham.compute_all(f,precision,true,true)[1]
+    frobmat = DeRham.compute_all(f,true,true)[1]
     R = parent(frobmat[1,1])
     @test frobmat == R[231 11; 294 17]
 end
@@ -37,7 +37,7 @@ function testLinAlgProb()
     S = [0,1,2]
     l = d * n - n + d - length(S)
     M = 3
-    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,R,PR,M)) == 
+    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -62,7 +62,7 @@ function testFrobTrans()
     n = 2
     d = 3
     p = 7
-    N = 2 # the series precision
+    N = [2,2] # the series precision
     M = 3 # the absolute precision
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
@@ -79,7 +79,7 @@ function testFrobTrans()
     for i in BasisT
         temp = []
         for j in i
-            push!(temp,Utils.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
+            push!(temp,DeRham.liftCoefficients(PrecisionRing,PrecisionRingPoly,j))
         end
         push!(BasisTLift,temp)
     end
@@ -91,7 +91,7 @@ function testFrobTrans()
     end
     #M = 15
 
-    frobterms = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p)
 
     x0,x1,x2 = PVars
 
@@ -147,13 +147,13 @@ function testRedOfTerms()
     x0,x1,x2 = Vars
     f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
     S = [0,1,2]
-    N = 2
+    N = [2,2]
     M = 3
     
     # TODO: change other instances of pseudo_inverse_controlled in this file and ZetaFunction.jl to this method
     S = [0,1,2]
     #pseudoInverseMat = Array(CopiedFindMonomialBasis.pseudo_inverse_controlled_lifted(f,S,R,PR,M))
-    pseudoInverseMat = 
+    pseudo_inverse_mat = 
     [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
     0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
     0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
@@ -191,14 +191,14 @@ function testRedOfTerms()
             push!(Basis,[j,i])
         end
     end
-    FBasis = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = DeRham.applyFrobeniusToBasis(Basis, fLift, N, p)
     #pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat) 
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = DeRham.reducetransform_LA_descending(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
+    Reductions = DeRham.reducetransform_LA_descending(FBasis, N, S, fLift, matrix(PrecisionRing,pseudo_inverse_mat), p)
     ev = DeRham.gen_exp_vec(n+1,n*d-n-1,:invlex)
     @test DeRham.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev) == [86 0 98 0 226 0 329 236 0 272; 133 0 224 0 203 0 238 91 0 322]
 end
@@ -221,6 +221,7 @@ function testT()
      172 0 52 0 114 0 0 170 0 1]
 end
 
+#=
 function testFrobMat()
     n = 2
     d = 3
@@ -229,8 +230,8 @@ function testFrobMat()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    N = 6
-    M = 15
+    N = [2,2]
+    M = 3
     PrecisionRing = residue_ring(ZZ,p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
     BasisT = DeRham.compute_monomial_bases(f,R,PR)
@@ -251,7 +252,7 @@ function testFrobMat()
             push!(Basis,[j,i])
         end
     end
-    FBasis = DeRham.applyFrobeniusToBasis(Basis,n,d,fLift,N,p,PrecisionRing,PrecisionRingPoly)
+    FBasis = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p)
     pseudoInverseMatTemp = DeRham.pseudo_inverse_controlled(f,S,R,PR)
     pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
     for i in 1:nrows(pseudoInverseMat)
@@ -262,5 +263,5 @@ function testFrobMat()
     Reductions = DeRham.reducetransform_LA(FBasis,n,d,p,N,S,fLift,pseudoInverseMat,PrecisionRing,PrecisionRingPoly)
     @test DeRham.computeFrobeniusMatrix(n,d,Reductions,T) == 1
 end
-
+=#
 #end

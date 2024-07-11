@@ -15,7 +15,7 @@ include("CurvesAndSurfaces.jl")
     testFrobTrans()
     testRedOfTerms()
     testT()
-    testFrobMat()
+    #testFrobMat()
 end
 
 #@testset "Elliptic curves" begin

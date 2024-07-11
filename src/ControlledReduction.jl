@@ -734,7 +734,7 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 
 TODO: what exactly is big N?? Why isn't is used?
 """
-function reducetransform_LA_descending(FT,N,S,f,pseudoInverseMat,p)
+function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p)
     result = []
     for pol in FT
         reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
