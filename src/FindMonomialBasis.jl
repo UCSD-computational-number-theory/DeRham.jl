@@ -177,6 +177,19 @@ function pseudo_inverse_controlled(f, S, l, R, PR)
     end
 end
 
+"""
+    pseudo_inverse_controlled_lifted(f,S,l,M)
+
+Solves the linear algebra problem as in
+`pseudo_inverse_controlled`, but then 
+hensel lifts to Z/p^MZ
+
+f - the polynomial definitng the hypersurface
+S - the set in [0..n] to be used for the linear algebra problem
+l - ???? we need to document this, it's something used by compute_contolled_matrix
+M - the absolute precision to lift to.
+
+"""
 function pseudo_inverse_controlled_lifted(f,S,l,M)
     PR = parent(f)
     R = coefficient_ring(PR)

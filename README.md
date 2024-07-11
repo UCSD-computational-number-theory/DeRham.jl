@@ -1,5 +1,7 @@
 # DeRham.jl
 
+[![CI](https://github.com/UCSD-computational-number-theory/DeRham.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/UCSD-computational-number-theory/DeRham.jl/actions/workflows/CI.yml)
+
 This package aims to implement cutting-edge-speed algorithms that calculate the cohomology of algebraic varieties and the extra structure on them. Longer term goals include having fast versions of all the various forms of Kedlaya's algorithm, Harvey's algorithm, Moonen's algorithm, etc.
 
 **This package is a work-in-progress.** PRs and contributions are welcome. 
