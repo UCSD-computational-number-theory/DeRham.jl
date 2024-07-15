@@ -241,7 +241,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
+function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -329,7 +329,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
     verbose && println("Getting reduction matrix for V = $V")
 
     #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
-    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat)
+    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
     #=
     for i in axes(matrices,1)
         printMat(matrices[i])
@@ -444,7 +444,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p)
         # there's some sort of parity issue between our code and edgar's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         
-        matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat)
+        matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat,Ruvs)
         B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
         
         gMat = (A+B)*gMat
@@ -684,7 +684,7 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
+function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -719,7 +719,7 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
         for i in eachindex(ω)
             #ω[i] = reducechain...
             verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p)
+            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs)
         end
 
         poleorder = poleorder - p
@@ -735,9 +735,10 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 TODO: what exactly is big N?? Why isn't is used?
 """
 function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p)
+    Ruvs = Dict()
     result = []
     for pol in FT
-        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p)
+        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs)
         push!(result, reduction)
     end
     return result
@@ -776,7 +777,10 @@ end
 """
 Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
 """
-function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat)
+function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    end
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     R = coefficient_ring(parent(f))
@@ -811,6 +815,7 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat)
         end
         push!(matrices, tempMat)
     end
+    get!(Ruvs, V, matrices)
     return matrices
 end
 

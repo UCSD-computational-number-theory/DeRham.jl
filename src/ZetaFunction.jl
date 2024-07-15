@@ -257,7 +257,7 @@ include("ControlledReduction.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
-verbose = true
+verbose = false
 n = 2
 d = 3
 p = 7
@@ -266,5 +266,5 @@ PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x0,x1,x2 = Vars
 f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
 S = [0,1,2]
-Test = compute_all(f,3)
+Test = compute_all(f)
 =#
