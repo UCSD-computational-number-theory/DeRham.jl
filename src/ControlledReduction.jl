@@ -21,6 +21,7 @@ applies reduction formula from Prop 1.15 in Costa's thesis to
 basis elements of Homog(dn-d), returns them as polynomials
 """
 function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
+    println(typeof(pseudoInverseMat))
     R = coefficient_ring(PR)
     Vars = gens(PR)
     n = nvars(parent(f)) - 1

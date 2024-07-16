@@ -196,11 +196,11 @@ function compute_all(f, verbose=false, givefrobmat=false)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p)
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M)
-    MS = matrix_space(ZZ, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
+    MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
     for i in 1:nrows(pseudo_inverse_mat_new)
         for j in 1:ncols(pseudo_inverse_mat_new)
-            pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
+            pseudo_inverse_mat[i,j] = precisionring(ZZ(pseudo_inverse_mat_new[i,j]))
         end
     end
     #=
