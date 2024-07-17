@@ -12,6 +12,8 @@ Determines the necessary p-adic precision r for the Frobenius matrix
 function frobenius_precision(k, q)
     if k == 2 && q == 7
         r = 2
+    elseif k == 21 && q == 7
+        r = 10
     end 
     return r
 end 
@@ -22,8 +24,10 @@ end
 Determines the relative p-adic precision [r_m] for the basis of cohomology 
 """
 function relative_precision(k, q)
-    if k ==2 && q == 7
+    if k == 2 && q == 7
         r_m = [2,3]
+    elseif k == 21 && q == 7
+        r_m = [2,3,3]
     end
     return r_m
 end 
@@ -31,6 +35,8 @@ end
 function series_precision(r_m, p, n)
     if r_m == [2,3] && p == 7 && n == 2
         N_m = [2,2]
+    elseif r_m == [2,3,3] && p == 7 && n == 3
+        N_m = [4,4,3]
     end 
     return N_m
 end
@@ -43,6 +49,8 @@ Determines M such that the algorithm works in Z/p^M Z
 function algorithm_precision(r_m, N_m, p)
     if r_m == [2,3] && N_m == [2,2] && p == 7
         M = 3
+    elseif r_m == [2,3,3] && N_m == [4,4,3] && p == 7
+        M = 6
     end
     return M
 end 
