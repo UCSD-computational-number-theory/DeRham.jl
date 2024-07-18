@@ -20,6 +20,7 @@ INPUTS:
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 """
 function monomial_change_basis(f, l, basis)
+       println(basis)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
        S = [i for i in 0:n]
@@ -45,6 +46,7 @@ function monomial_change_basis(f, l, basis)
        
        #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns); 
        change_basis_matrix_aug = hcat(basis_columns,change_basis_matrix); 
+       println((rank(change_basis_matrix_aug), number_of_columns(change_basis_matrix_aug), number_of_rows(change_basis_matrix_aug)))
        return change_basis_matrix_aug
 end 
 
@@ -62,7 +64,7 @@ function monomial_change_basis_inverse(f,l,basis)
        R = coefficient_ring(PR)  
        A = monomial_change_basis(f,l,basis)
        
-       flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:left)
+       flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
        
        if flag
            return (A,B)

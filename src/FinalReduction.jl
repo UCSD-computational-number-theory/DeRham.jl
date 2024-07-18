@@ -30,6 +30,7 @@ function computeT(f, Basis, M)
     partials = reverse(partials)
 
     T = zero_matrix(precisionring, 0, len)
+
     for i in 0:n-1
         l = d*(n-i) - n - 1
         if l > 0
@@ -41,7 +42,7 @@ function computeT(f, Basis, M)
                 len_basis = length(basis)
                 change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
-                tmp = []
+                tmp = zero_matrix(precisionring, len_basis, len)
                 for j in 1:len # indexing over monomials 
                     # row vector for monomials[j] with respect to standard monomial basis
                     #row_vec = matrix(precisionring, 1, length(exp_vec), convert_p_to_m([monomials[j]],exp_vec))
@@ -49,11 +50,16 @@ function computeT(f, Basis, M)
                     vec = change_basis_inverse * transpose(row_vec)
                     for k in 1:length(basis)
                         #push!(tmp, precisionring(ZZ(factorial(n-1-i)))*vec[length(exp_vec)-len_basis+k,1])
-                        push!(tmp, precisionring(ZZ(factorial(n-1-i)))*vec[k,1])
+                        #push!(tmp, precisionring(ZZ(factorial(n-1-i)))*vec[k,1])
+                        tmp[k,j] = precisionring(ZZ(factorial(n-1-i)))*vec[k,1]
                     end
                     term = 0
                     for t in 1:len_domain*(n+1)
-                        t_partial = ceil(Int, t/(n+1))
+                        #t_partial = ceil(Int, t/(n+1))
+                        t_partial = ceil(Int, t/(n+1)) % (n+1)
+                        if t_partial == 0
+                            t_partial = n+1
+                        end
                         t_domain = t%(len_domain)
                         if t_domain == 0
                             t_domain = len_domain
@@ -62,7 +68,8 @@ function computeT(f, Basis, M)
                     end 
                     monomials[j] = term
                 end 
-                T = vcat(matrix(precisionring,1,len,tmp),T)
+                #T = vcat(matrix(precisionring,1,len,tmp),T)
+                T = vcat(tmp, T)
             end 
         end 
     end 

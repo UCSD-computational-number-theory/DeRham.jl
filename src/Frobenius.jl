@@ -111,14 +111,14 @@ INPUTS:
 * "R" -- basering(parent(f))
 * "PR" -- parent(f)
 """
-function applyFrobeniusToBasis(Basis,f,N,p)
+function applyFrobeniusToBasis(Basis,f,N_m,p)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
     for b in Basis
-        Fmon = applyFrobeniusToMon(n,d,f,N,p,exponent_vector(b[1],1),b[2],R,PR)
+        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR)
         verbose && println(Fmon)
         push!(result, Fmon)
     end
