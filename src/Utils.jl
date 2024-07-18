@@ -47,7 +47,7 @@ INPUTS:
 """
 function gen_exp_vec(n, d, order=:lex)
     @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
-    result = Any[]
+    result = Vector{Int64}[]
     #=
     if d == 0
         return [1]
