@@ -135,7 +135,8 @@ end
 
 
 """
-    computeAll(f, verbose=false, givefrobmat=false)
+    zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
+
 
 Wrapper function that outputs the Frobenius Matrix
 
@@ -143,7 +144,8 @@ INPUTS:
 * "f" -- Oscar polynomial
 
 KEYWORD ARGUMENTS:
-verboselevel -- print statements at various levels of depth
+TODO:verboselevel -- print statements at various levels of depth
+RIGHTNOW: verbose -- print stuff
 givefrobmat -- should the funciton also output the appoximated frobenius matrix
 algorithm -- the algorithm used for controlled reduction
 termorder -- the term ordering that should be used in vector representations
@@ -235,7 +237,8 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder)
+    #TODO: check which algorithm we're using
+    Reductions = reducetransform_costachunks(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder)
     verbose && println(Reductions)
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))

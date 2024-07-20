@@ -200,7 +200,7 @@ function testRedOfTerms()
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = DeRham.reducetransform_LA_descending(FBasis, N, S, fLift, matrix(PrecisionRing,pseudo_inverse_mat), p, :invlex)
+    Reductions = DeRham.reducetransform(FBasis, N, S, fLift, matrix(PrecisionRing,pseudo_inverse_mat), p, :invlex, :costachunks)
     ev = DeRham.gen_exp_vec(n+1,n*d-n-1,:invlex)
     reductions_as_rows = DeRham.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
     RR = parent(reductions_as_rows[1,1])

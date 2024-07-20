@@ -233,7 +233,7 @@ function undo_rev_tweak(I,p)
 end
 
 """
-    reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+    reducechain_costachunks(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 
@@ -241,37 +241,14 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     
-    #println(pseudoInverseMat)
 
-    #= @assert pseudoInverseMat ==
-    pseudoInverseMat = 
-    [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
-    0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
-    225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 114 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 114;
-    0 0 0 1 0 0 172 0 0 0 0 0 0 0 0;
-    59 0 0 0 1 94 0 172 0 166 0 0 61 0 188;
-    0 0 0 0 0 0 0 0 172 0 0 0 0 286 0;
-    0 57 0 173 0 0 0 0 0 0 172 0 0 114 0;
-    83 0 57 0 173 59 0 0 0 94 0 172 166 0 61;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    114 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 114 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
-    11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] "seems to have the wrong pseudo-inverse" =#
-    #I = [28,7,28]
-    #gCoeff = R(2)
     
     I = u
 
@@ -279,7 +256,6 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #I = reverse(I) # parity issue due to Costa's code being reverse from ours
 
     gMat = g
-    #chain = 0
     verbose && println("This is I: $I")
     J = copy(I)
 
@@ -291,13 +267,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
 
     gVec = I - rev_tweak(I,n*d-n)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
-    #gMat = zeros(R,length(ev))
-    #for j in axes(gMat,1)
-    #    if gVec == ev[j]
-    #        gMat[j] = gCoeff
-    #        break
-    #    end
-    #end
+
     I = I - gVec
     if m - n < p
         nend = m - n
@@ -336,84 +306,6 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     end
     =#
 
-    #for i in axes(matrices,1)
-    #    printMat(matrices[i])
-    #end
-    #=
-    if V == [1,1,1]
-        #println("Using precomputed R_u,[1,1,1]")
-    matrices_precomputed = [
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[169 0 0 0 1 249 0 172 0 177 0 0 282 0 155]
-[0 114 0 0 0 0 0 0 1 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[94 0 57 0 173 280 0 0 0 61 0 172 188 0 160]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[155 0 0 0 0 11 0 0 0 221 0 0 310 0 22]
-[0 0 0 1 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 1 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[225 0 0 0 0 155 0 0 0 11 0 0 221 0 310]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 114 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 114]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 1 0 0 172 0 0 0 0 0 0 0 0]
-[59 0 0 0 1 94 0 172 0 166 0 0 61 0 188]
-[0 0 0 0 0 0 0 0 172 0 0 0 0 286 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 57 0 173 0 0 0 0 0 0 172 0 0 114 0]
-[83 0 57 0 173 59 0 0 0 94 0 172 166 0 61]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[114 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 114 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[166 0 114 0 0 118 0 0 0 188 0 0 332 0 236]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[11 0 0 0 0 221 0 0 0 310 0 0 22 0 214]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-]
-]
-      #matrices = map(M -> R.(M),matrices)
-      for i in 1:4
-          @assert matrices[i] == matrices_precomputed[i] "the $i-th R_u,v matrix seems to have been computed wrong"
-      end
-    end 
-    =#
     
     B,A = computeRPoly_LAOneVar2(matrices,reverse(I - (nend-(d*n-n))*V),reverse(V),R)
     
@@ -441,7 +333,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
         verbose && println("Getting y direction reduction matrix for V = $(y)") 
-        # there's some sort of parity issue between our code and edgar's
+        # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
         matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat,Ruvs,termorder)
@@ -606,7 +498,7 @@ function poly_of_end_costadata(costadata,PR,p,d,n,termorder)
 
     g = vector_to_polynomial(g_vec,n,d*n-n,PR,termorder)
 
-    # no need to do rev_tweak since reducechain_LA returns the "true" u
+    # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
     [prod(vars .^ u) * g, n]
 end
@@ -681,10 +573,12 @@ end
 #end
 
 """
+    reducepoly_costachunks_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -719,7 +613,7 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
         for i in eachindex(ω)
             #ω[i] = reducechain...
             verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,termorder)
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,termorder)
         end
 
         poleorder = poleorder - p
@@ -730,20 +624,36 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
 end
 
 """
+    reducetransform_costachunks_descending(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
-TODO: what exactly is big N?? Why isn't is used?
+N_m - the precision
 """
-function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
     Ruvs = Dict()
     result = []
     for pol in FT
-        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+        reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
         push!(result, reduction)
     end
     return result
 end
-        
+
+function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    return nothing
+end
+
+function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,termorder,algorithm)
+    if algorithm == :costachunks
+        reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    elseif algorithm == :naive
+        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    else
+        throw(ArgumentError("Unsupported Algorithm: $algorithm"))
+    end
+end
+
 """
 computes reduction matrices
 """
