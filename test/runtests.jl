@@ -26,24 +26,24 @@ end
 
 #@testset "Curves and Surfaces" begin # the "whiteboard picture"
 #    test_ellipticcurve_1(7)
-#    test_ellipticcurve_1(11)
-#    test_ellipticcurve_1(13)
-#
-#    test_ellipticcurve_2(7)
-#    test_ellipticcurve_2(11)
-#    test_ellipticcurve_2(13)
-#
-#    test_fermat_k3(7)
-#    test_fermat_k3(11)
-#    test_fermat_k3(13)
-#
-#    test_fermatdeform_k3(7)
-#    test_fermatdeform_k3(11)
-#    test_fermatdeform_k3(13)
-#    
-#    test_highergenus_1(7)
-#    test_highergenus_1(11)
-#    test_highergenus_1(13)
+##    test_ellipticcurve_1(11)
+##    test_ellipticcurve_1(13)
+##
+##    test_ellipticcurve_2(7)
+##    test_ellipticcurve_2(11)
+##    test_ellipticcurve_2(13)
+##
+##    test_fermat_k3(7)
+##    test_fermat_k3(11)
+##    test_fermat_k3(13)
+##
+##    test_fermatdeform_k3(7)
+##    test_fermatdeform_k3(11)
+##    test_fermatdeform_k3(13)
+##    
+##    test_highergenus_1(7)
+##    test_highergenus_1(11)
+##    test_highergenus_1(13)
 #end
 
 #@testset "Bigger primes" begin

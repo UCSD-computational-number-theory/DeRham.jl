@@ -141,8 +141,18 @@ Wrapper function that outputs the Frobenius Matrix
 
 INPUTS: 
 * "f" -- Oscar polynomial
+
+KEYWORD ARGUMENTS:
+verboselevel -- print statements at various levels of depth
+givefrobmat -- should the funciton also output the appoximated frobenius matrix
+algorithm -- the algorithm used for controlled reduction
+termorder -- the term ordering that should be used in vector representations
+>>>if you don't know what this is, ignore it.
+vars_reversed -- reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
+
 """
-function compute_all(f, verbose=false, givefrobmat=false)
+function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
