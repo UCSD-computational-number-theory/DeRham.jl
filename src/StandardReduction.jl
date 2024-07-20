@@ -18,8 +18,9 @@ INPUTS:
 * "f" -- polynomial
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
+* "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis(f, l, basis)
+function monomial_change_basis(f, l, basis, termorder)
        println(basis)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
@@ -36,10 +37,10 @@ function monomial_change_basis(f, l, basis)
               push!(basis_lift, liftCoefficients(ZZ,PRZZ,i,false))
        end
 
-       exp_vec = gen_exp_vec(n+1, l,:invlex)
+       exp_vec = gen_exp_vec(n+1, l, termorder)
 
        # matrix for the map (\mu_0, \dots, \mu_n) \mapsto \sum_{i\in n} \mu_i \partial_i f 
-       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ)
+       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,termorder)
        
        # column vectors corresponding to monomials in the basis of cohomology 
        basis_columns = transpose(convert_p_to_m(basis_lift,exp_vec))
@@ -58,11 +59,12 @@ INPUTS:
 * "f" -- polynomial
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
+* "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse(f,l,basis)    
+function monomial_change_basis_inverse(f,l,basis,termorder)    
        PR = parent(f)
        R = coefficient_ring(PR)  
-       A = monomial_change_basis(f,l,basis)
+       A = monomial_change_basis(f,l,basis,termorder)
        
        flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
        
@@ -82,11 +84,12 @@ INPUTS:
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "M" -- integer, desired mod p^M precision
+* "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse_lifted(f, l, basis, M)
+function monomial_change_basis_inverse_lifted(f, l, basis, M, termorder)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis)
+    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis,termorder)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)

@@ -7,6 +7,7 @@ include("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
 include("CurvesAndSurfaces.jl")
+include("Orderings.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     testEllCurve1_7()
@@ -18,11 +19,6 @@ include("CurvesAndSurfaces.jl")
     #testFrobMat()
 end
 
-#@testset "Elliptic curves" begin
-#
-#    test_lmfdb_elliptic_curves()
-#
-#end
 
 #@testset "Curves and Surfaces" begin # the "whiteboard picture"
 #    test_ellipticcurve_1(7)
@@ -59,9 +55,17 @@ end
 #
 #end
 #
-#@testset "Monomial orderings" begin
-#    test_reproduce_costa_thesis()
+
+@testset "Monomial orderings" begin
+    test_supported_monomial_orderings()
+
+    test_reversing_variables()
+
+end
+
+#@testset "Elliptic curves" begin
+#
+#    test_lmfdb_elliptic_curves()
 #
 #end
-
 

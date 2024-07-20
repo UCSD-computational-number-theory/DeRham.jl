@@ -32,12 +32,12 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
     verbose && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
-    ev = gen_exp_vec(n+1,d*n-n-1,:invlex)
+    ev = gen_exp_vec(n+1,d*n-n-1,termorder)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
@@ -162,7 +162,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("Working with a degree $d hypersurface in P^$n")
 
-    basis = compute_monomial_bases(f, R, PR,:invlex) # basis of cohomology 
+    basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
 
     verbose && println("Basis of cohomology is $basis")
 
@@ -179,7 +179,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
-    T = computeT(f, basis, M)
+    T = computeT(f, basis, M, termorder)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
@@ -203,9 +203,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println(Basis)
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder)
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M)
+    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -235,11 +235,11 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat,p)
+    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder)
     verbose && println(Reductions)
-    ev = gen_exp_vec(n+1,n*d-n-1,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
     verbose && println(FM)
 
     if verbose

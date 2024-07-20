@@ -50,7 +50,7 @@ INPUTS:
 * "R" -- ring, precision ring 
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
-function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
+function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
     verbose && println("N=$N, m=$m")
@@ -68,7 +68,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR)
         e = j + m
         factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
         verbose && println("e=$e,factorial_e=$factorial_e")
-        ev = gen_exp_vec(n+1,d*j,:invlex)
+        ev = gen_exp_vec(n+1,d*j,termorder)
         fj = f^j
         sum = 0
         for alpha in ev
@@ -104,21 +104,18 @@ Applies the frobenius to all the elements of Basis
 INPUTS: 
 * "Basis" -- array of basis elmenets
 * "n" -- number of variables minus 1
-* "d" -- degree
 * "f" -- polynomial which is the denominator of poles (lifted version)
-* "N" -- series precision
+* "N_m" -- series precision
 * "p" -- the prime
-* "R" -- basering(parent(f))
-* "PR" -- parent(f)
 """
-function applyFrobeniusToBasis(Basis,f,N_m,p)
+function applyFrobeniusToBasis(Basis,f,N_m,p,termorder)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
     for b in Basis
-        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR)
+        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder)
         verbose && println(Fmon)
         push!(result, Fmon)
     end
