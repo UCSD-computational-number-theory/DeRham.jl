@@ -238,7 +238,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform_costachunks(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm)
     verbose && println(Reductions)
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
