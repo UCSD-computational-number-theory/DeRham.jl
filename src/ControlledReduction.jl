@@ -37,7 +37,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     end
     # get gi's using pseudoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
+    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
     MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
     gJS = MS()
     gJS = pseudoInverseMat*transpose(gVec)
