@@ -37,7 +37,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     end
     # get gi's using pseudoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
+    gVec = convert_p_to_m([div(XV*g,XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
     MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
     gJS = MS()
     gJS = pseudoInverseMat*transpose(gVec)
@@ -51,7 +51,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     gcpartials = reverse(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
 
     #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
+    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
 
 end
 
@@ -795,9 +795,10 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
     =#
     ev = gen_exp_vec(n+1,n*d-n,:invlex)
     monomials = gen_mon(ev,URing,PURing)
+    #monomials = gen_mon(ev,R,parent(f))
     reductions = []
     for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing)[1])
+        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,m,PURing)[1])
     end
     polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
