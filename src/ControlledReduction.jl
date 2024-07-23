@@ -708,7 +708,7 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
     #monomials = gen_mon(ev,R,parent(f))
     reductions = []
     for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing)[1])
+        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing,termorder)[1])
     end
     polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
