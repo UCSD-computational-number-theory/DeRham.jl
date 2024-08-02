@@ -43,7 +43,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     gJS = pseudoInverseMat*transpose(gVec)
     gc = []
     for i in 1:(n+1)
-        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-length(S)+1,termorder),R,PR)[1])
+        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
     end
     gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
@@ -299,12 +299,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     verbose && println("Getting reduction matrix for V = $V")
 
     #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR,termorder)
-    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
     #=
+    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
     for i in axes(matrices,1)
         printMat(matrices[i])
     end
     =#
+    matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
 
     
     B,A = computeRPoly_LAOneVar2(matrices,reverse(I - (nend-(d*n-n))*V),reverse(V),R)
@@ -336,7 +337,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat,Ruvs,termorder)
+        matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,termorder)
         B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
         
         gMat = (A+B)*gMat
@@ -682,6 +683,56 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         end
     end
     return [A,B]
+end
+
+function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    end
+    n = nvars(parent(f)) - 1
+    d = degree(f,1)
+    R = coefficient_ring(parent(f))
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-d+1,termorder)
+    MS1 = matrix_space(R, length(ev1), length(ev1))
+    MS2 = matrix_space(R, length(ev2),1)
+    result = Vector{typeof(MS1())}(undef, n+2)
+    for i in 1:n+2
+        result[i] = MS1(0)
+    end
+    Stilda = zeros(Int, length(S))
+    for i in S
+        Stilda[i+1] = 1
+    end
+    for i in 1:length(ev1)
+        mon = ev1[i] + V - Stilda
+        gVec = MS2()
+        for j in 1:length(ev2)
+            if ev2[j] == mon
+                gVec[j] = R(1)
+            else
+                gVec[j] = R(0)
+            end
+        end
+        gJS = pseudoInverseMat*gVec
+        for j in 1:(n+1)
+            temp = zeros(Int, n+1)
+            temp[j] = 1
+            for k in 1:length(ev3)
+                for l in 1:length(ev1)
+                    if ev1[l] == ev3[k] + reverse(Stilda - temp)
+                        result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    end
+                    if ev1[l] == ev3[k] + reverse(Stilda - temp)
+                        result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    end
+                end
+            end
+        end
+    end
+    get!(Ruvs, V, result)
+    return result
 end
 
 """
