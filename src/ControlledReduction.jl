@@ -703,10 +703,13 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
     end
     Stilda = zeros(Int, length(S))
     for i in S
-        Stilda[i+1] = 1
+        Stilda[n+1-i] = 1
     end
     for i in 1:length(ev1)
-        mon = ev1[i] + V - Stilda
+        mon = Vector{Int64}(undef, n+1)
+        for m in 1:(n+1)
+            mon[m] = ev1[i][m] + V[m] - Stilda[m]
+        end
         gVec = MS2()
         for j in 1:length(ev2)
             if ev2[j] == mon
@@ -717,15 +720,25 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
         end
         gJS = pseudoInverseMat*gVec
         for j in 1:(n+1)
-            temp = zeros(Int, n+1)
-            temp[j] = 1
             for k in 1:length(ev3)
                 for l in 1:length(ev1)
-                    if ev1[l] == ev3[k] + reverse(Stilda - temp)
-                        result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    for m in 1:(n+1)
+                        if m == n+1-j+1
+                            ev3[k][m] = ev3[k][m] + Stilda[m] - 1
+                        else
+                            ev3[k][m] = ev3[k][m] + Stilda[m]
+                        end
                     end
-                    if ev1[l] == ev3[k] + reverse(Stilda - temp)
+                    if ev1[l] == ev3[k]
+                        result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                         result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    end
+                    for m in 1:(n+1)
+                        if m == n+1-j+1
+                            ev3[k][m] = ev3[k][m] - Stilda[m] + 1
+                        else
+                            ev3[k][m] = ev3[k][m] - Stilda[m]
+                        end
                     end
                 end
             end
