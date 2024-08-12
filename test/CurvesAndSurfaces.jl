@@ -116,7 +116,7 @@ function test_fermatdeform_k3(p)
 
     f = x^4 + y^4 + z^4 + w^4 + 2x*y*z*w
 
-    zeta = DeRham.compute_all(f,precision,false,true)[2]
+    zeta = DeRham.compute_all(f,false,true)[2]
 
     t = gen(parent(zeta))
     ts = (t .^ (21:-1:0))

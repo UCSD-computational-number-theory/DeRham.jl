@@ -11,7 +11,7 @@ function testEllCurve1_7()
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    frobmat = DeRham.compute_all(f,true,true)[1]
+    frobmat = DeRham.compute_all(f,false,true)[1]
     R = parent(frobmat[1,1])
     @test frobmat == R[231 11; 294 17]
 end

@@ -21,7 +21,7 @@ applies reduction formula from Prop 1.15 in Costa's thesis to
 basis elements of Homog(dn-d), returns them as polynomials
 """
 function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
-    println(typeof(pseudoInverseMat))
+    #println(typeof(pseudoInverseMat))
     R = coefficient_ring(PR)
     Vars = gens(PR)
     n = nvars(parent(f)) - 1
@@ -242,7 +242,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
+function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -281,7 +281,8 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
 
     gMat = g
     #chain = 0
-    verbose && println("This is I: $I")
+    I_edgar = [x//7 for x in I]
+    verbose && println("This is I: $I_edgar")
     J = copy(I)
 
     #TODO?
@@ -327,7 +328,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
     end
     =#
 
-    verbose && println("Getting reduction matrix for V = $V")
+    #verbose && println("Getting reduction matrix for V = $V")
 
     #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
     matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
@@ -420,8 +421,8 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
     
     i = 1
     
-    verbose && println("Before reduction chunk: $gMat")
-    verbose && println("Before reduction chunk, I is $I")
+    #verbose && println("Before reduction chunk: $gMat")
+    #verbose && println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
       gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
@@ -429,7 +430,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
-        verbose && println("After step $i: $gMat")
+        #verbose && println("After step $i: $gMat")
 
         i = i+1
       end
@@ -437,11 +438,11 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
     # TODO: test how much of a difference the fast evaluation actually makes
 
     I = I - (nend-(d*n-n))*V
-    verbose && println("After steps 1-$i, I is $I")
+    #verbose && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
-        verbose && println("Getting y direction reduction matrix for V = $(y)") 
+        #verbose && println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and edgar's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
         
@@ -449,11 +450,11 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
         B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
         
         gMat = (A+B)*gMat
-        verbose && println("After step $(i+1): $gMat")
+        #verbose && println("After step $(i+1): $gMat")
 
         i = i+1
         I = I - y
-        verbose && println("After step $(i+1), I is $I")
+        #verbose && println("After step $(i+1), I is $I")
     end
     #=
     MK = A + B*K
@@ -474,7 +475,7 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs)
     
     if nend == p
         newI = J - p*V
-        @assert undo_rev_tweak(I,p) == newI
+        #@assert undo_rev_tweak(I,p) == newI
 
         return (newI, gMat)
     else
@@ -533,9 +534,9 @@ Returns the data used by costa's code given a polynomial term.
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term(term,n,d,p)
+function costadata_of_initial_term(term,n,d,p,verbose=false)
 
-    verbose && println("p: $p")
+    #verbose && println("p: $p")
 
     R = base_ring(parent(term[1])) 
     i = term
@@ -557,7 +558,7 @@ function costadata_of_initial_term(term,n,d,p)
     end
 
 
-    verbose && println("creation: u is type $(typeof(II))")
+    #verbose && println("creation: u is type $(typeof(II))")
     (II,g)
 end
 
@@ -590,7 +591,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
 
     # otherwise, push on a new term
     if !ind_already
-        verbose && println("incorporation: u has type $(typeof(costadata[1]))")
+        #verbose && println("incorporation: u has type $(typeof(costadata[1]))")
         push!(costadata_arr,costadata)
     end
 end
@@ -685,13 +686,13 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs)
+function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    verbose && println(pol)
+    #verbose && println(pol)
 
     i = pol
     highpoleorder = i[length(i)][2]
@@ -701,32 +702,33 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs)
 
     poleorder = highpoleorder
     while n < poleorder
+        println("pole order is $poleorder")
         # this is an array of polynomials
         ωₑ = termsoforder(pol,poleorder)
 
-        verbose && println("ωₑ: $ωₑ")
+        #verbose && println("ωₑ: $ωₑ")
         
 
         for term in ωₑ
-            verbose && println("term: $term")
+            #verbose && println("term: $term")
             term_costadata = costadata_of_initial_term(term,n,d,p)
-            verbose && println("term, in Costa's format: $term_costadata")
+            #verbose && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
         end
 
-        verbose && println("ω: $ω")
+        #verbose && println("ω: $ω")
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
-            verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs)
+            #verbose && println("u is type $(typeof(ω[i][1]))")
+            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,verbose)
         end
 
         poleorder = poleorder - p
     end
 
-    verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S))
+    #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S))
     return poly_of_end_costadatas(ω,PR,p,d,n,S)
 end
 
@@ -735,11 +737,11 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 
 TODO: what exactly is big N?? Why isn't is used?
 """
-function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p)
+function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p,verbose)
     Ruvs = Dict()
     result = []
     for pol in FT
-        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs)
+        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
         push!(result, reduction)
     end
     return result

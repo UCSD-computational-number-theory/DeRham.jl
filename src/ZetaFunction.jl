@@ -190,7 +190,7 @@ function compute_all(f, verbose=false, givefrobmat=false)
         end
     end
 
-    verbose && println(Basis)
+    verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p)
@@ -225,16 +225,17 @@ function compute_all(f, verbose=false, givefrobmat=false)
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ, pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat,p)
-    verbose && println(Reductions)
+    Reductions = reducetransform_LA_descending(FBasis, N_m, S, fLift, pseudo_inverse_mat,p,verbose)
+    verbose && println("Reductions is $Reductions")
     ev = gen_exp_vec(n+1,n*d-n-1,:invlex)
-    verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
-    verbose && println(FM)
 
-    if verbose
-        println("The Frobenius matrix is $FM")
-    end
+    reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
+
+    verbose && println("convert_p_to_m is $reductions_verbose")
+
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+
+    verbose && println("The Frobenius matrix is $FM")
 
     if givefrobmat
         (FM,LPolynomial(FM,q,n))
