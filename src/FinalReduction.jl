@@ -8,7 +8,11 @@
 #include("Utils.jl")
 #include("StandardReduction.jl")
 
-function computeT(f, Basis, M)
+"""
+    computeT(f,Basis,M,termorder)
+
+"""
+function computeT(f, Basis, M, termorder)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -21,7 +25,7 @@ function computeT(f, Basis, M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     f_lift = liftCoefficients(precisionring,precisionringpoly,f)
 
-    exp_vec = gen_exp_vec(n+1, d*n-n-1, :invlex)
+    exp_vec = gen_exp_vec(n+1, d*n-n-1, termorder)
     monomials = gen_mon(exp_vec, precisionring, precisionringpoly)
     #len = binomial(n+(d*n-n-1), n)
     len = length(monomials)
@@ -34,13 +38,13 @@ function computeT(f, Basis, M)
     for i in 0:n-1
         l = d*(n-i) - n - 1
         if l > 0
-            exp_vec = gen_exp_vec(n+1,l,:invlex)
+            exp_vec = gen_exp_vec(n+1,l,termorder)
             if (l-(d-1)) >= 0
-                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,:invlex)
+                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,termorder)
                 len_domain = length(monomials_domain)
                 basis = Basis[n-i]
                 len_basis = length(basis)
-                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M)
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 for j in 1:len # indexing over monomials 

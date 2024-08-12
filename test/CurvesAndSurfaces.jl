@@ -14,8 +14,9 @@ function test_ellipticcurve_1(p)
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
-    zeta = DeRham.compute_all(f,precision,false,true)[2]
+    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
+    zeta = zeta[1] # LPolynomial returns two things rn, precision issues i guess
     t = gen(parent(zeta))
 
     correctzeta = if p == 7
@@ -40,7 +41,7 @@ function test_ellipticcurve_2(p)
 
     f = y^2*z - x^3 - x*z^2
 
-    zeta = DeRham.compute_all(f,precision,false,true)[2]
+    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
     t = gen(parent(zeta))
 
@@ -72,7 +73,7 @@ function test_fermat_k3(p)
 
     f = x^4 + y^4 + z^4 + w^4 
 
-    zeta = DeRham.compute_all(f,false,true)[2]
+    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
     t = gen(parent(zeta))
     ts = (t .^ (21:-1:0))
@@ -149,14 +150,14 @@ function test_highergenus_1(p)
     n = 2
     d = 3
     series_precision = (4,4)
-    absolute_precision = 7
+    abs_precision = 7
 
     F = GF(p)
     R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
 
     f = x^5 + y^5 + z^5 +x*z*y^3
 
-    zeta = DeRham.compute_all(f,4,absolute_precision,false,true)[2]
+    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
     t = gen(parent(zeta))
     ts = (t .^ (21:-1:0))

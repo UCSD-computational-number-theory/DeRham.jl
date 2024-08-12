@@ -31,7 +31,7 @@ f = x^5 + y^5 + z^5 + x * y^3 * z
 # $$(\mu_0, \dots, \mu_n) \mapsto \sum_{i=0}^n \mu_i \partial_i f$$
 # where each $\mu_i$ are monomials of degree $dm - n - 1 - (d-1)$.
 #
-function compute_basis_matrix(f, l, m, R, PR)
+function compute_basis_matrix(f, l, m, R, PR, termorder)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
@@ -39,7 +39,7 @@ function compute_basis_matrix(f, l, m, R, PR)
     @assert(0 <= m && m <= n)
 
     section = binomial(n + l - (d-1), n)
-    domain_mons = compute_monomials(n+1, l - (d - 1), PR,:invlex)
+    domain_mons = compute_monomials(n+1, l - (d - 1), PR, termorder)
 
     if length(domain_mons) <= 0
         return []
@@ -52,7 +52,7 @@ function compute_basis_matrix(f, l, m, R, PR)
 
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
-            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, :invlex)
+            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, termorder)
         end
     end
     
@@ -65,7 +65,12 @@ end
 # where $\mu_i$ for $0\leq i < |S|$ are of degree $l - (d - 1)$ and $\mu_i$ for
 # $|S| \leq i \leq n$ are of degree $l - d$.
 #
-function compute_controlled_matrix(f, l, S, R, PR)
+"""
+    compute_controlled_matrix(f, l, S, R, PR, termorder)
+
+what does this do again?
+"""
+function compute_controlled_matrix(f, l, S, R, PR, termorder)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
@@ -74,8 +79,8 @@ function compute_controlled_matrix(f, l, S, R, PR)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
-    in_set_mons = compute_monomials(n+1, l - (d - 1), PR,:invlex)
-    not_in_set_mons = compute_monomials(n+1, l - d, PR,:invlex)
+    in_set_mons = compute_monomials(n+1, l - (d - 1), PR, termorder)
+    not_in_set_mons = compute_monomials(n+1, l - d, PR, termorder)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -96,13 +101,13 @@ function compute_controlled_matrix(f, l, S, R, PR)
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
-            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, :invlex)
+            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, termorder)
         end
     end
 
     for i in (len_S+1):n+1
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, :invlex)
+            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, termorder)
         end
     end
     return M
@@ -111,15 +116,15 @@ end
 # Computes the monomial basis of $H_{dR}^n(U_{\QQ_p})$. In particular, we find the monomials
 # of degree $l = dm - n - 1$ in $F_p[x_0, \dots, x_n]$ that project onto a basis of the cokernel
 # of the map computed in `compute_classical_mat()`.
-function compute_monomial_basis(f, m, R, PR, order=:lex)
+function compute_monomial_basis(f, m, R, PR, termorder)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
 
-    ev = gen_exp_vec(n + 1, m*d - n - 1,order)
+    ev = gen_exp_vec(n + 1, m*d - n - 1, termorder)
     row_monomials = gen_mon(ev,R,PR)
 
-    M = compute_basis_matrix(f, d*m - n - 1, m, R, PR)
+    M = compute_basis_matrix(f, d*m - n - 1, m, R, PR, termorder)
     if isempty(M)
         return row_monomials
     end
@@ -133,13 +138,13 @@ end
 
 # Computes the the monomial bases for different `m`. That is,
 # `compute_monomial_bases(f, R, PR)[m]` will give the `m`-th case.
-function compute_monomial_bases(f, R, PR,order=:lex)
+function compute_monomial_bases(f, R, PR, termorder)
     n = nvars(parent(f)) - 1
 
     res = []
 
     for m in 1:n
-        push!(res, compute_monomial_basis(f, m, R, PR,order))
+        push!(res, compute_monomial_basis(f, m, R, PR,termorder))
     end
     return res
 end
@@ -155,18 +160,19 @@ The map is constructed as a matrix from the polynomial f and the set S.
 
 f - the polynomial defining the hypersurface
 S - the set in [0..n] to be used for the linear algebra problem
+termorder - the order of the monomials used for vectors
 
 I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
 PR- paren(f)
 """
-function pseudo_inverse_controlled(f, S, l, R, PR)
+function pseudo_inverse_controlled(f, S, l, R, PR, termorder)
     n = nvars(parent(f)) - 1
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
     
-    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ)
+    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, termorder)
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
@@ -188,12 +194,13 @@ f - the polynomial definitng the hypersurface
 S - the set in [0..n] to be used for the linear algebra problem
 l - ???? we need to document this, it's something used by compute_contolled_matrix
 M - the absolute precision to lift to.
+termorder - the order of the monomials used for vectors
 
 """
-function pseudo_inverse_controlled_lifted(f,S,l,M)
+function pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR)
+    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR,termorder)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)
@@ -204,15 +211,15 @@ function pseudo_inverse_controlled_lifted(f,S,l,M)
     return henselLift(p,M,U,Sol_mod_p_int)
 end
 
-# Computes the pseudo_inverse for the classical case.
-#TODO: update this to reflex changes to pseudo_inverse_controlled
-#it's used in standard reduction, I'll plan to take care of it then
-function pseudo_inverse_classical(f, R, PR)
-    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-end
-
-function pseudo_inverse_classicalm(f, m, R, PR)
-    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-end
+## Computes the pseudo_inverse for the classical case.
+##TODO: update this to reflex changes to pseudo_inverse_controlled
+##it's used in standard reduction, I'll plan to take care of it then
+#function pseudo_inverse_classical(f, R, PR)
+#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
+#end
+#
+#function pseudo_inverse_classicalm(f, m, R, PR)
+#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
+#end
 
 #end

@@ -15,13 +15,12 @@
 #verbose = false
 
 """
-    reduce_LA(U,V,S,n,d,f,pseudoInverseMat,g,ev,R,PR,Vars)
+    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
 
 applies reduction formula from Prop 1.15 in Costa's thesis to 
 basis elements of Homog(dn-d), returns them as polynomials
 """
-function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
-    #println(typeof(pseudoInverseMat))
+function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     R = coefficient_ring(PR)
     Vars = gens(PR)
     n = nvars(parent(f)) - 1
@@ -38,13 +37,13 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     end
     # get gi's using pseudoinverse
     XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),:invlex))
+    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
     MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
     gJS = MS()
     gJS = pseudoInverseMat*transpose(gVec)
     gc = []
     for i in 1:(n+1)
-        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-length(S)+1,:invlex),R,PR)[1])
+        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
     end
     gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
@@ -52,7 +51,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR)
     gcpartials = reverse(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
 
     #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
+    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
 
 end
 
@@ -234,7 +233,7 @@ function undo_rev_tweak(I,p)
 end
 
 """
-    reducechain_LA(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+    reducechain_costachunks(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 
@@ -242,37 +241,14 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,verbose=false)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     
-    #println(pseudoInverseMat)
 
-    #= @assert pseudoInverseMat ==
-    pseudoInverseMat = 
-    [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22;
-    0 0 0 1 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 1 0 0 0 0 0 0 0 0 0 0;
-    225 0 0 0 0 155 0 0 0 11 0 0 221 0 310;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 114 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 114;
-    0 0 0 1 0 0 172 0 0 0 0 0 0 0 0;
-    59 0 0 0 1 94 0 172 0 166 0 0 61 0 188;
-    0 0 0 0 0 0 0 0 172 0 0 0 0 286 0;
-    0 57 0 173 0 0 0 0 0 0 172 0 0 114 0;
-    83 0 57 0 173 59 0 0 0 94 0 172 166 0 61;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    114 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 114 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    166 0 114 0 0 118 0 0 0 188 0 0 332 0 236;
-    11 0 0 0 0 221 0 0 0 310 0 0 22 0 214;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
-    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;] "seems to have the wrong pseudo-inverse" =#
-    #I = [28,7,28]
-    #gCoeff = R(2)
     
     I = u
 
@@ -292,14 +268,8 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,verbose=false)
 
 
     gVec = I - rev_tweak(I,n*d-n)
-    ev = gen_exp_vec(n+1,n*d-n,:invlex)
-    #gMat = zeros(R,length(ev))
-    #for j in axes(gMat,1)
-    #    if gVec == ev[j]
-    #        gMat[j] = gCoeff
-    #        break
-    #    end
-    #end
+    ev = gen_exp_vec(n+1,n*d-n,termorder)
+
     I = I - gVec
     if m - n < p
         nend = m - n
@@ -330,92 +300,15 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,verbose=false)
 
     #verbose && println("Getting reduction matrix for V = $V")
 
-    #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR)
-    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
+    #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     #=
+    matrices = computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
     for i in axes(matrices,1)
         printMat(matrices[i])
     end
     =#
+    matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
 
-    #for i in axes(matrices,1)
-    #    printMat(matrices[i])
-    #end
-    #=
-    if V == [1,1,1]
-        #println("Using precomputed R_u,[1,1,1]")
-    matrices_precomputed = [
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[169 0 0 0 1 249 0 172 0 177 0 0 282 0 155]
-[0 114 0 0 0 0 0 0 1 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[94 0 57 0 173 280 0 0 0 61 0 172 188 0 160]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[155 0 0 0 0 11 0 0 0 221 0 0 310 0 22]
-[0 0 0 1 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 1 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[225 0 0 0 0 155 0 0 0 11 0 0 221 0 310]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 114 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 114]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 1 0 0 172 0 0 0 0 0 0 0 0]
-[59 0 0 0 1 94 0 172 0 166 0 0 61 0 188]
-[0 0 0 0 0 0 0 0 172 0 0 0 0 286 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 57 0 173 0 0 0 0 0 0 172 0 0 114 0]
-[83 0 57 0 173 59 0 0 0 94 0 172 166 0 61]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-],
-                R[[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[114 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 114 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[166 0 114 0 0 118 0 0 0 188 0 0 332 0 236]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[11 0 0 0 0 221 0 0 0 310 0 0 22 0 214]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-]
-]
-      #matrices = map(M -> R.(M),matrices)
-      for i in 1:4
-          @assert matrices[i] == matrices_precomputed[i] "the $i-th R_u,v matrix seems to have been computed wrong"
-      end
-    end 
-    =#
     
     B,A = computeRPoly_LAOneVar2(matrices,reverse(I - (nend-(d*n-n))*V),reverse(V),R)
     
@@ -442,11 +335,11 @@ function reducechain_LA(u,g,m,S,f,pseudoInverseMat,p,Ruvs,verbose=false)
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
-        #verbose && println("Getting y direction reduction matrix for V = $(y)") 
-        # there's some sort of parity issue between our code and edgar's
-        #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR)
+        verbose && println("Getting y direction reduction matrix for V = $(y)") 
+        # there's some sort of parity issue between our code and Costa's
+        #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRPoly_LAOneVar1(y,S,f,pseudoInverseMat,Ruvs)
+        matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,termorder)
         B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
         
         gMat = (A+B)*gMat
@@ -534,7 +427,7 @@ Returns the data used by costa's code given a polynomial term.
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term(term,n,d,p,verbose=false)
+function costadata_of_initial_term(term,n,d,p,termorder)
 
     #verbose && println("p: $p")
 
@@ -548,7 +441,7 @@ function costadata_of_initial_term(term,n,d,p,verbose=false)
 
     V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
-    ev = gen_exp_vec(n+1,n*d-n,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n,termorder)
     g = zeros(R,length(ev))
     for j in axes(g,1)
         if u == ev[j]
@@ -602,13 +495,13 @@ after reduction.
 
 Thus, the pole order is n.
 """
-function poly_of_end_costadata(costadata,PR,p,d,n)
+function poly_of_end_costadata(costadata,PR,p,d,n,termorder)
     (u,g_vec) = costadata
     vars = gens(PR)
 
-    g = vector_to_polynomial(g_vec,n,d*n-n,PR,:invlex)
+    g = vector_to_polynomial(g_vec,n,d*n-n,PR,termorder)
 
-    # no need to do rev_tweak since reducechain_LA returns the "true" u
+    # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
     [prod(vars .^ u) * g, n]
 end
@@ -621,11 +514,11 @@ after reduction.
 Thus, the pole order is always n.
 
 """
-function poly_of_end_costadatas(costadatas,PR,p,d,n,S)
+function poly_of_end_costadatas(costadatas,PR,p,d,n,S,termorder)
     res = PR(0)
     vars = gens(PR)
     for costadata in costadatas
-        res += poly_of_end_costadata(costadata,PR,p,d,n)[1]
+        res += poly_of_end_costadata(costadata,PR,p,d,n,termorder)[1]
     end
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(res,XS), n]]
@@ -651,7 +544,7 @@ end
 #        B = MPolyBuildCtx(PR)
 #        push_term!(B, R(1), o)
 #        XS = finish(B)
-#        ev = gen_exp_vec(n+1,d*n - n,:invlex)
+#        ev = gen_exp_vec(n+1,d*n - n,termorder)
 #        gReduction = div(XU*convert_m_to_p(transpose(RChain[1]),ev,R,PR)[1],XS)
 #        println("Polynomial obtained from reduction: $gReduction")
 #        result = result + gReduction
@@ -683,10 +576,12 @@ end
 #end
 
 """
+    reducepoly_costachunks_descending(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -710,9 +605,9 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
         
 
         for term in ωₑ
-            #verbose && println("term: $term")
-            term_costadata = costadata_of_initial_term(term,n,d,p)
-            #verbose && println("term, in Costa's format: $term_costadata")
+            verbose && println("term: $term")
+            term_costadata = costadata_of_initial_term(term,n,d,p,termorder)
+            verbose && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
         end
@@ -721,36 +616,52 @@ function reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
-            #verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_LA(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,verbose)
+            verbose && println("u is type $(typeof(ω[i][1]))")
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,termorder)
         end
 
         poleorder = poleorder - p
     end
 
-    #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S))
-    return poly_of_end_costadatas(ω,PR,p,d,n,S)
+    verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+    return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
 """
+    reducetransform_costachunks_descending(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
-TODO: what exactly is big N?? Why isn't is used?
+N_m - the precision
 """
-function reducetransform_LA_descending(FT,N_m,S,f,pseudoInverseMat,p,verbose)
+function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
     Ruvs = Dict()
     result = []
     for pol in FT
-        reduction = reducepoly_LA_descending(pol,S,f,pseudoInverseMat,p,Ruvs,verbose)
+        reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
         push!(result, reduction)
     end
     return result
 end
-        
+
+function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    return nothing
+end
+
+function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,termorder,algorithm)
+    if algorithm == :costachunks
+        reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    elseif algorithm == :naive
+        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    else
+        throw(ArgumentError("Unsupported Algorithm: $algorithm"))
+    end
+end
+
 """
 computes reduction matrices
 """
-function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
+function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     YRing, y = polynomial_ring(R, "y")
     PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
     yV = []
@@ -758,11 +669,11 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
         push!(yV, y*V[i])
     end
     UVars = mins + yV
-    ev = gen_exp_vec(n+1,n*d-n,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n,termorder)
     monomials = gen_mon(ev,YRing,PYRing)
     reductions = []
     for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PYRing)[1])
+        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PYRing,termorder)[1])
     end
     polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
@@ -777,10 +688,73 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR)
     return [A,B]
 end
 
+function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    end
+    n = nvars(parent(f)) - 1
+    d = degree(f,1)
+    R = coefficient_ring(parent(f))
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-d+1,termorder)
+    MS1 = matrix_space(R, length(ev1), length(ev1))
+    MS2 = matrix_space(R, length(ev2),1)
+    result = Vector{typeof(MS1())}(undef, n+2)
+    for i in 1:n+2
+        result[i] = MS1(0)
+    end
+    Stilda = zeros(Int, length(S))
+    for i in S
+        Stilda[n+1-i] = 1
+    end
+    for i in 1:length(ev1)
+        mon = Vector{Int64}(undef, n+1)
+        for m in 1:(n+1)
+            mon[m] = ev1[i][m] + V[m] - Stilda[m]
+        end
+        gVec = MS2()
+        for j in 1:length(ev2)
+            if ev2[j] == mon
+                gVec[j] = R(1)
+            else
+                gVec[j] = R(0)
+            end
+        end
+        gJS = pseudoInverseMat*gVec
+        for j in 1:(n+1)
+            for k in 1:length(ev3)
+                for l in 1:length(ev1)
+                    for m in 1:(n+1)
+                        if m == n+1-j+1
+                            ev3[k][m] = ev3[k][m] + Stilda[m] - 1
+                        else
+                            ev3[k][m] = ev3[k][m] + Stilda[m]
+                        end
+                    end
+                    if ev1[l] == ev3[k]
+                        result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                        result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    end
+                    for m in 1:(n+1)
+                        if m == n+1-j+1
+                            ev3[k][m] = ev3[k][m] - Stilda[m] + 1
+                        else
+                            ev3[k][m] = ev3[k][m] - Stilda[m]
+                        end
+                    end
+                end
+            end
+        end
+    end
+    get!(Ruvs, V, result)
+    return result
+end
+
 """
 Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
 """
-function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
+function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     end
@@ -796,11 +770,12 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs)
     end
     U = UVars[2:(n+2)] + yV
     =#
-    ev = gen_exp_vec(n+1,n*d-n,:invlex)
+    ev = gen_exp_vec(n+1,n*d-n,termorder)
     monomials = gen_mon(ev,URing,PURing)
+    #monomials = gen_mon(ev,R,parent(f))
     reductions = []
     for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing)[1])
+        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing,termorder)[1])
     end
     polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
     matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
