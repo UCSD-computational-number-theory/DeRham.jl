@@ -45,7 +45,7 @@ INPUTS:
 * "d" -- integer
 * "order" -- string, monomial ordering, defaulted to lexicographic ordering. Also supports neglex 
 """
-
+#=
 function gen_exp_vec(n, d, order=:lex)
     @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
     result = Vector{Int64}[]
@@ -104,9 +104,10 @@ function gen_exp_vec(n, d, order=:lex)
 
     result
 end
+=#
 
 
-function gen_exp_vec1(n, d, order=:lex)
+@memoize function gen_exp_vec(n, d, order=:lex)
     result = Vector{Vector{Int64}}(undef, binomial(n+d-1,d))
     for i in 1:binomial(n+d-1,d)
         result[i] = zeros(Int64,n)
@@ -158,7 +159,7 @@ function gen_exp_vec1(n, d, order=:lex)
                 end
             end
         end
-    elseif order == :invlex
+    elseif order == :neglex
         for i in 1:n
             dtemp = copy(d)
             k = 1
@@ -198,6 +199,53 @@ function gen_exp_vec1(n, d, order=:lex)
                     while dtemp >= 0
                         for j in 1:binomial(n-i+d-dtemp-dtemp2-1,d-dtemp-dtemp2)
                             result[j+k-1][i] = dtemp
+                        end
+                        k = k + binomial(n-i+d-dtemp-dtemp2-1,d-dtemp-dtemp2)
+                        dtemp = dtemp - 1
+                    end
+                end
+            end
+        end
+    elseif order == :invlex
+        for i in 1:n
+            dtemp = copy(d)
+            k = 0
+            while k <= (length(result) - 1)
+                if i > 1
+                    dtemp = copy(d)
+                    for j in 1:n
+                        dtemp = dtemp - result[length(result)-k][j]
+                    end
+                end
+                if i == n && dtemp > 0
+                    result[length(result)-k][n-i+1] = dtemp
+                    k = k + 1
+                    continue
+                end
+                if dtemp == 0
+                    k = k + 1
+                    continue
+                end
+                if dtemp == 1 && i > 1
+                    for j in i:n
+                        result[length(result)-(k+j-i)][n-j+1] = 1
+                    end
+                    k = k + n - i + 1
+                    continue
+                end
+                dtemp2 = copy(d - dtemp)
+                if i == 1 || dtemp2 == 0
+                    while dtemp >= 0
+                        for j in 1:binomial(n-i+d-dtemp-1,d-dtemp)
+                            result[length(result)-(j+k-1)][n-i+1] = dtemp
+                        end
+                        k = k + binomial(n-i+d-dtemp-1,d-dtemp)
+                        dtemp = dtemp - 1
+                    end
+                else
+                    while dtemp >= 0
+                        for j in 1:binomial(n-i+d-dtemp-dtemp2-1,d-dtemp-dtemp2)
+                            result[length(result)-(j+k-1)][n-i+1] = dtemp
                         end
                         k = k + binomial(n-i+d-dtemp-dtemp2-1,d-dtemp-dtemp2)
                         dtemp = dtemp - 1
