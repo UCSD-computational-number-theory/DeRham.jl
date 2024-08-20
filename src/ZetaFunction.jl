@@ -202,7 +202,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
         end
     end
 
-    verbose && println(Basis)
+    verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder)
@@ -245,9 +245,13 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
     verbose && println(FM)
 
-    if verbose
-        println("The Frobenius matrix is $FM")
-    end
+    #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
+
+    #verbose && println("convert_p_to_m is $reductions_verbose")
+
+    #FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+
+   # verbose && println("The Frobenius matrix is $FM")
 
     if givefrobmat
         (FM,LPolynomial(FM,q,n))

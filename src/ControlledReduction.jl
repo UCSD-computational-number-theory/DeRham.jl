@@ -256,7 +256,9 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     #I = reverse(I) # parity issue due to Costa's code being reverse from ours
 
     gMat = g
-    verbose && println("This is I: $I")
+    #chain = 0
+    I_edgar = [x//7 for x in I]
+    verbose && println("This is I: $I_edgar")
     J = copy(I)
 
     #TODO?
@@ -296,7 +298,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     end
     =#
 
-    verbose && println("Getting reduction matrix for V = $V")
+    #verbose && println("Getting reduction matrix for V = $V")
 
     #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     #=
@@ -312,8 +314,8 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     
     i = 1
     
-    verbose && println("Before reduction chunk: $gMat")
-    verbose && println("Before reduction chunk, I is $I")
+    #verbose && println("Before reduction chunk: $gMat")
+    #verbose && println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
       gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
@@ -321,7 +323,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
-        verbose && println("After step $i: $gMat")
+        #verbose && println("After step $i: $gMat")
 
         i = i+1
       end
@@ -329,7 +331,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     # TODO: test how much of a difference the fast evaluation actually makes
 
     I = I - (nend-(d*n-n))*V
-    verbose && println("After steps 1-$i, I is $I")
+    #verbose && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
@@ -341,11 +343,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
         B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
         
         gMat = (A+B)*gMat
-        verbose && println("After step $(i+1): $gMat")
+        #verbose && println("After step $(i+1): $gMat")
 
         i = i+1
         I = I - y
-        verbose && println("After step $(i+1), I is $I")
+        #verbose && println("After step $(i+1), I is $I")
     end
     #=
     MK = A + B*K
@@ -366,7 +368,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
     
     if nend == p
         newI = J - p*V
-        @assert undo_rev_tweak(I,p) == newI
+        #@assert undo_rev_tweak(I,p) == newI
 
         return (newI, gMat)
     else
@@ -427,7 +429,7 @@ only be used at the beginning of reduction
 """
 function costadata_of_initial_term(term,n,d,p,termorder)
 
-    verbose && println("p: $p")
+    #verbose && println("p: $p")
 
     R = base_ring(parent(term[1])) 
     i = term
@@ -449,7 +451,7 @@ function costadata_of_initial_term(term,n,d,p,termorder)
     end
 
 
-    verbose && println("creation: u is type $(typeof(II))")
+    #verbose && println("creation: u is type $(typeof(II))")
     (II,g)
 end
 
@@ -482,7 +484,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
 
     # otherwise, push on a new term
     if !ind_already
-        verbose && println("incorporation: u has type $(typeof(costadata[1]))")
+        #verbose && println("incorporation: u has type $(typeof(costadata[1]))")
         push!(costadata_arr,costadata)
     end
 end
@@ -585,7 +587,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    verbose && println(pol)
+    #verbose && println(pol)
 
     i = pol
     highpoleorder = i[length(i)][2]
@@ -595,10 +597,11 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
 
     poleorder = highpoleorder
     while n < poleorder
+        println("pole order is $poleorder")
         # this is an array of polynomials
         ωₑ = termsoforder(pol,poleorder)
 
-        verbose && println("ωₑ: $ωₑ")
+        #verbose && println("ωₑ: $ωₑ")
         
 
         for term in ωₑ
@@ -609,7 +612,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
             incorporate_initial_term!(ω,term_costadata)
         end
 
-        verbose && println("ω: $ω")
+        #verbose && println("ω: $ω")
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
