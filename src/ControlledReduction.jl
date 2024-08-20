@@ -632,7 +632,8 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 N_m - the precision
 """
 function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
-    Ruvs = Dict()
+    MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
+    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
     for pol in FT
         reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
@@ -686,16 +687,16 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
 end
 
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
-    if haskey(Ruvs, V)
-        return get(Ruvs, V, 0)
-    end
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     R = coefficient_ring(parent(f))
+    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = gen_exp_vec(n+1,n*d-n-d+1,termorder)
-    MS1 = matrix_space(R, length(ev1), length(ev1))
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
     for i in 1:n+2
