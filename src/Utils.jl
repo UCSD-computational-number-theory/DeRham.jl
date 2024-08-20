@@ -107,7 +107,7 @@ end
 =#
 
 
-@memoize function gen_exp_vec(n, d, order=:lex)
+function gen_exp_vec(n, d, order=:lex)
     result = Vector{Vector{Int64}}(undef, binomial(n+d-1,d))
     for i in 1:binomial(n+d-1,d)
         result[i] = zeros(Int64,n)
