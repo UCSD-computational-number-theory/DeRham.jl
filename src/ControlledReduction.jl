@@ -241,7 +241,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,verbose=:false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -329,8 +329,10 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder)
       end
     end
     # TODO: test how much of a difference the fast evaluation actually makes
-
-    I = I - (nend-(d*n-n))*V
+    # i > 1 iff the while loop above is executed at least once 
+    if i > 1 # TODO: this will have a problem with fastevaluation
+        I = I - (nend-(d*n-n))*V
+    end
     #verbose && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
