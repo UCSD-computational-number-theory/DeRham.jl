@@ -409,13 +409,12 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,verbose=:
             K = K+1
         end
         matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
-        #=
-        for t in matrices
-            printMat(t)
-        end
-        =#
         B,A = computeRPoly_LAOneVar2(matrices,reverse(mins),reverse(V),R)
-        gMat = finitediff_prodeval_linear(B,A,0,K,gMat)
+        i = 1
+        while i <= K
+            gMat = (A+B*(K-i))*gMat
+            i = i+1
+        end
         J = J - K*V
         m = m - K
     end
@@ -462,7 +461,6 @@ function finitediff_prodeval_linear(a,b,start,stop,g)
     # now, Fk = F(k)
     g = Fk * g
   end
-
   g
 end
 
@@ -699,7 +697,6 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
     for pol in FT
-        #reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
         reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
         push!(result, reduction)
     end
