@@ -764,7 +764,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = gen_exp_vec(n+1,n*d-n-d+1,termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
     for i in 1:n+2
