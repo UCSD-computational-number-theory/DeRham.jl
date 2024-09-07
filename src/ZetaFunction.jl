@@ -172,9 +172,13 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("There are $k basis elements in H^$n")
 
-    r_m = relative_precision(k, p)
-    N_m = series_precision(r_m, p, n) # series precision 
-    M = algorithm_precision(r_m, N_m, p)
+    r_m = relative_precision(k, p)  # relative precision
+    N_m = series_precision(r_m, p, n)  # series precision 
+    M = algorithm_precision(r_m, N_m, p)  # algorithm precision
+
+    verbose && println("relative precision is $r_m")
+    verbose && println("series precision is $N_m")
+    verbose && println("algorithm precision is $M")
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
      
@@ -205,7 +209,8 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder, verbose=verbose)
+    #verbose && println("Terms of applying Frobenius is $FBasis")
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
@@ -238,12 +243,19 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm)
-    verbose && println(Reductions)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,verbose=verbose)
+    #verbose && println("Terms after controlled reduction are $Reductions")
+    if verbose
+        for i in 1:length(Basis)
+            basis_elt = Basis[i]
+            after_reduction = Reductions[i]
+            println("Basis element $basis_elt becomes $after_reduction after controlled reduction")
+        end 
+    end 
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
-    verbose && println(FM)
+    verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
 

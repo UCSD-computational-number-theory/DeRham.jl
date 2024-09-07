@@ -543,7 +543,7 @@ Characteristic polynomial = [7 -3 1]
 
 
 
-
+-------------------------------------------
 
 calulating frobenius of [0 0 0 0] at coordinate 0
 compute_fpow(3)

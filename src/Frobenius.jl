@@ -50,14 +50,14 @@ INPUTS:
 * "R" -- ring, precision ring 
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
-function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder)
+function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder; verbose=false)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
     verbose && println("N=$N, m=$m")
     verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
-    verbose && println("Factorial: $Factorial")
-    verbose && println("p: $p")
+    #verbose && println("Factorial: $Factorial")
+    #verbose && println("p: $p")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -75,7 +75,15 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder)
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1),Int64(p) * (beta + alpha + o))
             monomial = div(finish(B), X1)
-            sum = sum + R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p))) * monomial
+            #coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p)))
+            coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)))) # not sure whether there should be a power of p here 
+            sum = sum + coefficient * monomial
+            if verbose && coefficient != 0
+                Djm = D[j+1]
+                C_jalpha = coeff(fj,alpha)
+                #println("Djm=$Djm, C_jalpha=$C_jalpha")
+            end
+            verbose && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
@@ -108,15 +116,15 @@ INPUTS:
 * "N_m" -- series precision
 * "p" -- the prime
 """
-function applyFrobeniusToBasis(Basis,f,N_m,p,termorder)
+function applyFrobeniusToBasis(Basis,f,N_m,p,termorder; verbose=false)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
     for b in Basis
-        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder)
-        verbose && println(Fmon)
+        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder,verbose=verbose)
+        #verbose && println(Fmon)
         push!(result, Fmon)
     end
     return result
