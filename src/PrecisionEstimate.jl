@@ -163,125 +163,130 @@ end
 Determines M such that the algorithm works in Z/p^M Z 
 """
 #function algorithm_precision(r_m, N_m, p)
-function algorithm_precision(p,n,d)
+function algorithm_precision(p,n,d,r_m,N_m)
     #if r_m == [2,3] && N_m == [2,2] && p == 7
     #    M = 3
     #elseif r_m == [2,3,3] && N_m == [4,4,3] && p == 7
     #    M = 6
     #end
     #return M
+    s_m = [i+x-1 for (i,x) in enumerate(N_m)]
+    s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), p) for s in s_m]
+
+    precision = maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
+
     if ( n == 2 && d == 3 ) 
         if ( p < 5) 
-            precision = 5;
+            @assert precision == 5;
         elseif ( 5 <= p && p < 17 ) 
-            precision = 3;
+            @assert precision == 3;
         elseif ( 17 <= p  ) 
-            precision = 1;
+            @assert precision == 1;
         end
     elseif ( n == 2 && d == 4 ) 
         if ( p < 5) 
-            precision = 7;
+            @assert precision == 7;
         elseif ( 5 <= p && p < 17 ) 
-            precision = 5;
+            @assert precision == 5;
         elseif ( 17 <= p  ) 
-            precision = 3;
+            @assert precision == 3;
         end
     elseif ( n == 2 && d == 5 ) 
         if ( p < 5) 
-            precision = 12;
+            @assert precision == 12;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 9;
+            @assert precision == 9;
         elseif ( 7 <= p  ) 
-            precision = 7;
+            @assert precision == 7;
         end
     elseif ( n == 2 && d == 6 ) 
         if ( p < 5) 
-            precision = 19;
+            @assert precision == 19;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 13;
+            @assert precision == 13;
         elseif ( 7 <= p && p < 11 ) 
-            precision = 13;
+            @assert precision == 13;
         elseif ( 11 <= p  ) 
-            precision = 11;
+            @assert precision == 11;
         end
     elseif ( n == 2 && d == 7 ) 
         if ( p < 5) 
-            precision = 23;
+            @assert precision == 23;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 20;
+            @assert precision == 20;
         elseif ( 7 <= p && p < 11 ) 
-            precision = 19;
+            @assert precision == 19;
         elseif ( 11 <= p && p < 17 ) 
-            precision = 17;
+            @assert precision == 17;
         elseif ( 17 <= p  ) 
-            precision = 15;
+            @assert precision == 15;
         end
     elseif ( n == 2 && d == 8 ) 
         if ( p < 5) 
-            precision = 30;
+            @assert precision == 30;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 26;
+            @assert precision == 26;
         elseif ( 7 <= p && p < 13 ) 
-            precision = 25;
+            @assert precision == 25;
         elseif ( 13 <= p && p < 17 ) 
-            precision = 25;
+            @assert precision == 25;
         elseif ( 17 <= p  ) 
-            precision = 21;
+            @assert precision == 21;
         end
     elseif ( n == 2 && d == 9 ) 
         if ( p < 5) 
-            precision = 41;
+            @assert precision == 41;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 33;
+            @assert precision == 33;
         elseif ( 7 <= p && p < 11 ) 
-            precision = 32;
+            @assert precision == 32;
         elseif ( 11 <= p && p < 17 ) 
-            precision = 31;
+            @assert precision == 31;
         elseif ( 17 <= p  ) 
-            precision = 29;
+            @assert precision == 29;
         end
     elseif ( n == 3 && d == 4 ) 
         if ( p < 5) 
-            precision = 16;
+            @assert precision == 16;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 9;
+            @assert precision == 9;
         elseif ( 7 <= p && p < 23 ) 
-            precision = 6;
+            @assert precision == 6;
         elseif ( 23 <= p && p < 43 ) 
-            precision = 5;
+            @assert precision == 5;
         elseif ( 43 <= p  ) 
-            precision = 4;
+            @assert precision == 4;
         end
     elseif ( n == 3 && d == 5 ) 
         if ( p < 5) 
-            precision = 21;
+            @assert precision == 21;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 17;
+            @assert precision == 17;
         elseif ( 7 <= p && p < 11 ) 
-            precision = 14;
+            @assert precision == 14;
         elseif ( 11 <= p && p < 23 ) 
-            precision = 12;
+            @assert precision == 12;
         elseif ( 23 <= p && p < 29 ) 
-            precision = 11;
+            @assert precision == 11;
         elseif ( 29 <= p  ) 
-            precision = 10;
+            @assert precision == 10;
         end
     elseif ( n == 3 && d == 6 ) 
         if ( p < 5) 
-            precision = 38;
+            @assert precision == 38;
         elseif ( 5 <= p && p < 7 ) 
-            precision = 29;
+            @assert precision == 29;
         elseif ( 7 <= p && p < 11 ) 
-            precision = 28;
+            @assert precision == 28;
         elseif ( 11 <= p && p < 17 ) 
-            precision = 26;
+            @assert precision == 26;
         elseif ( 17 <= p && p < 23 ) 
-            precision = 24;
+            @assert precision == 24;
         elseif ( 23 <= p  ) 
-            precision = 22;
+            @assert precision == 22;
         end
     end
-    precision
+    return precision
 end 
 
 

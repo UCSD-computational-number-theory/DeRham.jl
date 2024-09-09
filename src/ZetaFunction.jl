@@ -172,11 +172,11 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("There are $k basis elements in H^$n")
 
-    #r_m = relative_precision(k, p)
+    r_m = relative_precision(k, p)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d)
-    M = algorithm_precision(p,n,d)
+    M = algorithm_precision(p,n,d,r_m,N_m)
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
      
