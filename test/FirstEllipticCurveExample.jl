@@ -221,7 +221,7 @@ function testT()
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     basis = DeRham.compute_monomial_bases(f,R,PR,:invlex)
-    @test Array(DeRham.computeT(f,basis,M,:invlex)) == 
+    @test Array(DeRham.computeT(f,basis,M,:invlex,true)) == 
     [257 0 85 0 0 0 172 257 0 0;
      172 0 52 0 114 0 0 170 0 1]
 end
