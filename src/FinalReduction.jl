@@ -12,7 +12,7 @@
     computeT(f,Basis,M,termorder)
 
 """
-function computeT(f, Basis, M, termorder)
+function computeT(f, Basis, M, termorder, vars_reversed)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
     d = degree(f,1)
@@ -31,7 +31,10 @@ function computeT(f, Basis, M, termorder)
     len = length(monomials)
 
     partials = [ derivative(f_lift, i) for i in 1:n+1 ]
-    partials = reverse(partials)
+    if vars_reversed == true
+        partials = reverse(partials)
+    end
+    println(partials)
 
     T = zero_matrix(precisionring, 0, len)
 
@@ -44,7 +47,7 @@ function computeT(f, Basis, M, termorder)
                 len_domain = length(monomials_domain)
                 basis = Basis[n-i]
                 len_basis = length(basis)
-                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder)
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder,vars_reversed)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 for j in 1:len # indexing over monomials 

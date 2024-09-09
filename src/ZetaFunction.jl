@@ -183,7 +183,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
-    T = computeT(f, basis, M, termorder)
+    T = computeT(f, basis, M, termorder, vars_reversed)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
@@ -203,14 +203,12 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
             push!(Basis,[j,i])
         end
     end
-
     verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder, verbose=verbose)
-    #verbose && println("Terms of applying Frobenius is $FBasis")
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
+    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -241,8 +239,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,verbose=verbose)
-    #verbose && println("Terms after controlled reduction are $Reductions")
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,verbose=verbose)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
@@ -286,12 +283,12 @@ include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
 n = 2
-d = 3
+d = 4
 p = 7
 R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x0,x1,x2 = Vars
-f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+x,y,z = Vars
+f = x^4 + y^4 + z^4
 S = [0,1,2]
-@time zeta_function(f)
+@time DeRham.zeta_function(f)
 =#

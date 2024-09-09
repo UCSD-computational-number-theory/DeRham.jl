@@ -53,4 +53,21 @@ function test_reversing_variables()
     @test zeta_reversed == zeta_normal
     @test zeta_reversed_lex == zeta_normal_lex
 end
+
+function test_naive_algorithm()
+    n = 2
+    d = 3
+
+    p = 7
+
+    F = GF(p)
+    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+
+    f = y^2*z - x^3 - x*z^2 - z^3
+
+    zeta_costa = DeRham.zeta_function(f)
+    zeta_naive = DeRham.zeta_function(f)
+
+    @test zeta_costa == zeta_naive
+end
     

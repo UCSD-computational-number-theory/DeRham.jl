@@ -50,11 +50,13 @@ INPUTS:
 * "R" -- ring, precision ring 
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
-function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder; verbose=false)
+function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_reversed; verbose=false)
     #FIXME reversed to match Costa's code
-    #beta = reverse(beta)
-    #verbose && println("N=$N, m=$m")
-    #verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
+    if vars_reversed == false
+        beta = reverse(beta)
+    end
+    verbose && println("N=$N, m=$m")
+    verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
     #verbose && println("Factorial: $Factorial")
     #verbose && println("p: $p")
@@ -116,15 +118,15 @@ INPUTS:
 * "N_m" -- series precision
 * "p" -- the prime
 """
-function applyFrobeniusToBasis(Basis,f,N_m,p,termorder; verbose=false)
+function applyFrobeniusToBasis(Basis,f,N_m,p,termorder,vars_reversed; verbose=false)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
     for b in Basis
-        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder,verbose=verbose)
-        #verbose && println(Fmon)
+        Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder,vars_reversed,verbose=verbose)
+        verbose && println(Fmon)
         push!(result, Fmon)
     end
     return result
