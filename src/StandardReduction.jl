@@ -20,7 +20,7 @@ INPUTS:
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis(f, l, basis, termorder)
+function monomial_change_basis(f, l, basis, termorder, vars_reversed)
        println(basis)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
@@ -40,7 +40,7 @@ function monomial_change_basis(f, l, basis, termorder)
        exp_vec = gen_exp_vec(n+1, l, termorder)
 
        # matrix for the map (\mu_0, \dots, \mu_n) \mapsto \sum_{i\in n} \mu_i \partial_i f 
-       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,termorder)
+       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,termorder,vars_reversed)
        
        # column vectors corresponding to monomials in the basis of cohomology 
        basis_columns = transpose(convert_p_to_m(basis_lift,exp_vec))
@@ -61,10 +61,10 @@ INPUTS:
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse(f,l,basis,termorder)    
+function monomial_change_basis_inverse(f,l,basis,termorder,vars_reversed)    
        PR = parent(f)
        R = coefficient_ring(PR)  
-       A = monomial_change_basis(f,l,basis,termorder)
+       A = monomial_change_basis(f,l,basis,termorder, vars_reversed)
        
        flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
        
@@ -86,10 +86,10 @@ INPUTS:
 * "M" -- integer, desired mod p^M precision
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse_lifted(f, l, basis, M, termorder)
+function monomial_change_basis_inverse_lifted(f, l, basis, M, termorder,vars_reversed)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis,termorder)
+    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis,termorder,vars_reversed)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)

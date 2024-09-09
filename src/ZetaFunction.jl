@@ -60,6 +60,7 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
+        println(temp)
         verbose && println("temp: $temp")
         for i in 1:length(temp)
 #            println(temp[i])
@@ -183,7 +184,8 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
-    T = computeT(f, basis, M, termorder)
+    T = computeT(f, basis, M, termorder, vars_reversed)
+    printMat(T)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
@@ -207,9 +209,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed)
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
+    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -240,7 +242,8 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed)
+    println(Reductions)
     verbose && println(Reductions)
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
@@ -282,8 +285,8 @@ d = 3
 p = 7
 R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x0,x1,x2 = Vars
-f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
+x,y,z = Vars
+f = y^2*z - x^3 - x*z^2 - z^3
 S = [0,1,2]
-@time zeta_function(f)
+@time DeRham.zeta_function(f)
 =#

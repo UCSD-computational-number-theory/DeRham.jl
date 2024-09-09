@@ -70,7 +70,7 @@ end
 
 what does this do again?
 """
-function compute_controlled_matrix(f, l, S, R, PR, termorder)
+function compute_controlled_matrix(f, l, S, R, PR, termorder, vars_reversed)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
@@ -97,7 +97,9 @@ function compute_controlled_matrix(f, l, S, R, PR, termorder)
     M = U()
 
     partials = [ derivative(f, i) for i in 1:n+1 ]
-    partials = reverse(partials)
+    if vars_reversed == true
+        partials = reverse(partials)
+    end
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
@@ -166,13 +168,13 @@ I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
 PR- paren(f)
 """
-function pseudo_inverse_controlled(f, S, l, R, PR, termorder)
+function pseudo_inverse_controlled(f, S, l, R, PR, termorder,vars_reversed)
     n = nvars(parent(f)) - 1
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
     
-    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, termorder)
+    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, termorder,vars_reversed)
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
@@ -197,10 +199,10 @@ M - the absolute precision to lift to.
 termorder - the order of the monomials used for vectors
 
 """
-function pseudo_inverse_controlled_lifted(f,S,l,M,termorder)
+function pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR,termorder)
+    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR,termorder,vars_reversed)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)
