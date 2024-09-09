@@ -262,8 +262,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     I_edgar = [x//7 for x in I]
     verbose && println("This is I: $I_edgar")
     J = copy(I)
-    println(I)
-    println(gMat)
 
     #TODO?
     if vars_reversed == false
@@ -271,7 +269,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     else
         V = chooseV(Array{Int}(divexact.(I,p)),d)
     end
-    println(V)
 
     if vars_reversed == true
         gVec = I - rev_tweak(I,n*d-n)
@@ -361,7 +358,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         end
         
         gMat = (A+B)*gMat
-        println(gMat)
         #verbose && println("After step $(i+1): $gMat")
 
         i = i+1

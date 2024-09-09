@@ -60,7 +60,6 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
-        println(temp)
         verbose && println("temp: $temp")
         for i in 1:length(temp)
 #            println(temp[i])
@@ -185,7 +184,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
     T = computeT(f, basis, M, termorder, vars_reversed)
-    printMat(T)
     verbose && println("T matrix is $T")
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
@@ -205,7 +203,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
             push!(Basis,[j,i])
         end
     end
-
     verbose && println("Basis of cohomology is $Basis")
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
@@ -281,12 +278,12 @@ include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
 n = 2
-d = 3
+d = 4
 p = 7
 R = GF(p,1)
 PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
 x,y,z = Vars
-f = y^2*z - x^3 - x*z^2 - z^3
+f = x^4 + y^4 + z^4
 S = [0,1,2]
 @time DeRham.zeta_function(f)
 =#
