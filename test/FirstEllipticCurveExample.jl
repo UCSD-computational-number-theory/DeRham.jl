@@ -39,7 +39,7 @@ function testLinAlgProb()
     S = [0,1,2]
     l = d * n - n + d - length(S)
     M = 3
-    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,:invlex)) == 
+    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,:invlex,true)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -92,7 +92,7 @@ function testFrobTrans()
     end
     #M = 15
 
-    frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p,:invlex)
+    frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p,:invlex,true)
 
     x0,x1,x2 = PVars
 
