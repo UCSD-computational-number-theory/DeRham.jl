@@ -57,14 +57,47 @@ end
 
 """
     chooseV(I, d)
-
-choose direction of reduction in the same way as Costa's code
+Choose the direction of reduction V following Edgar's method
 
 INPUTS: 
 * "I" -- list/tuple, exponents of monomials
 * "d" -- integer, degree of f 
 """
 function chooseV(I, d)
+    v = zeros(Int,length(I))
+    n = length(I)
+
+    sum = 0
+    for i in 1:n 
+        if I[i] > 0
+            v[i] = v[i] + 1
+            sum = sum + 1
+        end 
+    end 
+
+    while sum < d 
+        for i in 0:(n-1) 
+            if I[n-i] > v[n-i]
+                v[n-i] = v[n-i] + 1
+                sum = sum + 1
+                break
+            end 
+        end 
+    end 
+    return v
+end 
+
+"""
+    skim_chooseV(I, d)
+
+choose direction of reduction V by scanning from right to left
+Note: this differs from Edgar's method, see chooseV
+
+INPUTS: 
+* "I" -- list/tuple, exponents of monomials
+* "d" -- integer, degree of f 
+"""
+function skim_chooseV(I, d)
     V = zeros(Int,length(I))
     i = 0
     #s = 1
@@ -289,7 +322,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder;ver
     #verbose && println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
-      gMat = finitediff_prodval_linear(B,A,nend-(dn-n),nend,gMat)
+      gMat = finitediff_prodeval_linear(B,A,nend-(dn-n),nend,gMat)
     else
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
@@ -382,6 +415,48 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder;ver
 
 end
 
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,verbose=:false)
+    n = nvars(parent(f)) - 1
+    d = degree(f,1)
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
+    J = rev_tweak(u,n*d-n)
+    gMat = g
+    while m > n
+        V = chooseV(J,d)
+        mins = copy(J)
+        K = 0
+        while true
+            temp = mins - V
+            isLessThanZero = false
+            for j in temp
+                if j < 0
+                    isLessThanZero = true
+                    break
+                end
+            end
+            if isLessThanZero == true
+                break
+            end
+            if m - K == n
+                break
+            end
+            mins = temp
+            K = K+1
+        end
+        matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
+        B,A = computeRPoly_LAOneVar2(matrices,reverse(mins),reverse(V),R)
+        i = 1
+        while i <= K
+            gMat = (A+B*(K-i))*gMat
+            i = i+1
+        end
+        J = J - K*V
+        m = m - K
+    end
+    return (J, gMat)
+end
+
 """
 finitediff_prodeval_linear(a,b,start,stop,g)
 
@@ -414,7 +489,7 @@ function finitediff_prodeval_linear(a,b,start,stop,g)
 
   Fk = a .* stop .+ b # Fk = F(k), here k = stop
 
-  g = Fstop*g
+  g = Fk*g
 
   for k = stop-1:-1:start
     # right now, Fk = F(k+1)
@@ -422,8 +497,7 @@ function finitediff_prodeval_linear(a,b,start,stop,g)
     # now, Fk = F(k)
     g = Fk * g
   end
-
-  g
+  return g
 end
 
 """
@@ -457,7 +531,7 @@ function costadata_of_initial_term(term,n,d,p,termorder)
 
 
     #verbose && println("creation: u is type $(typeof(II))")
-    (II,g)
+    return (II,g)
 end
 
 """
@@ -617,7 +691,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder;verbos
             incorporate_initial_term!(ω,term_costadata)
         end
 
-        verbose && println("ω: $ω")
+        #verbose && println("ω: $ω")
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
@@ -630,6 +704,21 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder;verbos
 
     #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
+end
+
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+    n = nvars(parent(f)) - 1
+    d = degree(f,1)
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
+    result = []
+    for term in pol
+        terms = termsoforder(pol,term[2])
+        for t in terms
+            push!(result,reducechain_naive(costadata_of_initial_term(t,n,d,p,termorder)...,t[2],S,f,pseudoInverseMat,p,Ruvs,termorder))
+        end
+    end
+    return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
 end
 
 """
@@ -651,7 +740,14 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder;ver
 end
 
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder)
-    return nothing
+    MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
+    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    result = []
+    for pol in FT
+        reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+        push!(result, reduction)
+    end
+    return result
 end
 
 function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,termorder,algorithm;verbose=false)
@@ -704,7 +800,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = gen_exp_vec(n+1,n*d-n-d+1,termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
     for i in 1:n+2

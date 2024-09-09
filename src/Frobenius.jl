@@ -53,8 +53,8 @@ INPUTS:
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder; verbose=false)
     #FIXME reversed to match Costa's code
     #beta = reverse(beta)
-    verbose && println("N=$N, m=$m")
-    verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
+    #verbose && println("N=$N, m=$m")
+    #verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
     #verbose && println("Factorial: $Factorial")
     #verbose && println("p: $p")
@@ -67,7 +67,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder; verbose=f
     for j in 0:(N-1)
         e = j + m
         factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
-        verbose && println("e=$e,factorial_e=$factorial_e")
+        #verbose && println("e=$e,factorial_e=$factorial_e")
         ev = gen_exp_vec(n+1,d*j,termorder)
         fj = f^j
         sum = 0
@@ -83,7 +83,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder; verbose=f
                 C_jalpha = coeff(fj,alpha)
                 #println("Djm=$Djm, C_jalpha=$C_jalpha")
             end
-            verbose && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
+            #verbose && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])

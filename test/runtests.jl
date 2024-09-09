@@ -3,7 +3,8 @@ using Test
 using Oscar
 
 # source files, in the future replace this with `using DeRham`
-include("../src/DeRham.jl")
+using DeRham
+#inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
 include("CurvesAndSurfaces.jl")
