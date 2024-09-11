@@ -40,13 +40,13 @@ function computeT(f, Basis, M, termorder, vars_reversed)
 
     for i in 0:n-1
         l = d*(n-i) - n - 1
-        if l > 0
+        basis = Basis[n-i]
+        len_basis = length(basis)
+        if l >=0 
             exp_vec = gen_exp_vec(n+1,l,termorder)
-            if (l-(d-1)) >= 0
+            if (l-(d-1)) > 0
                 monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,termorder)
                 len_domain = length(monomials_domain)
-                basis = Basis[n-i]
-                len_basis = length(basis)
                 change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder,vars_reversed)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
@@ -63,10 +63,11 @@ function computeT(f, Basis, M, termorder, vars_reversed)
                     term = 0
                     for t in 1:len_domain*(n+1)
                         #t_partial = ceil(Int, t/(n+1))
-                        t_partial = ceil(Int, t/(n+1)) % (n+1)
-                        if t_partial == 0
-                            t_partial = n+1
-                        end
+                        #t_partial = ceil(Int, t/(n+1)) % (n+1)
+                        t_partial = ceil(Int, t/len_domain) 
+                        #if t_partial == 0
+                        #    t_partial = n+1
+                        #end
                         t_domain = t%(len_domain)
                         if t_domain == 0
                             t_domain = len_domain
@@ -77,10 +78,19 @@ function computeT(f, Basis, M, termorder, vars_reversed)
                 end 
                 #T = vcat(matrix(precisionring,1,len,tmp),T)
                 T = vcat(tmp, T)
+            else 
+                println(monomials)
+                tmp = zero_matrix(precisionring, len_basis, len)
+                for j in 1:len # indexing over monomials
+                    for k in 1:length(basis)
+                        tmp[k,j] = coeff(monomials[j],liftCoefficients(precisionring,precisionringpoly,basis[k]))
+                    end
+                end 
+                T = vcat(tmp, T)
             end 
         end 
     end 
-    T = vcat(matrix(precisionring,1,len,[trailing_coefficient(x) for x in monomials]), T)
+   # T = vcat(matrix(precisionring,1,len,[trailing_coefficient(x) for x in monomials]), T)
     return T 
 end 
 

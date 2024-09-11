@@ -166,8 +166,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
 
-    verbose && println("Basis of cohomology is $basis")
-
     k = sum([length(tmp) for tmp in basis]) # dimension of H^n
 
     verbose && println("There are $k basis elements in H^$n")
@@ -185,6 +183,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     T = computeT(f, basis, M, termorder, vars_reversed)
     verbose && println("T matrix is $T")
+
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
 
@@ -204,6 +203,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
         end
     end
     verbose && println("Basis of cohomology is $Basis")
+
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)

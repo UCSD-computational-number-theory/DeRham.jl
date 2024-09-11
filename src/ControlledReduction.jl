@@ -302,7 +302,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     else
         V = chooseV(Array{Int}(divexact.(I,p)),d)
     end
-    verbose && println("LOOK! I=$I, V = $V")
+    # verbose && println("LOOK! I=$I, V = $V")
 
 
     if vars_reversed == true
@@ -351,7 +351,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         else
             y = tweak(J - i*V,d*n-n) - tweak(J - (i+1)*V,d*n-n)
         end
-        verbose && println("Getting y direction reduction matrix for V = $(y)") 
+        #verbose && println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
@@ -709,7 +709,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_r
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
-            verbose && println("u is type $(typeof(ω[i][1]))")
+            #verbose && println("u is type $(typeof(ω[i][1]))")
             ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,verbose=verbose)
         end
 

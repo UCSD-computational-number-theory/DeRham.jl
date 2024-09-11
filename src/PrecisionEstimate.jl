@@ -28,9 +28,11 @@ Determines the relative p-adic precision [r_m] for the basis of cohomology
 """
 function relative_precision(k, q)
     if k == 2 && q == 7
-        r_m = [2,3]
+        r_m = [1,2]
     elseif k == 21 && q == 7
         r_m = [2,3,3]
+    elseif k == 12 && q == 7
+        r_m = [3,4]
     end
     return r_m
 end 
@@ -174,6 +176,7 @@ function algorithm_precision(p,n,d,r_m,N_m)
     s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), p) for s in s_m]
 
     precision = maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
+    println(precision)
 
     if ( n == 2 && d == 3 ) 
         if ( p < 5) 
