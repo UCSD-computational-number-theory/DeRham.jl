@@ -9,6 +9,7 @@ using DeRham
 include("FirstEllipticCurveExample.jl")
 include("CurvesAndSurfaces.jl")
 include("Orderings.jl")
+include("Precision.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     testEllCurve1_7()
@@ -62,6 +63,12 @@ end
 
     #test_reversing_variables()
 
+end
+
+@testset "Precision" begin
+    test_hodge_polygon_values()
+    test_hodge_polygon_examples()
+    #test_algorithm_precision()
 end
 
 #@testset "Elliptic curves" begin

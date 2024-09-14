@@ -4,7 +4,7 @@
 #r = 7 # p-adic precision
 #n = 2
 
-#TODO: this file needs to be dual licensed under the GPL because I copied hardcoded values from controlledreduction
+#TODO: parts of this file needs to be dual licensed under the GPL because I copied hardcoded values from controlledreduction
 
 
 """
@@ -21,20 +21,29 @@ function frobenius_precision(k, q)
     return r
 end 
 
+
 """
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
 
 Calculates the vector of relative precisions r_m 
 
 INPUTS: 
-* "HP" -- list, the i-th item corresponds to the height of above i in the Hodge polygon
-* "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
-* "hodge_numbers" -- list, the list of Hodge numbers 
+* "polygon" -- A SlopesPolygon struct describing a polygon whose values describe the
+divisibility of the roots. Note: it is traditional to use the hodge polygon here,
+but if you know the Newton Polygon (e.g. you have a K3 surface and you already have the
+Artin-Mazur height) then the Newton Polygon will do just as well.
 * "weight" -- integer, the motivic weight of the cohomology group, equals to the dimension of the hypersurface
 * "p" -- integer, prime number 
 """
+function calculate_relative_precision(polygon, weight, p) 
 
-function calculate_relative_precision(HP, slope, hodge_numbers, weight, p) 
+#   * "HP" -- list, the i-th item corresponds to the height of above i in the Hodge polygon
+#   * "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
+#   * "hodge_numbers" -- list, the list of Hodge numbers 
+    HP = polygon.values
+    slope = Int.(polygon.slopes)
+    hodge_numbers = polygon.slopelengths
+
     r_vector = [0 for i in 1:length(hodge_numbers)]
     Pdeg = length(HP) - 1  # degree of the L-polynomial P_n(X,T)
     max_digits = 0
@@ -212,121 +221,7 @@ function algorithm_precision(p,n,d,r_m,N_m)
     s_m = [i+x-1 for (i,x) in enumerate(N_m)]
     s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), p) for s in s_m]
 
-    precision = maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
-    println(precision)
-
-    if ( n == 2 && d == 3 ) 
-        if ( p < 5) 
-            @assert precision == 5;
-        elseif ( 5 <= p && p < 17 ) 
-            @assert precision == 3;
-        elseif ( 17 <= p  ) 
-            @assert precision == 1;
-        end
-    elseif ( n == 2 && d == 4 ) 
-        if ( p < 5) 
-            @assert precision == 7;
-        elseif ( 5 <= p && p < 17 ) 
-            @assert precision == 5;
-        elseif ( 17 <= p  ) 
-            @assert precision == 3;
-        end
-    elseif ( n == 2 && d == 5 ) 
-        if ( p < 5) 
-            @assert precision == 12;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 9;
-        elseif ( 7 <= p  ) 
-            @assert precision == 7;
-        end
-    elseif ( n == 2 && d == 6 ) 
-        if ( p < 5) 
-            @assert precision == 19;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 13;
-        elseif ( 7 <= p && p < 11 ) 
-            @assert precision == 13;
-        elseif ( 11 <= p  ) 
-            @assert precision == 11;
-        end
-    elseif ( n == 2 && d == 7 ) 
-        if ( p < 5) 
-            @assert precision == 23;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 20;
-        elseif ( 7 <= p && p < 11 ) 
-            @assert precision == 19;
-        elseif ( 11 <= p && p < 17 ) 
-            @assert precision == 17;
-        elseif ( 17 <= p  ) 
-            @assert precision == 15;
-        end
-    elseif ( n == 2 && d == 8 ) 
-        if ( p < 5) 
-            @assert precision == 30;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 26;
-        elseif ( 7 <= p && p < 13 ) 
-            @assert precision == 25;
-        elseif ( 13 <= p && p < 17 ) 
-            @assert precision == 25;
-        elseif ( 17 <= p  ) 
-            @assert precision == 21;
-        end
-    elseif ( n == 2 && d == 9 ) 
-        if ( p < 5) 
-            @assert precision == 41;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 33;
-        elseif ( 7 <= p && p < 11 ) 
-            @assert precision == 32;
-        elseif ( 11 <= p && p < 17 ) 
-            @assert precision == 31;
-        elseif ( 17 <= p  ) 
-            @assert precision == 29;
-        end
-    elseif ( n == 3 && d == 4 ) 
-        if ( p < 5) 
-            @assert precision == 16;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 9;
-        elseif ( 7 <= p && p < 23 ) 
-            @assert precision == 6;
-        elseif ( 23 <= p && p < 43 ) 
-            @assert precision == 5;
-        elseif ( 43 <= p  ) 
-            @assert precision == 4;
-        end
-    elseif ( n == 3 && d == 5 ) 
-        if ( p < 5) 
-            @assert precision == 21;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 17;
-        elseif ( 7 <= p && p < 11 ) 
-            @assert precision == 14;
-        elseif ( 11 <= p && p < 23 ) 
-            @assert precision == 12;
-        elseif ( 23 <= p && p < 29 ) 
-            @assert precision == 11;
-        elseif ( 29 <= p  ) 
-            @assert precision == 10;
-        end
-    elseif ( n == 3 && d == 6 ) 
-        if ( p < 5) 
-            @assert precision == 38;
-        elseif ( 5 <= p && p < 7 ) 
-            @assert precision == 29;
-        elseif ( 7 <= p && p < 11 ) 
-            @assert precision == 28;
-        elseif ( 11 <= p && p < 17 ) 
-            @assert precision == 26;
-        elseif ( 17 <= p && p < 23 ) 
-            @assert precision == 24;
-        elseif ( 23 <= p  ) 
-            @assert precision == 22;
-        end
-    end
-    return precision
+    maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
 end 
 
 
