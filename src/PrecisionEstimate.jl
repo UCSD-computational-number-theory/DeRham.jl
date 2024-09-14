@@ -22,6 +22,43 @@ function frobenius_precision(k, q)
 end 
 
 """
+    calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
+
+Calculates the vector of relative precisions r_m 
+
+INPUTS: 
+* "HP" -- list, the i-th item corresponds to the height of above i in the Hodge polygon
+* "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
+* "hodge_numbers" -- list, the list of Hodge numbers 
+* "weight" -- integer, the motivic weight of the cohomology group, equals to the dimension of the hypersurface
+* "p" -- integer, prime number 
+"""
+
+function calculate_relative_precision(HP, slope, hodge_numbers, weight, p) 
+    r_vector = [0 for i in 1:length(hodge_numbers)]
+    Pdeg = length(HP) - 1  # degree of the L-polynomial P_n(X,T)
+    max_digits = 0
+    
+    for i in 1:(div(Pdeg, 2) + 1)
+        r = ceil(Int, log(2*Pdeg/i)/log(p) + i*weight*0.5) - HP[i+1]
+
+        if r >= max_digits
+            max_digits = r 
+            for j in 1:(slope[i+1] + 1)
+                r_vector[j] = r 
+            end 
+
+            for j in slope[i+1]+2:length(hodge_numbers)
+                r = r-1
+                r_vector[j] = r
+            end 
+        end 
+    end 
+
+    return reverse(r_vector)
+end 
+
+"""
     relative_precision()
 
 Determines the relative p-adic precision [r_m] for the basis of cohomology 
