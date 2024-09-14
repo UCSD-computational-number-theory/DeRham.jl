@@ -289,6 +289,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     if vars_reversed == false
         I = reverse(I) # parity issue due to Costa's code being reverse from ours
     end
+    #println("Expanded I: $I")
 
     gMat = g
     #chain = 0
@@ -417,6 +418,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     =# 
     #throw(error)
     
+    #error()
     
     if nend == p
         newI = J - p*V
@@ -427,9 +429,10 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         return (I,gMat) # gives the "true" u
     end
 
+    
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,verbose=:false)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,verbose=false)
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
@@ -716,7 +719,8 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_r
         poleorder = poleorder - p
     end
 
-    #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+    verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
@@ -812,9 +816,13 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     end
+    #println(pseudoInverseMat)
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    #println("$ev1")
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    #println("$ev3")
+    #error()
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
     for i in 1:n+2
@@ -838,6 +846,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
             end
         end
         gJS = pseudoInverseMat*gVec
+        #println("After LingAlg problem: $gJS")
         for j in 1:(n+1)
             for k in 1:length(ev3)
                 for l in 1:length(ev1)
@@ -848,11 +857,15 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder)
                             ev3[k][m] = ev3[k][m] + Stilda[m]
                         end
                     end
+                    #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                    #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                    #println(" $(ev1[l] == ev3[k])")
                     if ev1[l] == ev3[k]
                         #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                         #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                         result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
                         result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+                        #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                     end
                     for m in 1:(n+1)
                         if m == n+1-j+1

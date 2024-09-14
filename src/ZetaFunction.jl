@@ -34,6 +34,7 @@ INPUTS:
 """
 function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
     verbose && println("Terms after controlled reduction: $Reductions")
+    println(T)
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -165,6 +166,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Working with a degree $d hypersurface in P^$n")
 
     basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+
+    verbose && println("Basis of cohomology is $basis")
+
 
     k = sum([length(tmp) for tmp in basis]) # dimension of H^n
 
