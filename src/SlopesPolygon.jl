@@ -18,11 +18,22 @@ For example, SlopesPolygon([1,19,1])
 is the hodge polygon of 
 (the primitive second cohomology of)
 a K3 surface.
+
+This is implemented in an "eager" way, i.e.
+all relevant constructions are calculated
+upon creation of the struct.
+
+`slopes` - a list of slopes of the polygon
+`slopelengths` - a list of how long each slope goes for
+`values` - the value of the polygon as a function, evaluated starting at x=0
+`slopesbefore` - given an x, what is the slope in the coordinate just before x,
+                 by definition slopesbefore[1] = 0
 """
 struct SlopesPolygon
     slopes::Array{Rational{Int}}
     slopelengths::Array{Int}
     values::Array{Int}
+    slopesbefore::Array{Rational{Int}}
 end
 
 # MARK - constructors
@@ -38,7 +49,10 @@ Right now, we call this in the constructors.
 function values(slopes,slopelengths)
     l = sum(slopelengths) + 1
     vals = zeros(Rational{Int},l)
+    slopesbefore = zeros(Rational{Int},l)
+
     vals[1] = 0 # starting point is (0,0)
+    slopesbefore[1] = 0
 
     nSlopes = length(slopelengths)
     j = 1 
@@ -48,11 +62,12 @@ function values(slopes,slopelengths)
         while j <= slopeend
             yval = vals[j] + slope 
             vals[j+1] = yval
+            slopesbefore[j+1] = slope
             j = j + 1
         end
     end
 
-    vals
+    (vals,slopesbefore)
 end
 
 """
@@ -63,7 +78,7 @@ slopelengths[i] units
 function SlopesPolygon(slopelengths::Array{T}) where T<:Integer
     n = length(slopelengths) - 1
     slopes = Rational.(collect(0:n))
-    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths))
+    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
 end
 
 """
@@ -98,7 +113,7 @@ function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
         push!(slopelengths,slopevec[2])
     end
 
-    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths))
+    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
 end
 
 # MARK - creating polygons from other polygons

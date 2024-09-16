@@ -68,7 +68,7 @@ end
 @testset "Precision" begin
     test_hodge_polygon_values()
     test_hodge_polygon_examples()
-    #test_algorithm_precision()
+    test_algorithm_precision()
 end
 
 #@testset "Elliptic curves" begin

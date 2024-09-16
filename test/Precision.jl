@@ -150,20 +150,38 @@ end
 # MARK - End GPL dual licesnse
 
 function test_algorithm_precision()
+    #TODO: figure out precision for small primes
     #primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
+    curveprimes = [7,11,13]
+
+    for p in curveprimes
+
+        test_algorithm_precision_example(p,2,3)
+        test_algorithm_precision_example(p,2,4)
+        test_algorithm_precision_example(p,2,5)
+        test_algorithm_precision_example(p,2,6)
+        test_algorithm_precision_example(p,2,7)
+        test_algorithm_precision_example(p,2,8)
+        test_algorithm_precision_example(p,2,9)
+
+    end
+
     primes = [7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
     for p in primes 
 
-        test_algorithm_precision_example(7,2,3)
-        test_algorithm_precision_example(7,2,4)
-        test_algorithm_precision_example(7,2,5)
-        test_algorithm_precision_example(7,2,6)
-        test_algorithm_precision_example(7,2,7)
-        test_algorithm_precision_example(7,2,8)
-        test_algorithm_precision_example(7,2,9)
+        #TODO: consolidate preivous for loop here 
+        #      once curves are working w.r.t. precision
+        #
+        #test_algorithm_precision_example(p,2,3)
+        #test_algorithm_precision_example(p,2,4)
+        #test_algorithm_precision_example(p,2,5)
+        #test_algorithm_precision_example(p,2,6)
+        #test_algorithm_precision_example(p,2,7)
+        #test_algorithm_precision_example(p,2,8)
+        #test_algorithm_precision_example(p,2,9)
 
-        test_algorithm_precision_example(7,3,4)
-        test_algorithm_precision_example(7,3,5)
+        test_algorithm_precision_example(p,3,4)
+        test_algorithm_precision_example(p,3,5)
     end
 
 end

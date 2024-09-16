@@ -41,7 +41,7 @@ function calculate_relative_precision(polygon, weight, p)
 #   * "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
 #   * "hodge_numbers" -- list, the list of Hodge numbers 
     HP = polygon.values
-    slope = Int.(polygon.slopes)
+    slope = Int.(polygon.slopesbefore)
     hodge_numbers = polygon.slopelengths
 
     r_vector = [0 for i in 1:length(hodge_numbers)]
@@ -219,7 +219,7 @@ function algorithm_precision(p,n,d,r_m,N_m)
     #end
     #return M
     s_m = [i+x-1 for (i,x) in enumerate(N_m)]
-    s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), p) for s in s_m]
+    s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), ZZ(p)) for s in s_m]
 
     maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
 end 
