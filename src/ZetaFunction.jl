@@ -32,7 +32,7 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
     verbose && println("Terms after controlled reduction: $Reductions")
     println(T)
     R = parent(T[1,1])
@@ -253,7 +253,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     end 
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder)
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
     verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
@@ -329,13 +329,12 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 2
+n = 3
 d = 4
 p = 7
-R = GF(p,1)
-PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x,y,z = Vars
-f = x^4 + y^4 + z^4
-S = [0,1,2]
+F = GF(p)
+R, (x,y,z,w) = polynomial_ring(F, ["x$i" for i in 0:n])
+
+f = x^4 + y^4 + z^4 + w^4
 @time DeRham.zeta_function(f)
 =#
