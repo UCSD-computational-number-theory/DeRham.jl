@@ -149,8 +149,6 @@ Data computed using Edgar Costa's `controlledreduction` library.
 function test_highergenus_1(p)
     n = 2
     d = 3
-    series_precision = (4,4)
-    abs_precision = 7
 
     F = GF(p)
     R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])

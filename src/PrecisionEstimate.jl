@@ -21,6 +21,37 @@ function frobenius_precision(k, q)
     return r
 end 
 
+"""
+    impreciselog(p,a)
+
+log with any base, via the log rules,
+though I think there should be floating point error.
+"""
+impreciselog(p,a) = log(a) / log(p)
+
+"""
+    integral_basis_multiplier_bound(p,m,n)
+
+Calculates the smallest integer t such that
+p^t* ω is in the integral latticee of the cohomology,
+for all ω in the griffiths-dwork basis of cohomology.
+Here, `m` is the pole order, 
+and the bound we have depends only on p, m, and n.
+
+This is called ϕ in Costa's thesis, and it is 
+called f in Abbott-Kedlaya-Roe.
+This method implements theorem 3.4.6 only of 
+Abbott-Kedlaya-Roe.
+"""
+function integral_basis_multiplier_bound(p,m,n)
+
+    sum = 0
+    for i in 1:n
+        sum += floor(Int,impreciselog(p,max(1,m-i)))
+    end
+
+    sum
+end
 
 """
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
@@ -66,6 +97,20 @@ function calculate_relative_precision(polygon, weight, p)
 
     return reverse(r_vector)
 end 
+
+function calculate_series_precision(p,n,r_m)
+
+    if p < 2*(n+1) + maximum(r_m)
+        println("Unsupported p: $p. Returning nonsense.")
+        return zeros(Int,n)
+    end
+
+    # TODO update for small p
+    N = [(r_m[i] == 0 ? 0 : n+1 + r_m[i] - (i+1)) for i in 1:n]
+
+    N
+end
+
 
 """
     relative_precision()

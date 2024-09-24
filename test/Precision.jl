@@ -20,9 +20,124 @@ end
 
 # TODO: copy of gpl license
 
-function test_series_precision()
+function test_series_precision_example(p,n,d)
+    r_m = DeRham.calculate_relative_precision(hodge_polygon(p,n,d),n-1,p)
+    N = DeRham.calculate_series_precision(p,n,r_m)
 
+    if ( n == 2 && d == 3 ) 
+        if ( p < 5) 
+            @test N == [2 3]
+        elseif ( 5 <= p && p < 17 ) 
+            @test N == [2,2]
+        elseif ( 17 <= p  ) 
+            @test N == [0,1]
+        end
+    elseif ( n == 2 && d == 4 ) 
+        if ( p < 5) 
+            @test N == [4,4]
+        elseif ( 5 <= p && p < 17 ) 
+            @test N == [3,3]
+        elseif ( 17 <= p  ) 
+            @test N == [2,2]
+        end
+    elseif ( n == 2 && d == 5 ) 
+        if ( p < 5) 
+            @test N == [6,6]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [4,5]
+        elseif ( 7 <= p  ) 
+            @test N == [4,4]
+        end
+    elseif ( n == 2 && d == 6 ) 
+        if ( p < 5) 
+            @test N == [8,9]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [7,7]
+        elseif ( 7 <= p && p < 11 ) 
+            @test N == [6,7]
+        elseif ( 11 <= p  ) 
+            @test N == [6,6]
+        end
+    elseif ( n == 2 && d == 7 ) 
+        if ( p < 5) 
+            @test N == [11,11]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [10,10]
+        elseif ( 7 <= p && p < 11 ) 
+            @test N == [10,10]
+        elseif ( 11 <= p && p < 17 ) 
+            @test N == [9,9]
+        elseif ( 17 <= p  ) 
+            @test N == [8,8]
+        end
+    elseif ( n == 2 && d == 8 ) 
+        if ( p < 5) 
+            @test N == [14,14]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [13,13]
+        elseif ( 7 <= p && p < 13 ) 
+            @test N == [13,13]
+        elseif ( 13 <= p && p < 17 ) 
+            @test N == [12,13]
+        elseif ( 17 <= p  ) 
+            @test N == [11,11]
+        end
+    elseif ( n == 2 && d == 9 ) 
+        if ( p < 5) 
+            @test N == [18,18]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [16,16]
+        elseif ( 7 <= p && p < 11 ) 
+            @test N == [16,16]
+        elseif ( 11 <= p && p < 17 ) 
+            @test N == [16,16]
+        elseif ( 17 <= p  ) 
+            @test N == [15,15]
+        end
+    elseif ( n == 3 && d == 4 ) 
+        if ( p < 5) 
+            @test N == [7,7,8]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [4,5,5]
+        elseif ( 7 <= p && p < 23 ) 
+            @test N == [4,4,3]
+        elseif ( 23 <= p && p < 43 ) 
+            @test N == [3,3,3]
+        elseif ( 43 <= p  ) 
+            @test N == [3,3,2]
+        end
+    elseif ( n == 3 && d == 5 ) 
+        if ( p < 5) 
+            @test N == [11,11,10]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [8,8,9]
+        elseif ( 7 <= p && p < 11 ) 
+            @test N == [8,8,7]
+        elseif ( 11 <= p && p < 23 ) 
+            @test N == [7,7,6]
+        elseif ( 23 <= p && p < 29 ) 
+            @test N == [6,6,6]
+        elseif ( 29 <= p  ) 
+            @test N == [6,6,5]
+        end
+    elseif ( n == 3 && d == 6 ) 
+        if ( p < 5) 
+            @test N == [17,18,17]
+        elseif ( 5 <= p && p < 7 ) 
+            @test N == [15,15,14]
+        elseif ( 7 <= p && p < 11 ) 
+            @test N == [15,15,14]
+        elseif ( 11 <= p && p < 17 ) 
+            @test N == [14,14,13]
+        elseif ( 17 <= p && p < 23 ) 
+            @test N == [13,13,12]
+        elseif ( 23 <= p  ) 
+            @test N == [12,12,11]
+        end
+    end
+    
 end
+
 
 function test_algorithm_precision_example(p,n,d)
 
@@ -183,8 +298,25 @@ function test_algorithm_precision()
         test_algorithm_precision_example(p,3,4)
         test_algorithm_precision_example(p,3,5)
     end
-
 end
+
+function test_series_precision()
+    #TODO: add the bound and fix for small p
+
+    # p = 11
+    test_series_precision_example(11,2,3)
+    test_series_precision_example(11,2,4)
+
+    # p = 13
+    test_series_precision_example(13,2,3)
+    test_series_precision_example(13,2,4)
+    test_series_precision_example(13,2,5)
+
+    # k3 surfaces
+    test_series_precision_example(11,3,4)
+    test_series_precision_example(13,3,4)
+end
+
 
 function test_hodge_polygon_values()
     k3 = DeRham.SlopesPolygon([1,20,1])
