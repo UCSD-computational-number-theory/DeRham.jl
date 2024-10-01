@@ -331,7 +331,8 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     #verbose && println("Before reduction chunk, I is $I")
     fastevaluation = false
     if fastevaluation
-      gMat = finitediff_prodeval_linear(B,A,nend-(dn-n),nend,gMat)
+      gMat = finitediff_prodeval_linear(B,A,0,nend-(d*n-n)-1,gMat)
+      i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
         gMat = (A+B*(nend-(d*n-n)-i))*gMat
