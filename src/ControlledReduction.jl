@@ -289,9 +289,10 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     if vars_reversed == false
         I = reverse(I) # parity issue due to Costa's code being reverse from ours
     end
-    #println("Expanded I: $I")
+    println("Expanded I: $I")
 
     gMat = g
+    println(gMat)
     #chain = 0
     I_edgar = [x//7 for x in I]
     #verbose && println("This is I: $I_edgar")
@@ -303,6 +304,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     else
         V = chooseV(Array{Int}(divexact.(I,p)),d)
     end
+    println("V: $V")
     # verbose && println("LOOK! I=$I, V = $V")
 
 
@@ -337,6 +339,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         #verbose && println("After step $i: $gMat")
 
         i = i+1
+        println(gMat)
       end
     end
     # TODO: test how much of a difference the fast evaluation actually makes
@@ -352,6 +355,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         else
             y = tweak(J - i*V,d*n-n) - tweak(J - (i+1)*V,d*n-n)
         end
+        println("V: $y")
         #verbose && println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
@@ -364,6 +368,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         end
         
         gMat = (A+B)*gMat
+        println(gMat)
         #verbose && println("After step $(i+1): $gMat")
 
         i = i+1
