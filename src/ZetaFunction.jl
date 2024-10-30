@@ -244,6 +244,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #end
     #TODO: check which algorithm we're using
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
+    println(Reductions)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
@@ -336,5 +337,5 @@ F = GF(p)
 R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
 
 f = y^2*z - x^3 - x*z^2 - z^3
-@time DeRham.zeta_function(f,vars_reversed=true)
+@time DeRham.zeta_function(f)
 =#
