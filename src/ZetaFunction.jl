@@ -34,7 +34,6 @@ INPUTS:
 """
 function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
     verbose && println("Terms after controlled reduction: $Reductions")
-    println(T)
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -244,7 +243,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #end
     #TODO: check which algorithm we're using
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
-    println(Reductions)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
@@ -255,6 +253,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
+    display(FM)
     verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
@@ -330,12 +329,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 2
-d = 3
-p = 7
+n = 5
+p = 13
 F = GF(p)
-R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3,x4,x5,x6) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = y^2*z - x^3 - x*z^2 - z^3
+f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3
 @time DeRham.zeta_function(f)
 =#
