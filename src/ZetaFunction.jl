@@ -243,7 +243,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,verbose=verbose,fastevaluation)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
