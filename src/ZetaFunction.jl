@@ -155,7 +155,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
+function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -243,7 +243,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,verbose=verbose)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,verbose=verbose,fastevaluation)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
