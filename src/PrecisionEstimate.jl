@@ -30,7 +30,9 @@ though I think there should be floating point error.
 impreciselog(p,a) = log(a) / log(p)
 
 """
-    integral_basis_multiplier_bound(p,m,n)
+    ibm_derham_bound(p,m,n)
+
+ibm stands for integral basis multiplier
 
 Calculates the smallest integer t such that
 p^t* ω is in the integral latticee of the cohomology,
@@ -43,7 +45,7 @@ called f in Abbott-Kedlaya-Roe.
 This method implements theorem 3.4.6 only of 
 Abbott-Kedlaya-Roe.
 """
-function integral_basis_multiplier_bound(p,m,n)
+function ibm_derham_bound(p,m,n)
 
     sum = 0
     for i in 1:n
@@ -100,6 +102,7 @@ end
 
 function calculate_series_precision(p,n,r_m)
 
+    println(r_m)
     if p < 2*(n) + maximum(r_m)
         println("Unsupported p: $p. Returning nonsense.")
         return zeros(Int,n)

@@ -174,7 +174,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("There are $k basis elements in H^$n")
 
     hp = hodgepolygon(f; basis=basis)
-    r_m = calculate_relative_precision(hp, n, p)
+    r_m = calculate_relative_precision(hp, n-1, p)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d,r_m)
@@ -182,9 +182,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
      
-    println("Series Precision: $N_m, alg precision $M")
-    error()
-
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
@@ -283,8 +280,8 @@ griffiths-dwork basis basis
 
 basis -- an array of "polynomials with pole" as descirbed in PolynomialWithPole.jl
 """
-function hodgepolygon(basis::Array)
-    n = highestpoleorder(basis)
+function hodgepolygon(basis::Array,n)
+    #WRONG: n = highestpoleorder(basis)
     hodgenumbers = zeros(Int,n)
     for i in 0:n-1
         h = length(termsoforder(basis,n-i))
@@ -317,7 +314,7 @@ function hodgepolygon(f; termorder=:invlex, basis=nothing)
         end
     end
 
-    hodgepolygon(Basis)
+    hodgepolygon(Basis,n)
 end
 
 
