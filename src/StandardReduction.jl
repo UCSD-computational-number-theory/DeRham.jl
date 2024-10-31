@@ -21,7 +21,7 @@ INPUTS:
 * "termorder" -- the monomial ordering of vectors
 """
 function monomial_change_basis(f, l, basis, termorder, vars_reversed)
-       println(basis)
+       #println(basis)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
        S = [i for i in 0:n]
@@ -47,7 +47,7 @@ function monomial_change_basis(f, l, basis, termorder, vars_reversed)
        
        #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns); 
        change_basis_matrix_aug = hcat(basis_columns,change_basis_matrix); 
-       println((rank(change_basis_matrix_aug), number_of_columns(change_basis_matrix_aug), number_of_rows(change_basis_matrix_aug)))
+       #println((rank(change_basis_matrix_aug), number_of_columns(change_basis_matrix_aug), number_of_rows(change_basis_matrix_aug)))
        return change_basis_matrix_aug
 end 
 
