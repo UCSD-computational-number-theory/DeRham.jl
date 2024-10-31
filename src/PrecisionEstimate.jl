@@ -100,7 +100,7 @@ end
 
 function calculate_series_precision(p,n,r_m)
 
-    if p < 2*(n+1) + maximum(r_m)
+    if p < 2*(n) + maximum(r_m)
         println("Unsupported p: $p. Returning nonsense.")
         return zeros(Int,n)
     end
@@ -112,33 +112,36 @@ function calculate_series_precision(p,n,r_m)
 end
 
 
-"""
-    relative_precision()
-
-Determines the relative p-adic precision [r_m] for the basis of cohomology 
-"""
-function relative_precision(k, q)
-    if k == 2 && q == 7
-        r_m = [1,2]
-    elseif k == 21 && q == 7
-        r_m = [2,3,3]
-    elseif k == 12 && q == 7
-        r_m = [3,4]
-    end
-    return r_m
-end 
+#"""
+#    relative_precision()
+#
+#Determines the relative p-adic precision [r_m] for the basis of cohomology 
+#"""
+#function relative_precision(k, q)
+#    if k == 2 && q == 7
+#        r_m = [1,2]
+#    elseif k == 21 && q == 7
+#        r_m = [2,3,3]
+#    elseif k == 12 && q == 7
+#        r_m = [3,4]
+#    end
+#    return r_m
+#end 
 
 #function series_precision(r_m, p, n)
-function series_precision(p, n, d)
+function series_precision(p, n, d, r_m)
     #if r_m == [2,3] && p == 7 && n == 2
     #    N_m = [2,2]
     #elseif r_m == [2,3,3] && p == 7 && n == 3
     #    N_m = [4,4,3]
     #end 
     #return N_m
+    N = [0,0]
+
+    # begin copypasta
     if ( n == 2 && d == 3 ) 
         if ( p < 5) 
-            N = [2 3]
+            N = [2,3]
         elseif ( 5 <= p && p < 17 ) 
             N = [2,2]
         elseif ( 17 <= p  ) 
@@ -246,6 +249,11 @@ function series_precision(p, n, d)
         elseif ( 23 <= p  ) 
             N = [12,12,11]
         end
+    end
+    # end copypasta
+
+    if N == [0,0]
+        N = calculate_series_precision(p,n,r_m)
     end
     N
 end

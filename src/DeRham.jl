@@ -20,7 +20,6 @@ include("ControlledReduction.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
 
-include("SlopesPolygon.jl")
 include("CharPolyFrob.jl")
 
 

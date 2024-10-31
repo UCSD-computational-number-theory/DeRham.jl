@@ -173,14 +173,18 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("There are $k basis elements in H^$n")
 
-    r_m = relative_precision(k, p)
+    hp = hodgepolygon(f; basis=basis)
+    r_m = calculate_relative_precision(hp, n, p)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
-    N_m = series_precision(p,n,d)
+    N_m = series_precision(p,n,d,r_m)
     M = algorithm_precision(p,n,d,r_m,N_m)
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
      
+    println("Series Precision: $N_m, alg precision $M")
+    error()
+
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
@@ -297,12 +301,14 @@ Calculates the hodge polygon of f
 
 f - the polynomial to get the hodge polygon of
 """
-function hodgepolygon(f; termorder=:invlex)
+function hodgepolygon(f; termorder=:invlex, basis=nothing)
     n = nvars(parent(f)) - 1
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
-    basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    if basis == nothing
+        basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    end
     
     Basis = []
     for i in 1:n
