@@ -7,6 +7,8 @@ function hodge_polygon(p,n,d)
         DeRham.SlopesPolygon([1,19,1]) #normally [1,20,1]
     elseif n == 3 && d == 5
         DeRham.SlopesPolygon([4,44,4]) #normally [4,45,4]
+    elseif n == 3 && d == 6 
+        DeRham.SlopesPolygon([10,85,10]) #normally [10,86,10]
     else
         error("uniplemented newton polygon formula")
     end
@@ -303,6 +305,30 @@ end
 function test_series_precision()
     #TODO: add the bound and fix for small p
 
+    #primes = [3]#,5,7]#, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
+    #for p in primes
+    #    n = 2
+    #    for d in 3:9
+    #        println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
+    #        test_series_precision_example(p,n,d)
+    #    end
+
+    #    n = 3
+    #    for d in 4:6
+    #        println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
+    #        test_series_precision_example(p,n,d)
+    #    end
+    #end
+
+    test_series_precision_example(5,2,3)
+    test_series_precision_example(5,2,4)
+
+    test_series_precision_example(7,2,3)
+    test_series_precision_example(7,2,4)
+    
+    test_series_precision_example(7,3,4)
+    
+
     # p = 11
     test_series_precision_example(11,2,3)
     test_series_precision_example(11,2,4)
@@ -315,6 +341,11 @@ function test_series_precision()
     # k3 surfaces
     test_series_precision_example(11,3,4)
     test_series_precision_example(13,3,4)
+
+    test_series_precision_example(13,3,5)
+
+    test_series_precision_example(17,2,5)
+    test_series_precision_example(17,2,6)
 end
 
 
@@ -343,4 +374,9 @@ function test_hodge_polygon_examples()
     f = x^4 + y^4 + z^4 + w^4
 
     @test DeRham.hodgepolygon(f) == DeRham.SlopesPolygon([1,19,1])
+end
+
+
+function test_ibm_crank()
+
 end

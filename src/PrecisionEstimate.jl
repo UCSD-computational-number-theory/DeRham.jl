@@ -56,6 +56,120 @@ function ibm_derham_bound(p,m,n)
 end
 
 """
+    ibm_constant(p,m,ibm_bound)
+
+Calcuates the `N` in theorem 3.4.9 of Abbott-Kedlaya-Roe
+"""
+function ibm_constant(p,m,ibm_bound)
+    g(m,i) = valuation(binomial(-m,i),p)
+
+    NN(l) = ibm_bound[(m+l)*p] - l - g(m,l)
+
+    l = 1
+    N = NN(1)
+    while 0 < NN(l)
+        N = max(N,NN(l))
+        l += 1
+    end
+    #verbose && println("In AKR notation, f((m+l)p) - l - g(m,l) < 0 at l = $l")
+
+    N
+end
+
+"""
+"""
+function ibm_crank_bound(p,n,M)
+    nChunks = ceil(Int,M/p)
+    nBounds = nChunks * p
+    bounds = ibm_derham_bound.(p,1:(nBounds*p^2),n)
+
+    for m = 1:nChunks
+#        println(bounds)
+
+        # find the best bound for f(p*m)
+        c = 1
+        while true
+            N = ibm_constant(p,m,bounds)
+            #println("N: $N")
+            if N ≤ n - 1 + bounds[m]
+                bounds[p*m] = n - 1 + bounds[m]
+                #print("reached log bound n - 1 + f(m) = $(bounds[p*m])")
+                #println(" at for chunk $m, i.e. f($(p*m))")
+                break
+            elseif bounds[p*m] ≤ N
+                #println("crank stabilized at N=$N for chunk $m, i.e. f($(p*m))")
+                if bounds[p*m] < N
+                    #println("original bound is better than N!")
+                end
+                break
+            else
+                # go another round!
+                bounds[p*m] = N
+                #println("go another round!")
+            end
+            #println("finished crank number $c")
+        end
+
+        # update the elements before
+        for k = (p*m)-p+1:p*m
+            if bounds[m*p] < bounds[k]
+                bounds[k] = bounds[m*p]
+            end
+        end
+
+    end
+
+    bounds[1:nBounds]
+end
+
+#"""
+#This algorithm is not proven to be correct,
+#please don't use it.
+#"""
+#function ibm_crank_bound_longwise(p,n,M;MM=nothing)
+#    if MM == nothing
+#        MM = M * p^2
+#    end
+#
+#    # start with de rham bound
+#    bounds = ibm_derham_bound.(p,1:MM,n)
+#
+#    numCranks = 3
+#    
+#    for i = 1:numCranks
+#
+#        m = 1
+#        while true
+#            N = ibm_constant(p,m,bounds)
+#            if N < n - 1 + bounds[m]
+#                #bounds[p*m] = n - 1 + bounds[m]
+#                for mm = p*m:p:MM
+#                    bounds[mm] = n - 1 + bounds[divexact(mm,p)]
+#                end
+#                println("log bound takes over at m = $(m*p)")
+#                break
+#            else
+#                bounds[p*m] = N
+#            end
+#            m = m + 1
+#        end
+#
+#        # adjust bounds down
+#        for l = p:p:MM
+#            for k = l-p+1:l
+#                if bounds[p] < bounds[k]
+#                    bounds[k] = bounds[p]
+#                end
+#            end
+#        end
+#
+#    end
+#
+#    bounds
+#end
+
+
+"""
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
 
 Calculates the vector of relative precisions r_m 
@@ -102,15 +216,26 @@ end
 
 function calculate_series_precision(p,n,r_m)
 
-    println(r_m)
-    if p < 2*(n) + maximum(r_m)
-        println("Unsupported p: $p. Returning nonsense.")
-        return zeros(Int,n)
+    #println("Relative precision: $r_m")
+    if !(p < 2*(n) + maximum(r_m))
+        #println("Unsupported p: $p. Returning nonsense.")
+        #return zeros(Int,n)
+        N = [(r_m[m] == 0 ? 0 : n+1 + r_m[m] - (m+1)) for m in 1:n]
+        return N
     end
 
-    # TODO update for small p
-    N = [(r_m[i] == 0 ? 0 : n+1 + r_m[i] - (i+1)) for i in 1:n]
+    # TODO: prove that this is correct
+    #
+    # We may assume in (1.8) of Costa's thesis that the worst case is i=0
 
+    bounds = ibm_crank_bound(p,n,p*n)
+    #bounds = ibm_derham_bound.(p,1:p*n,n)
+
+    #TODO: why does ibm_derham_bound sometimes give answers that are better than the crank?
+    
+    N = [(r_m[m] == 0 ? 0 : r_m[m] - m + 1 + bounds[p*m]) for m in 1:n]
+
+    println("Series precision: $N")
     N
 end
 
