@@ -74,6 +74,8 @@ end
 This constructor assumes integer slopes
 starting at zero, and slope i goes for
 slopelengths[i] units
+
+E.g. SlopesPolygon([1,19,1]) is the hodge polygon of (the primitive H^2 of) a K3 surface.
 """
 function SlopesPolygon(slopelengths::Array{T}) where T<:Integer
     n = length(slopelengths) - 1
