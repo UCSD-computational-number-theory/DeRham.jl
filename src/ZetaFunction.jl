@@ -112,12 +112,18 @@ INPUT:
 * "FM" -- Frobenius matrix 
 """
 
-function LPolynomial(FM,q,n)
+function LPolynomial(FM, n, q, polygon, relative_precision)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
-    P, T = polynomial_ring(parent(FM[1,1]), "T")
-    f = charpoly(P, FM)
+    P, T = polynomial_ring(ZZ, "T")
+    lift_to_int(s) = map(x -> lift(ZZ,x),s)
 
+    f = charpoly(P, lift_to_int(FM))
+    cp_coeffs = collect(coefficients(f))
+    return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs)
+    
+
+    """
     k = degree(f)
     bound = binomial(k,Int(ceil(k/2)))*(q^(n/2))*ceil(k/2)
     R, t = polynomial_ring(ZZ,"t")
@@ -129,9 +135,9 @@ function LPolynomial(FM,q,n)
             result = result + (ZZ(coeff(f,i)))*t^(k-i)
         end
     end
+    """
 
-
-    return reverse(f), result
+    #return reverse(f), result
 end 
 
 
@@ -166,15 +172,23 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Working with a degree $d hypersurface in P^$n")
 
     basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
 
-    verbose && println("Basis of cohomology is $basis")
+    verbose && println("Basis of cohomology is $Basis")
 
+    hodge_polygon = hodgepolygon(Basis)
 
-    k = sum([length(tmp) for tmp in basis]) # dimension of H^n
+    k = sum([length(tmp) for tmp in Basis]) # dimension of H^n
 
     verbose && println("There are $k basis elements in H^$n")
 
-    r_m = relative_precision(k, p)
+    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
+    #r_m = relative_precision(k, p)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d)
@@ -265,9 +279,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
    # verbose && println("The Frobenius matrix is $FM")
 
     if givefrobmat
-        (FM,LPolynomial(FM,q,n))
+        (FM,LPolynomial(FM,n,q,hodge_polygon,r_m))
     else
-        LPolynomial(FM,q,n)
+        LPolynomial(FM,n,q,hodge_polygon,r_m)
     end
 end
 
