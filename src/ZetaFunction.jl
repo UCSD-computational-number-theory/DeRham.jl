@@ -186,13 +186,8 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("There are $k basis elements in H^$n")
 
-<<<<<<< HEAD
     r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
     #r_m = relative_precision(k, p)
-=======
-    hp = hodgepolygon(f; basis=basis)
-    r_m = calculate_relative_precision(hp, n-1, p)
->>>>>>> 2a7ac3384c261dbbae99bb0268abd29ae9244cdf
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d,r_m)
