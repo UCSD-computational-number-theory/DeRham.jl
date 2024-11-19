@@ -133,6 +133,9 @@ function compute_monomial_basis(f, m, R, PR, termorder)
 
     rows = size(M)[1]
 
+    temp = size(M)
+    println("Matrix of size $temp")
+
     pivot_rows = pivot_columns(transpose(M))
     non_pivot_rows = setdiff([1:rows;], pivot_rows)
     return map((i) -> row_monomials[i], non_pivot_rows)
@@ -175,6 +178,9 @@ function pseudo_inverse_controlled(f, S, l, R, PR, termorder,vars_reversed)
     fLift = liftCoefficients(ZZ,PRZZ,f)
     
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, termorder,vars_reversed)
+
+    temp = size(U)
+    println("Matrix of size $temp")
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     

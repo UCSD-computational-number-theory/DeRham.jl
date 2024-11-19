@@ -30,7 +30,9 @@ though I think there should be floating point error.
 impreciselog(p,a) = log(a) / log(p)
 
 """
-    integral_basis_multiplier_bound(p,m,n)
+    ibm_derham_bound(p,m,n)
+
+ibm stands for integral basis multiplier
 
 Calculates the smallest integer t such that
 p^t* ω is in the integral latticee of the cohomology,
@@ -43,7 +45,7 @@ called f in Abbott-Kedlaya-Roe.
 This method implements theorem 3.4.6 only of 
 Abbott-Kedlaya-Roe.
 """
-function integral_basis_multiplier_bound(p,m,n)
+function ibm_derham_bound(p,m,n)
 
     sum = 0
     for i in 1:n
@@ -52,6 +54,120 @@ function integral_basis_multiplier_bound(p,m,n)
 
     sum
 end
+
+"""
+    ibm_constant(p,m,ibm_bound)
+
+Calcuates the `N` in theorem 3.4.9 of Abbott-Kedlaya-Roe
+"""
+function ibm_constant(p,m,ibm_bound)
+    g(m,i) = valuation(binomial(-m,i),p)
+
+    NN(l) = ibm_bound[(m+l)*p] - l - g(m,l)
+
+    l = 1
+    N = NN(1)
+    while 0 < NN(l)
+        N = max(N,NN(l))
+        l += 1
+    end
+    #verbose && println("In AKR notation, f((m+l)p) - l - g(m,l) < 0 at l = $l")
+
+    N
+end
+
+"""
+"""
+function ibm_crank_bound(p,n,M)
+    nChunks = ceil(Int,M/p)
+    nBounds = nChunks * p
+    bounds = ibm_derham_bound.(p,1:(nBounds*p^2),n)
+
+    for m = 1:nChunks
+#        println(bounds)
+
+        # find the best bound for f(p*m)
+        c = 1
+        while true
+            N = ibm_constant(p,m,bounds)
+            #println("N: $N")
+            if N ≤ n - 1 + bounds[m]
+                bounds[p*m] = n - 1 + bounds[m]
+                #print("reached log bound n - 1 + f(m) = $(bounds[p*m])")
+                #println(" at for chunk $m, i.e. f($(p*m))")
+                break
+            elseif bounds[p*m] ≤ N
+                #println("crank stabilized at N=$N for chunk $m, i.e. f($(p*m))")
+                if bounds[p*m] < N
+                    #println("original bound is better than N!")
+                end
+                break
+            else
+                # go another round!
+                bounds[p*m] = N
+                #println("go another round!")
+            end
+            #println("finished crank number $c")
+        end
+
+        # update the elements before
+        for k = (p*m)-p+1:p*m
+            if bounds[m*p] < bounds[k]
+                bounds[k] = bounds[m*p]
+            end
+        end
+
+    end
+
+    bounds[1:nBounds]
+end
+
+#"""
+#This algorithm is not proven to be correct,
+#please don't use it.
+#"""
+#function ibm_crank_bound_longwise(p,n,M;MM=nothing)
+#    if MM == nothing
+#        MM = M * p^2
+#    end
+#
+#    # start with de rham bound
+#    bounds = ibm_derham_bound.(p,1:MM,n)
+#
+#    numCranks = 3
+#    
+#    for i = 1:numCranks
+#
+#        m = 1
+#        while true
+#            N = ibm_constant(p,m,bounds)
+#            if N < n - 1 + bounds[m]
+#                #bounds[p*m] = n - 1 + bounds[m]
+#                for mm = p*m:p:MM
+#                    bounds[mm] = n - 1 + bounds[divexact(mm,p)]
+#                end
+#                println("log bound takes over at m = $(m*p)")
+#                break
+#            else
+#                bounds[p*m] = N
+#            end
+#            m = m + 1
+#        end
+#
+#        # adjust bounds down
+#        for l = p:p:MM
+#            for k = l-p+1:l
+#                if bounds[p] < bounds[k]
+#                    bounds[k] = bounds[p]
+#                end
+#            end
+#        end
+#
+#    end
+#
+#    bounds
+#end
+
 
 """
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
@@ -100,45 +216,60 @@ end
 
 function calculate_series_precision(p,n,r_m)
 
-    if p < 2*(n+1) + maximum(r_m)
-        println("Unsupported p: $p. Returning nonsense.")
-        return zeros(Int,n)
+    #println("Relative precision: $r_m")
+    if !(p < 2*(n) + maximum(r_m))
+        #println("Unsupported p: $p. Returning nonsense.")
+        #return zeros(Int,n)
+        N = [(r_m[m] == 0 ? 0 : n+1 + r_m[m] - (m+1)) for m in 1:n]
+        return N
     end
 
-    # TODO update for small p
-    N = [(r_m[i] == 0 ? 0 : n+1 + r_m[i] - (i+1)) for i in 1:n]
+    # TODO: prove that this is correct
+    #
+    # We may assume in (1.8) of Costa's thesis that the worst case is i=0
 
+    bounds = ibm_crank_bound(p,n,p*n)
+    #bounds = ibm_derham_bound.(p,1:p*n,n)
+
+    #TODO: why does ibm_derham_bound sometimes give answers that are better than the crank?
+    
+    N = [(r_m[m] == 0 ? 0 : r_m[m] - m + 1 + bounds[p*m]) for m in 1:n]
+
+    println("Series precision: $N")
     N
 end
 
 
-"""
-    relative_precision()
-
-Determines the relative p-adic precision [r_m] for the basis of cohomology 
-"""
-function relative_precision(k, q)
-    if k == 2 && q == 7
-        r_m = [1,2]
-    elseif k == 21 && q == 7
-        r_m = [2,3,3]
-    elseif k == 12 && q == 7
-        r_m = [3,4]
-    end
-    return r_m
-end 
+#"""
+#    relative_precision()
+#
+#Determines the relative p-adic precision [r_m] for the basis of cohomology 
+#"""
+#function relative_precision(k, q)
+#    if k == 2 && q == 7
+#        r_m = [1,2]
+#    elseif k == 21 && q == 7
+#        r_m = [2,3,3]
+#    elseif k == 12 && q == 7
+#        r_m = [3,4]
+#    end
+#    return r_m
+#end 
 
 #function series_precision(r_m, p, n)
-function series_precision(p, n, d)
+function series_precision(p, n, d, r_m)
     #if r_m == [2,3] && p == 7 && n == 2
     #    N_m = [2,2]
     #elseif r_m == [2,3,3] && p == 7 && n == 3
     #    N_m = [4,4,3]
     #end 
     #return N_m
+    N = [0,0]
+
+    # begin copypasta
     if ( n == 2 && d == 3 ) 
         if ( p < 5) 
-            N = [2 3]
+            N = [2,3]
         elseif ( 5 <= p && p < 17 ) 
             N = [2,2]
         elseif ( 17 <= p  ) 
@@ -246,6 +377,11 @@ function series_precision(p, n, d)
         elseif ( 23 <= p  ) 
             N = [12,12,11]
         end
+    end
+    # end copypasta
+
+    if N == [0,0]
+        N = calculate_series_precision(p,n,r_m)
     end
     N
 end

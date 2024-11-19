@@ -66,8 +66,24 @@ function test_naive_algorithm()
     f = y^2*z - x^3 - x*z^2 - z^3
 
     zeta_costa = DeRham.zeta_function(f)
-    zeta_naive = DeRham.zeta_function(f)
+    zeta_naive = DeRham.zeta_function(f,algorithm=:naive)
 
     @test zeta_costa == zeta_naive
 end
-    
+
+function test_fastevaluation()
+    n = 2
+    d = 3
+
+    p = 7
+
+    F = GF(p)
+    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+
+    f = y^2*z - x^3 - x*z^2 - z^3
+
+    zeta = DeRham.zeta_function(f)
+    zeta_fasteval = DeRham.zeta_function(f,fastevaluation=true)
+
+    @test zeta == zeta_fasteval
+end

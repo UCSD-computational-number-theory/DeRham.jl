@@ -34,7 +34,6 @@ INPUTS:
 """
 function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
     verbose && println("Terms after controlled reduction: $Reductions")
-    println(T)
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -161,7 +160,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
+function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -187,11 +186,16 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("There are $k basis elements in H^$n")
 
+<<<<<<< HEAD
     r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
     #r_m = relative_precision(k, p)
+=======
+    hp = hodgepolygon(f; basis=basis)
+    r_m = calculate_relative_precision(hp, n-1, p)
+>>>>>>> 2a7ac3384c261dbbae99bb0268abd29ae9244cdf
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
-    N_m = series_precision(p,n,d)
+    N_m = series_precision(p,n,d,r_m)
     M = algorithm_precision(p,n,d,r_m,N_m)
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
@@ -257,7 +261,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,verbose=verbose)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
@@ -268,6 +272,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
+    display(FM)
     verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
@@ -293,8 +298,8 @@ griffiths-dwork basis basis
 
 basis -- an array of "polynomials with pole" as descirbed in PolynomialWithPole.jl
 """
-function hodgepolygon(basis::Array)
-    n = highestpoleorder(basis)
+function hodgepolygon(basis::Array,n)
+    #WRONG: n = highestpoleorder(basis)
     hodgenumbers = zeros(Int,n)
     for i in 0:n-1
         h = length(termsoforder(basis,n-i))
@@ -311,12 +316,14 @@ Calculates the hodge polygon of f
 
 f - the polynomial to get the hodge polygon of
 """
-function hodgepolygon(f; termorder=:invlex)
+function hodgepolygon(f; termorder=:invlex, basis=nothing)
     n = nvars(parent(f)) - 1
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
-    basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    if basis == nothing
+        basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    end
     
     Basis = []
     for i in 1:n
@@ -325,7 +332,32 @@ function hodgepolygon(f; termorder=:invlex)
         end
     end
 
-    hodgepolygon(Basis)
+    hodgepolygon(Basis,n)
+end
+
+
+"""
+    check_smoothness(f)
+
+Using Oscar, check whether f defines a smooth hypersurface.
+
+f is assumed to be homogeneous already. Otherwise Oscar
+will throw an error.
+
+note: the name issmooth / is_smooth is already taken by oscar,
+and really we're just wrapping that method.
+"""
+function check_smoothness(f)
+    p = characteristic(parent(f))
+    nVars = length(gens(parent(f)))
+
+    graded, _ = grade(parent(f))
+
+    R, _ = quo(graded, ideal(graded, [graded(f)]))
+
+    V = proj(R)
+
+    is_smooth(V)
 end
 
 #end 
@@ -343,12 +375,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 2
-d = 3
-p = 7
+n = 5
+p = 13
 F = GF(p)
-R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3,x4,x5,x6) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = y^2*z - x^3 - x*z^2 - z^3
-@time DeRham.zeta_function(f,vars_reversed=true)
+f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3
+@time DeRham.zeta_function(f)
 =#

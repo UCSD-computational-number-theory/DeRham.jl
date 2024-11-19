@@ -34,7 +34,7 @@ function computeT(f, Basis, M, termorder, vars_reversed)
     if vars_reversed == true
         partials = reverse(partials)
     end
-    println(partials)
+    #println(partials)
 
     T = zero_matrix(precisionring, 0, len)
 
@@ -79,7 +79,7 @@ function computeT(f, Basis, M, termorder, vars_reversed)
                 #T = vcat(matrix(precisionring,1,len,tmp),T)
                 T = vcat(tmp, T)
             else 
-                println(monomials)
+                #println(monomials)
                 tmp = zero_matrix(precisionring, len_basis, len)
                 for j in 1:len # indexing over monomials
                     for k in 1:length(basis)

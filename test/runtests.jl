@@ -60,6 +60,8 @@ end
 
 @testset "Monomial orderings" begin
     test_supported_monomial_orderings()
+    #test_naive_algorithm()
+    test_fastevaluation()
 
     #test_reversing_variables()
 
