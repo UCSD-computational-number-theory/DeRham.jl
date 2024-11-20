@@ -185,9 +185,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
-    T = computeT(f, basis, M, termorder, vars_reversed)
-    verbose && println("T matrix is $T")
-
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
 
@@ -215,6 +212,10 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
+
+    T = computeT(f, basis, M, termorder, vars_reversed)
+    verbose && println("T matrix is $T")
+
     for i in 1:nrows(pseudo_inverse_mat_new)
         for j in 1:ncols(pseudo_inverse_mat_new)
             pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
@@ -357,11 +358,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 5
+n = 4
 p = 13
 F = GF(p)
-R, (x1,x2,x3,x4,x5,x6) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3,x4,x5) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3
+f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3
 @time DeRham.zeta_function(f)
 =#
