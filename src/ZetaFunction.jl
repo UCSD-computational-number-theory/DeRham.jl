@@ -180,7 +180,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("Basis of cohomology is $Basis")
 
-    hodge_polygon = hodgepolygon(Basis)
+    hodge_polygon = hodgepolygon(Basis, n)
     #hodge_polygon = SlopesPolygon(Basis)
 
     k = sum([length(tmp) for tmp in Basis]) # dimension of H^n
@@ -295,7 +295,7 @@ griffiths-dwork basis basis
 basis -- an array of "polynomials with pole" as descirbed in PolynomialWithPole.jl
 """
 #function hodgepolygon(basis::Array,n)
-function hodgepolygon(basis::Vector)
+function hodgepolygon(basis::Vector, n)
     #WRONG: n = highestpoleorder(basis)
     hodgenumbers = zeros(Int,n)
     for i in 0:n-1
@@ -313,7 +313,7 @@ Calculates the hodge polygon of f
 
 f - the polynomial to get the hodge polygon of
 """
-function hodgepolygon(f; termorder=:invlex, basis=nothing)
+function hodgepolygon(f::RingElem; termorder=:invlex, basis=nothing)
     n = nvars(parent(f)) - 1
     PR = parent(f)
     R = coefficient_ring(parent(f))
