@@ -181,10 +181,10 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Basis of cohomology is $Basis")
 
     hodge_polygon = hodgepolygon(Basis, n)
-    #hodge_polygon = SlopesPolygon(Basis)
+    hodge_numbers = hodge_polygon.slopelengths
+    verbose && println("Hodge numbers = $hodge_numbers")
 
-    k = sum([length(tmp) for tmp in Basis]) # dimension of H^n
-
+    k = sum(hodge_numbers) # dimension of H^n
     verbose && println("There are $k basis elements in H^$n")
 
     r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
