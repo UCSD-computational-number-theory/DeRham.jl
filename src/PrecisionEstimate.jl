@@ -53,6 +53,7 @@ function ibm_derham_bound(p,m,n)
     end
 
     sum
+    #floor(Int,(n)*impreciselog(p,m))
 end
 
 """
@@ -92,7 +93,10 @@ function ibm_crank_bound(p,n,M)
             N = ibm_constant(p,m,bounds)
             #println("N: $N")
             if N ≤ n - 1 + bounds[m]
-                bounds[p*m] = n - 1 + bounds[m]
+                if n - 1 + bounds[m] ≤ bounds[p*m] 
+                    bounds[p*m] = n - 1 + bounds[m]
+                end
+                #bounds[p*m] = n - 1 + bounds[m]
                 #print("reached log bound n - 1 + f(m) = $(bounds[p*m])")
                 #println(" at for chunk $m, i.e. f($(p*m))")
                 break
@@ -118,6 +122,8 @@ function ibm_crank_bound(p,n,M)
         end
 
     end
+
+    #all(bounds .<= ibm_derham_bound.(p,1:nBounds*p^2,n)) || error("assertion failure")
 
     bounds[1:nBounds]
 end
@@ -217,12 +223,12 @@ end
 function calculate_series_precision(p,n,r_m)
 
     #println("Relative precision: $r_m")
-    if !(p < 2*(n) + maximum(r_m))
-        #println("Unsupported p: $p. Returning nonsense.")
-        #return zeros(Int,n)
-        N = [(r_m[m] == 0 ? 0 : n+1 + r_m[m] - (m+1)) for m in 1:n]
-        return N
-    end
+    #if !(p < 2*(n) + maximum(r_m))
+    #    #println("Unsupported p: $p. Returning nonsense.")
+    #    #return zeros(Int,n)
+    #    N = [(r_m[m] == 0 ? 0 : n+1 + r_m[m] - (m+1)) for m in 1:n]
+    #    return N
+    #end
 
     # TODO: prove that this is correct
     #

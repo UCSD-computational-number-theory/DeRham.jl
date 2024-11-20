@@ -305,47 +305,47 @@ end
 function test_series_precision()
     #TODO: add the bound and fix for small p
 
-    #primes = [3]#,5,7]#, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
-    #for p in primes
-    #    n = 2
-    #    for d in 3:9
-    #        println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
-    #        test_series_precision_example(p,n,d)
-    #    end
+    primes = [3,5,7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43]
+    for p in primes
+        n = 2
+        for d in 3:9
+            println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
+            test_series_precision_example(p,n,d)
+        end
 
-    #    n = 3
-    #    for d in 4:6
-    #        println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
-    #        test_series_precision_example(p,n,d)
-    #    end
-    #end
+        n = 3
+        for d in 4:6
+            println("Testing precision estimate for (p,n,d) = ($p,$n,$d)")
+            test_series_precision_example(p,n,d)
+        end
+    end
 
-    test_series_precision_example(5,2,3)
-    test_series_precision_example(5,2,4)
+    #test_series_precision_example(5,2,3)
+    #test_series_precision_example(5,2,4)
 
-    test_series_precision_example(7,2,3)
-    test_series_precision_example(7,2,4)
-    
-    test_series_precision_example(7,3,4)
-    
+    #test_series_precision_example(7,2,3)
+    #test_series_precision_example(7,2,4)
+    #
+    #test_series_precision_example(7,3,4)
+    #
 
-    # p = 11
-    test_series_precision_example(11,2,3)
-    test_series_precision_example(11,2,4)
+    ## p = 11
+    #test_series_precision_example(11,2,3)
+    #test_series_precision_example(11,2,4)
 
-    # p = 13
-    test_series_precision_example(13,2,3)
-    test_series_precision_example(13,2,4)
-    test_series_precision_example(13,2,5)
+    ## p = 13
+    #test_series_precision_example(13,2,3)
+    #test_series_precision_example(13,2,4)
+    #test_series_precision_example(13,2,5)
 
-    # k3 surfaces
-    test_series_precision_example(11,3,4)
-    test_series_precision_example(13,3,4)
+    ## k3 surfaces
+    #test_series_precision_example(11,3,4)
+    #test_series_precision_example(13,3,4)
 
-    test_series_precision_example(13,3,5)
+    #test_series_precision_example(13,3,5)
 
-    test_series_precision_example(17,2,5)
-    test_series_precision_example(17,2,6)
+    #test_series_precision_example(17,2,5)
+    #test_series_precision_example(17,2,6)
 end
 
 
