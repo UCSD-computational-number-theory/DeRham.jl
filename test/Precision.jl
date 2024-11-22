@@ -144,7 +144,7 @@ end
 function test_algorithm_precision_example(p,n,d)
 
     r_m = DeRham.calculate_relative_precision(hodge_polygon(p,n,d),n-1,p)
-    N_m = DeRham.series_precision(p,n,d)
+    N_m = DeRham.series_precision(p,n,d, r_m)
 
     precision = DeRham.algorithm_precision(p,n,d,r_m,N_m)
 

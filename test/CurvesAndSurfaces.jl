@@ -20,11 +20,14 @@ function test_ellipticcurve_1(p)
     t = gen(parent(zeta))
 
     correctzeta = if p == 7
-        7t^2 - 3t + 1
+        #7t^2 - 3t + 1
+        [7, -3, 1]
     elseif p == 11
-        11t^2 + 2t + 1
+        #11t^2 + 2t + 1
+        [11, 2, 1]
     elseif p == 13
-        13t^2 + 4t + 1
+        #13t^2 + 4t + 1
+        [13, 4, 1]
     else
         @assert false "unsupported prime for testing"
     end

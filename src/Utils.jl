@@ -563,7 +563,40 @@ function henselLift(p, precision, A, T)
     return matrix(R,stuff)
 end
 
+function findpivotcolumnsU(U)
+    n = ncols(U)
+    pivotcols = []
+    for i in 1:nrows(U)
+        for j in 1:ncols(U)
+            if U[i,j] != 0
+                push!(pivotcols,j)
+                break
+            end
+        end
+    end
+    return pivotcols
+end
 
+function Linverse(L)
+    MS = matrix_space(parent(L[1,1]),nrows(L),ncols(L))
+    A = MS()
+    for j in 1:ncols(L)
+        for i in i:nrows(L)
+            if i == j 
+                A[i,j] = inverse(L[i,j])
+            else
+                A[i,j] = inverse(L[i,j])*sum(-L[i,k]*A[k,j] for k in 1:(i-1))
+            end
+        end
+    end
+end
+
+function LUpseudoinverse(L,U)
+    A = Linverse(L)
+    MS = matrix_space(parent(U[1,1]),ncols(U),nrows(U))
+    B = MS()
+    
+end
 
 
 #end

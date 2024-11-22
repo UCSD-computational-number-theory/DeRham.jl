@@ -111,12 +111,18 @@ INPUT:
 * "FM" -- Frobenius matrix 
 """
 
-function LPolynomial(FM,q,n)
+function LPolynomial(FM, n, q, polygon, relative_precision)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
-    P, T = polynomial_ring(parent(FM[1,1]), "T")
-    f = charpoly(P, FM)
+    P, T = polynomial_ring(ZZ, "T")
+    lift_to_int(s) = map(x -> lift(ZZ,x),s)
 
+    f = charpoly(P, lift_to_int(FM))
+    cp_coeffs = collect(coefficients(f))
+    return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs)
+    
+
+    """
     k = degree(f)
     bound = binomial(k,Int(ceil(k/2)))*(q^(n/2))*ceil(k/2)
     R, t = polynomial_ring(ZZ,"t")
@@ -128,9 +134,9 @@ function LPolynomial(FM,q,n)
             result = result + (ZZ(coeff(f,i)))*t^(k-i)
         end
     end
+    """
 
-
-    return reverse(f), result
+    #return reverse(f), result
 end 
 
 
@@ -165,16 +171,24 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     verbose && println("Working with a degree $d hypersurface in P^$n")
 
     basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
 
-    verbose && println("Basis of cohomology is $basis")
+    verbose && println("Basis of cohomology is $Basis")
 
+    hodge_polygon = hodgepolygon(Basis, n)
+    hodge_numbers = hodge_polygon.slopelengths
+    verbose && println("Hodge numbers = $hodge_numbers")
 
-    k = sum([length(tmp) for tmp in basis]) # dimension of H^n
-
+    k = sum(hodge_numbers) # dimension of H^n
     verbose && println("There are $k basis elements in H^$n")
 
-    hp = hodgepolygon(f; basis=basis)
-    r_m = calculate_relative_precision(hp, n-1, p)
+    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
+    #r_m = relative_precision(k, p)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d,r_m)
@@ -184,9 +198,6 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
      
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-
-    T = computeT(f, basis, M, termorder, vars_reversed)
-    verbose && println("T matrix is $T")
 
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
@@ -215,6 +226,10 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
+
+    T = computeT(f, basis, M, termorder, vars_reversed)
+    verbose && println("T matrix is $T")
+
     for i in 1:nrows(pseudo_inverse_mat_new)
         for j in 1:ncols(pseudo_inverse_mat_new)
             pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
@@ -266,9 +281,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
    # verbose && println("The Frobenius matrix is $FM")
 
     if givefrobmat
-        (FM,LPolynomial(FM,q,n))
+        (FM,LPolynomial(FM,n,q,hodge_polygon,r_m))
     else
-        LPolynomial(FM,q,n)
+        LPolynomial(FM,n,q,hodge_polygon,r_m)
     end
 end
 
@@ -280,7 +295,8 @@ griffiths-dwork basis basis
 
 basis -- an array of "polynomials with pole" as descirbed in PolynomialWithPole.jl
 """
-function hodgepolygon(basis::Array,n)
+#function hodgepolygon(basis::Array,n)
+function hodgepolygon(basis::Vector, n)
     #WRONG: n = highestpoleorder(basis)
     hodgenumbers = zeros(Int,n)
     for i in 0:n-1
@@ -298,7 +314,7 @@ Calculates the hodge polygon of f
 
 f - the polynomial to get the hodge polygon of
 """
-function hodgepolygon(f; termorder=:invlex, basis=nothing)
+function hodgepolygon(f::RingElem; termorder=:invlex, basis=nothing)
     n = nvars(parent(f)) - 1
     PR = parent(f)
     R = coefficient_ring(parent(f))
@@ -357,11 +373,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 5
+n = 4
 p = 13
 F = GF(p)
-R, (x1,x2,x3,x4,x5,x6) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3,x4,x5) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3 + x6^3
+f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3
 @time DeRham.zeta_function(f)
 =#

@@ -41,14 +41,17 @@ function monomial_change_basis(f, l, basis, termorder, vars_reversed)
 
        # matrix for the map (\mu_0, \dots, \mu_n) \mapsto \sum_{i\in n} \mu_i \partial_i f 
        change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,termorder,vars_reversed)
-       
-       # column vectors corresponding to monomials in the basis of cohomology 
-       basis_columns = transpose(convert_p_to_m(basis_lift,exp_vec))
-       
-       #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns); 
-       change_basis_matrix_aug = hcat(basis_columns,change_basis_matrix); 
-       #println((rank(change_basis_matrix_aug), number_of_columns(change_basis_matrix_aug), number_of_rows(change_basis_matrix_aug)))
-       return change_basis_matrix_aug
+
+       if length(basis) == 0
+              return change_basis_matrix
+       else 
+              # column vectors corresponding to monomials in the basis of cohomology 
+              basis_columns = transpose(convert_p_to_m(basis_lift,exp_vec))
+              
+              #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns); 
+              change_basis_matrix_aug = hcat(basis_columns,change_basis_matrix); 
+              return change_basis_matrix_aug
+       end
 end 
 
 """
