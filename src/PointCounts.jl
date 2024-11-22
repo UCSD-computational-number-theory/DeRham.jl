@@ -2,12 +2,24 @@
 """
 Extracts the point counts from the zeta function
 """
-function pointcounts(n,d,zeta,p,N)
-  if n != 2 || d != 3
+function pointcount(n,d,zeta,p,q)
+  if n != 2 || d != 3 || q != p
     error("not implement for anything but elliptic curves")
   end
 
-  P, t = power_series_ring(ZZ,N,:t)
+
+  # right now this if will always hit but in the future
+  # we will implement this for more general things
+  if n == 2 && d == 3 && q == p
+    t = gens(parent(zeta))[1]
+    second_coef = coeff(zeta,1)
+    # zeta[2] = -a_p
+    # a_p =  p + 1 - #E(F_p)
+    return second_coef + p + 1
+  end
+
+  # MARK - general case
+  #P, t = power_series_ring(ZZ,N,:t)
 
   #TODO: 
   #

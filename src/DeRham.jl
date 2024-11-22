@@ -24,6 +24,7 @@ include("CharPolyFrob.jl")
 
 
 include("ZetaFunction.jl")
+include("PointCounts.jl")
 
 # TODO: export Zeta Function functions
 
