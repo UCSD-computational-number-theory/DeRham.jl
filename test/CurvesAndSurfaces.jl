@@ -14,10 +14,10 @@ function test_ellipticcurve_1(p)
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
-    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
+    zeta = DeRham.zeta_function(f)
 
-    zeta = zeta[1] # LPolynomial returns two things rn, precision issues i guess
-    t = gen(parent(zeta))
+    #zeta = zeta[1] # LPolynomial returns two things rn, precision issues i guess
+    #t = gen(parent(zeta))
 
     correctzeta = if p == 7
         #7t^2 - 3t + 1
@@ -44,16 +44,19 @@ function test_ellipticcurve_2(p)
 
     f = y^2*z - x^3 - x*z^2
 
-    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
+    zeta = DeRham.zeta_function(f)
 
-    t = gen(parent(zeta))
+    #t = gen(parent(zeta))
 
     correctzeta = if p == 7
-        7t^2 + 1
+        [ZZ(7),0,1]
+        #7t^2 + 1
     elseif p == 11
-        11t^2 + 1
+        [ZZ(11),0,1]
+        #11t^2 + 1
     elseif p == 13
-        13t^2 - 6t + 1
+        [ZZ(13),-6,1]
+        #13t^2 - 6t + 1
     else
         @assert false "unsupported prime for testing"
     end
@@ -160,23 +163,27 @@ function test_highergenus_1(p)
 
     zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
-    t = gen(parent(zeta))
-    ts = (t .^ (21:-1:0))
+    #t = gen(parent(zeta))
+    #ts = (t .^ (21:-1:0))
 
     convert_to_poly(row_of_coefs) = sum(ts .* transpose(row_of_coefs))
 
     correctzeta = if p == 7
         # takes about 0.6 sec
-        convert_to_poly([117649 -16807 -4802 -2401 2303 14 4 2 47 -7 -2 -1 1])
+        [ZZ(117649),-16807,-4802,-2401,2303,14,4,2,47,-7,-2,-1,1]
     elseif p == 11
         # takes about 1.1 sec
-        convert_to_poly([1771561 2898918 2283996 1051490 290400 43230 5210 3930 2400 790 156 18 1])
+        [ZZ(1771561),2898918,2283996,1051490,290400,43230,5210,3930,2400,790,156,18,1]
     elseif p == 13
         # takes about 1.2 sec
-        convert_to_poly([4826809 742586 628342 57122 68783 6188 5236 476 407 26 22 2 1])
+        [ZZ(4826809),742586,628342,57122,68783,6188,5236,476,407,26,22,2,1]
+    elseif p == 19
+        [ZZ(47045881),-2476099,1563852,-363527,196384,-29963,4066,-1577,544,-53,12,-1,1]
     else
         @assert false "unsupported prime for testing"
     end
+
+    println(zeta)
 
     @test zeta == correctzeta
 

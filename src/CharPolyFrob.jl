@@ -40,12 +40,13 @@ INPUTS:
 function sign_fe(n, d, prec_vec, cp_coeffs)
     sign = 1
     dimension = n-1 # dimension of hypersurface = motivic weight = n-1 
+    cp = cp_coeffs #TODO: why the naming discrepancy?
     if dimension % 2 == 0 
         for i in 2:Int(floor(d/2))
             # NOTE-TO-SELF: check if the symmetric index is d-i or d+1-i
             k = div((d-2*(i-1))*dimension,2)
             p_power = p^(min(prec_vec[i], prec_vec[d+1-i]+k))
-            if (mod(cp[i], p_power) != 0) && (mod(cp[d+1-i], p_pwer) != 0)
+            if (mod(cp[i], p_power) != 0) && (mod(cp[d+1-i], p_power) != 0)
                 if 0 == mod(cp[i] + cp[d+1-i] * p^k, p_power)
                     sign = -1
                 else

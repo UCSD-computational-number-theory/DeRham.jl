@@ -139,6 +139,82 @@ function LPolynomial(FM, n, q, polygon, relative_precision)
     #return reverse(f), result
 end 
 
+"""
+   precision_information(f,basis)
+
+returns all the precision information
+related to f
+
+basis -- the basis of cohomology, in the format of 
+         polynomials with pole
+"""
+function precision_information(f,basis)
+    p = Int64(characteristic(parent(f)))
+    n = nvars(parent(f)) - 1
+    verbose = false
+
+    hodge_polygon = hodgepolygon(basis, n)
+    hodge_numbers = hodge_polygon.slopelengths
+    verbose && println("Hodge numbers = $hodge_numbers")
+
+    k = sum(hodge_numbers) # dimension of H^n
+    verbose && println("There are $k basis elements in H^$n")
+
+    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
+    #r_m = relative_precision(k, p)
+    #N_m = series_precision(r_m, p, n) # series precision 
+    #M = algorithm_precision(r_m, N_m, p)
+    N_m = series_precision(p,n,d,r_m)
+    M = algorithm_precision(p,n,d,r_m,N_m)
+
+    (hodge_polygon,r_m,N_m,M)
+end
+
+"""
+    precision_information(f)
+
+returns the precision information for a polynomial f
+
+"""
+function precision_information(f)
+    n = nvars(parent(f)) - 1
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
+
+    # the term order doesn't matter, we will discard this
+    # basis
+    basis = compute_monomial_bases(f, R, PR, :invlex) # basis of cohomology 
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
+
+    precision_information(f,Basis)
+end
+
+"""
+    print_precision_info(n,d,p)
+
+Calcuates how much precision would be needed to compute
+the zeta functino of a polynomial with
+n+1 variables, of degree d, at the prime p
+"""
+function print_precision_info(n,d,p)
+    R, vars = polynomial_ring(GF(p),n+1)
+
+    # any hypersurface will do, all we care
+    # about is the hodge polygon
+    fermat_hypersurface = sum(vars .^ d)
+
+    (hp, rel, ser, alg) =  precision_information(fermat_hypersurface)
+
+    println("Hodge Numbers: $(hp.slopelengths)")
+    println("Relative precision: $rel")
+    println("Series precision: $ser")
+    println("Algorithm precision: $alg")
+end 
 
 """
     zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
@@ -180,19 +256,20 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     verbose && println("Basis of cohomology is $Basis")
 
-    hodge_polygon = hodgepolygon(Basis, n)
-    hodge_numbers = hodge_polygon.slopelengths
-    verbose && println("Hodge numbers = $hodge_numbers")
+    (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis)
+    #hodge_polygon = hodgepolygon(Basis, n)
+    #hodge_numbers = hodge_polygon.slopelengths
+    #verbose && println("Hodge numbers = $hodge_numbers")
 
-    k = sum(hodge_numbers) # dimension of H^n
-    verbose && println("There are $k basis elements in H^$n")
+    #k = sum(hodge_numbers) # dimension of H^n
+    #verbose && println("There are $k basis elements in H^$n")
 
-    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
-    #r_m = relative_precision(k, p)
-    #N_m = series_precision(r_m, p, n) # series precision 
-    #M = algorithm_precision(r_m, N_m, p)
-    N_m = series_precision(p,n,d,r_m)
-    M = algorithm_precision(p,n,d,r_m,N_m)
+    #r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
+    ##r_m = relative_precision(k, p)
+    ##N_m = series_precision(r_m, p, n) # series precision 
+    ##M = algorithm_precision(r_m, N_m, p)
+    #N_m = series_precision(p,n,d,r_m)
+    #M = algorithm_precision(p,n,d,r_m,N_m)
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
      
@@ -222,6 +299,14 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)
+    #println(FBasis)
+    for e in FBasis
+        println(length(e))
+        for t in e
+            print("   " * "$(length(terms(t[1]))): ")
+            println(total_degree(t[1]))
+        end
+    end
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
