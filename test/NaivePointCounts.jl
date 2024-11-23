@@ -22,20 +22,20 @@ function test_fermat_cubic_naive()
   7
  11
  13
- 17]
-# 19
-# 23
-# 29
-# 31
-# 37
-# 41
-# 43
-# 47
-# 53
-# 59
-# 61
-# 67
-# 71]
+ 17
+ 19
+ 23
+ 29
+ 31
+ 37
+ 41
+ 43
+ 47
+ 53
+ 59
+ 61
+ 67
+ 71]
   for p in ps
     R, (x,y,z) = polynomial_ring(GF(p),3)
     f = x^3 + y^3 + z^3
@@ -46,14 +46,17 @@ function test_fermat_cubic_naive()
     n = 2
     d = 3
     zeta = DeRham.zeta_function(f)
-    pc = DeRham.pointcount(n,d,zeta[1],p,p)
-    pc2 = DeRham.pointcount(n,d,zeta[2],p,p)
-    println()
-    println("p = $p")
-    print("Naive: $(naive[2]), ")
-    println("Controlled: $(pc), $(zeta[1])")
-    println("Other controlled: $(pc2), $(zeta[2])")
-    println()
+    println(zeta)
+    pc = DeRham.pointcount(n,d,zeta,p,p)
+    #pc2 = DeRham.pointcount(n,d,zeta[2],p,p)
+    #println()
+    #println("p = $p")
+    #print("Naive: $(naive[2]), ")
+    #println("Controlled: $(pc), $(zeta)")
+    ##println("Other controlled: $(pc2), $(zeta[2])")
+    #println()
+
+    @test naive[2] == pc
 
   end
 end

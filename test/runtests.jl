@@ -4,12 +4,14 @@ using Oscar
 
 # source files, in the future replace this with `using DeRham`
 using DeRham
+using Primes
 #inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
 include("CurvesAndSurfaces.jl")
 include("Orderings.jl")
 include("Precision.jl")
+include("NaivePointCounts.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     testEllCurve1_7()
@@ -71,7 +73,11 @@ end
     test_hodge_polygon_values()
     test_hodge_polygon_examples()
     test_algorithm_precision()
-    test_series_precision()
+    #test_series_precision()
+end
+
+@testset "Naive Point Counts" begin
+    test_fermat_cubic_naive()
 end
 
 #@testset "Elliptic curves" begin

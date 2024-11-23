@@ -279,7 +279,7 @@ function series_precision(p, n, d, r_m)
         elseif ( 5 <= p && p < 17 ) 
             N = [2,2]
         elseif ( 17 <= p  ) 
-            N = [0,1]
+            N = [1,1]#[0,1]
         end
     elseif ( n == 2 && d == 4 ) 
         if ( p < 5) 

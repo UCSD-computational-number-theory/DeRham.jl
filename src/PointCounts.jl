@@ -11,11 +11,12 @@ function pointcount(n,d,zeta,p,q)
   # right now this if will always hit but in the future
   # we will implement this for more general things
   if n == 2 && d == 3 && q == p
-    t = gens(parent(zeta))[1]
-    second_coef = coeff(zeta,1)
+    #t = gens(parent(zeta))[1]
+    #second_coef = coeff(zeta,1)
+
     # zeta[2] = -a_p
     # a_p =  p + 1 - #E(F_p)
-    return second_coef + p + 1
+    return zeta[2] + p + 1
   end
 
   # MARK - general case
@@ -58,5 +59,5 @@ function naivelypointcount(f,q)
   end
 
   n_aff_points = length(rationalpoints)
-  (rationalpoints,(n_aff_points - 1)/(q-1))
+  (rationalpoints,divexact(n_aff_points - 1,q-1))
 end
