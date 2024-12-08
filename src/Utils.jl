@@ -595,7 +595,12 @@ function LUpseudoinverse(L,U)
     A = Linverse(L)
     MS = matrix_space(parent(U[1,1]),ncols(U),nrows(U))
     B = MS()
-    
+    for j in 1:ncols(B)
+        for i in 1:nrows(U)
+            B[nrows(U)-i+1,ncols(B)-j+1] = (A[[nrows(U)-i+1,ncols(B)-j+1] + sum(-U[nrows(U)-i+1,ncols(B)-j+1+k]*B[nrows(U)-i+1+k,ncols(B)-j+1] for i in 1:(nrows(B)-ncols(B)))*inverse(U[nrows(U)-i+1,ncols(B)-j+1])])
+        end
+    end
+    return B
 end
 
 
