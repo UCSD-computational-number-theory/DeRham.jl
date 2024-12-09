@@ -300,13 +300,13 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)
     #println(FBasis)
-    for e in FBasis
-        println(length(e))
-        for t in e
-            print("   " * "$(length(terms(t[1]))): ")
-            println(total_degree(t[1]))
-        end
-    end
+    #for e in FBasis
+    #    println(length(e))
+    #    for t in e
+    #        print("   " * "$(length(terms(t[1]))): ")
+    #        println(total_degree(t[1]))
+    #    end
+    #end
     l = d * n - n + d - length(S)
     pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
