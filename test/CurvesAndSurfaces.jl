@@ -175,3 +175,9 @@ function test_highergenus_1(p)
     @test convert_to_poly(zeta) == correctzeta
 
 end
+
+
+#
+#Fermat cubic surface:
+#
+#[4826809 -2227758 428415 -43940 2535 -78 1]
