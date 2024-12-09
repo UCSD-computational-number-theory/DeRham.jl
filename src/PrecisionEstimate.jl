@@ -206,16 +206,17 @@ function calculate_relative_precision(polygon, weight, p)
 
         if r >= max_digits
             max_digits = r 
-            for j in 1:(slope[i+1] + 1)
-                r_vector[j] = r 
+            for j in 0:slope[i+1]
+                r_vector[j+1] = r 
             end 
 
-            for j in slope[i+1]+2:length(hodge_numbers)
+            for j in slope[i+1]+1:length(hodge_numbers)-1
                 r = r-1
-                r_vector[j] = r
+                r_vector[j+1] = r
             end 
         end 
     end 
+    println(max_digits)
 
     return reverse(r_vector)
 end 

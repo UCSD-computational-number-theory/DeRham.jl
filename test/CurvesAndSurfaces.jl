@@ -55,8 +55,8 @@ function test_ellipticcurve_2(p)
         [ZZ(11),0,1]
         #11t^2 + 1
     elseif p == 13
-        [ZZ(13),-6,1]
-        #13t^2 - 6t + 1
+        [ZZ(13),6,1]
+        #13t^2 + 6t + 1
     else
         @assert false "unsupported prime for testing"
     end
@@ -69,11 +69,6 @@ Data computed using Edgar Costa's `controlledreduction` library.
 """
 function test_fermat_k3(p)
     n = 3
-    d = 4
-
-    abs_precision = 6
-    series_precision = (4,4,3)
-
     F = GF(p)
     R, (x,y,z,w) = polynomial_ring(F, ["x$i" for i in 0:n])
 
@@ -104,7 +99,7 @@ function test_fermat_k3(p)
         @assert false "unsupported prime for testing"
     end
 
-    @test zeta == correctzeta
+    @test convert_to_poly(zeta) == correctzeta
 
 end
 
@@ -113,17 +108,12 @@ Data computed using Edgar Costa's `controlledreduction` library.
 """
 function test_fermatdeform_k3(p)
     n = 3
-    d = 4
-
-    abs_precision = 6
-    series_precision = (4,4,3)
-
     F = GF(p)
     R, (x,y,z,w) = polynomial_ring(F, ["x$i" for i in 0:n])
 
     f = x^4 + y^4 + z^4 + w^4 + 2x*y*z*w
 
-    zeta = DeRham.compute_all(f,false,true)[2]
+    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
 
     t = gen(parent(zeta))
     ts = (t .^ (21:-1:0))
@@ -145,7 +135,7 @@ function test_fermatdeform_k3(p)
         @assert false "unsupported prime for testing"
     end
 
-    @test zeta == correctzeta
+    @test convert_to_poly(zeta) == correctzeta
 
 end
 
@@ -154,8 +144,6 @@ Data computed using Edgar Costa's `controlledreduction` library.
 """
 function test_highergenus_1(p)
     n = 2
-    d = 3
-
     F = GF(p)
     R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
 
@@ -183,8 +171,7 @@ function test_highergenus_1(p)
         @assert false "unsupported prime for testing"
     end
 
-    println(zeta)
 
-    @test zeta == correctzeta
+    @test convert_to_poly(zeta) == correctzeta
 
 end
