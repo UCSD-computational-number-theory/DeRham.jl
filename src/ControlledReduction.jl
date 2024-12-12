@@ -73,10 +73,13 @@ function chooseV(I, d)
         if I[i] > 0
             v[i] = v[i] + 1
             sum = sum + 1
+            if sum >= d 
+                break
+            end
         end 
     end 
 
-    while sum < d 
+    while sum < d
         for i in 0:(n-1) 
             if I[n-i] > v[n-i]
                 v[n-i] = v[n-i] + 1
