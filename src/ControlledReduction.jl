@@ -513,18 +513,15 @@ g - the value into which the answer is accumulated.
 """
 function finitediff_prodeval_linear(a,b,start,stop,g)
   if start == stop
-    return (a .* stop .+ b) * g
+    return (stop*a + b) * g
   end
 
   Fk = parent(a)()
 
   #TODO: why does broadcast allocate so much?
-  #Fk = a .* stop .+ b # Fk = F(k), here k = stop
-  for j in 1:size(Fk,2)
-    for i in 1:size(Fk,1) # column major order, columns in inner loop
-      Fk[i,j] = a[i,j] * stop + b[i,j]
-    end
-  end
+  Fk = stop*a + b # Fk = F(k), here k = stop
+  # @. Fk = stop*a + b
+  # Note that broadcast is actually slower
 
   g = Fk*g
 
@@ -532,12 +529,8 @@ function finitediff_prodeval_linear(a,b,start,stop,g)
     # right now, Fk = F(k+1)
     
     # TODO: why does broadcast allocate so much?
-    #Fk = Fk .- a
-    for j in 1:size(Fk,2)
-      for i in 1:size(Fk,1)
-        Fk[i,j] = Fk[i,j] - a[i,j]
-      end
-    end
+    #@. Fk = Fk - a
+    Fk = Fk - a
 
     # now, Fk = F(k)
     g = Fk * g
@@ -759,7 +752,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reverse
     R = coefficient_ring(parent(f))
     result = []
     for term in pol
-        println("Reducing terms of order $(term[2])")
+        #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
         for t in terms
             push!(result,reducechain_naive(costadata_of_initial_term(t,n,d,p,termorder)...,t[2],S,f,pseudoInverseMat,p,Ruvs,termorder,fastevaluation,vars_reversed))
@@ -791,7 +784,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
     for pol in FT
-        println("Reducing a new polynomial...")
+        #println("Reducing a new polynomial...")
         reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation)
         push!(result, reduction)
     end
