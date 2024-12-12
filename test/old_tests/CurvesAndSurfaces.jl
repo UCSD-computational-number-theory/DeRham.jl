@@ -176,7 +176,6 @@ function test_highergenus_1(p)
 
 end
 
-
 #
 #Fermat cubic surface:
 #

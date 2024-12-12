@@ -8,10 +8,11 @@ using Primes
 #inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
-include("CurvesAndSurfaces.jl")
+#include("CurvesAndSurfaces.jl")
 include("Orderings.jl")
 include("Precision.jl")
 include("NaivePointCounts.jl")
+include("ManageCSVTests.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
     #testEllCurve1_7() TODO: why is this failing?
@@ -25,28 +26,19 @@ end
 
 
 @testset "Curves and Surfaces" begin # the "whiteboard picture"
-    test_ellipticcurve_1(7)
-    test_ellipticcurve_1(11)
-    test_ellipticcurve_1(13)
 
-    test_ellipticcurve_2(7)
-    test_ellipticcurve_2(11)
-#    test_ellipticcurve_2(13)
-#
-#    test_fermat_k3(7)
-#    test_fermat_k3(11)
-#    test_fermat_k3(13)
-#
-#    test_fermatdeform_k3(7)
-#    test_fermatdeform_k3(11)
-#    test_fermatdeform_k3(13)
-#    
-    test_highergenus_1(7)
-    test_highergenus_1(11)
-#    test_highergenus_1(13)
-#    test_highergenus_1(19)
+    runcsvtest("ellipticcurves.csv")
+    runcsvtest("highergenus.csv")
+    
+    #runcsvtest("k3surfaces.csv")
+    #runcsvtest("othersurfaces.csv")
 end
 
+#@testset "Threefolds" begin
+#    runcsvtest("threefolds.csv")
+#end
+
+#TODO: we don't have this data rn
 #@testset "Bigger primes" begin
 #
 #    test_ellipticcurve_1(next_prime(20))
