@@ -280,6 +280,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
 
+    #=
     BasisTLift = []
     for i in basis
         temp = []
@@ -290,11 +291,19 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     end
 
     Basis = []
+    
     for i in 1:n
-        for j in BasisTLift[i]
-            push!(Basis,[j,i])
+        for j in 1:length(Basis[i])
+            #push!(Basis,[j,i])
+            Basis[i,j] = liftCoefficients(precisionring, precisionringpoly, Basis[i,j])
         end
     end
+    =#
+    
+    for i in 1:length(Basis)
+        Basis[i][1] = liftCoefficients(precisionring, precisionringpoly, Basis[i][1])
+    end 
+
     verbose && println("Basis of cohomology is $Basis")
 
 
@@ -355,7 +364,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
-    display(FM)
+    # display(FM)
     verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
