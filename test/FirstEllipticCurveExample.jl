@@ -10,7 +10,7 @@ function testEllCurve1_7()
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
-    f = y^2*z - x^3 - x*z^2R - z^3
+    f = y^2*z - x^3 - x*z^2 - z^3
     frobmat = DeRham.zeta_function(f,givefrobmat=true)[1]
     R = parent(frobmat[1,1])
     @test frobmat == R[231 11; 294 17]

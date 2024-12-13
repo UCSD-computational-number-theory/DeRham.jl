@@ -216,7 +216,6 @@ function calculate_relative_precision(polygon, weight, p)
             end 
         end 
     end 
-    println(max_digits)
 
     return reverse(r_vector)
 end 
