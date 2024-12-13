@@ -15,7 +15,7 @@
 function computeT(f, Basis, M, termorder, vars_reversed)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])

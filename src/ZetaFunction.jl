@@ -151,6 +151,7 @@ basis -- the basis of cohomology, in the format of
 function precision_information(f,basis)
     p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
+    d = total_degree(f)
     verbose = false
 
     hodge_polygon = hodgepolygon(basis, n)
@@ -240,7 +241,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
 

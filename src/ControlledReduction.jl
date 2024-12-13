@@ -25,7 +25,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     R = coefficient_ring(PR)
     Vars = gens(PR)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     SC = []
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), V)
@@ -281,7 +281,7 @@ if the reduction hits the end, returns u as the "true" value, otherwise returns 
 function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation;verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     
@@ -442,7 +442,7 @@ end
 
 function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=false)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     J = rev_tweak(u,n*d-n)
@@ -701,7 +701,7 @@ sweeping down the terms of the series expansion by the pole order.
 function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed, fastevaluation; verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     #verbose && println(pol)
@@ -747,7 +747,7 @@ end
 
 function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
@@ -762,24 +762,31 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reverse
 end
 
 """
-    reducetransform_costachunks_descending(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
 
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
 N_m - the precision
 """
 function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reversed,fastevaluation; verbose=false)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
     MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
+    i = 1
     for pol in FT
-        reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=verbose)
+        println("Reducing vector $i")
+        i += 1
+        @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=verbose)
         push!(result, reduction)
     end
     return result
 end
 
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reversed,fastevaluation)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
     MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
@@ -833,7 +840,7 @@ end
 
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     R = coefficient_ring(parent(f))
     MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
     if haskey(Ruvs, V)
@@ -914,7 +921,7 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
         return get(Ruvs, V, 0)
     end
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     R = coefficient_ring(parent(f))
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
