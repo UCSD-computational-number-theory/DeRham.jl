@@ -30,7 +30,7 @@ end
     runcsvtest("ellipticcurves.csv")
     runcsvtest("highergenus.csv")
     
-    #runcsvtest("k3surfaces.csv")
+    runcsvtest("k3surfaces.csv")
     #runcsvtest("othersurfaces.csv")
 end
 

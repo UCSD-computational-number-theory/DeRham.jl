@@ -68,7 +68,12 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder,
                 ele *= p^final_val
             else
                 lifted = lift(ZZ,ele)
+                #println(typeof(ele))
+                #println("Char: \n$(characteristic(parent(ele)))")
+                #println(ele)
+                #println(lifted)
                 ele = divexact(ele,p^(-final_val)) 
+                #println(ele)
             end
             temp[i] = ele
         end 

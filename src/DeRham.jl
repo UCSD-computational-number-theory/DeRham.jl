@@ -7,6 +7,8 @@ using Combinatorics
 
 verbose = true
 
+#include("NemoAdditions.jl")
+
 include("Utils.jl")
 include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
