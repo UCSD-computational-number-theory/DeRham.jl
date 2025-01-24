@@ -4,6 +4,7 @@ using Oscar
 using BitIntegers
 using LinearAlgebra
 using Combinatorics
+using Memoize
 
 verbose = true
 

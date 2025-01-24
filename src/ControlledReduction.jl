@@ -505,7 +505,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,ter
         mins = copy(J)
         K = 0
         while true
-            tempv = mins - V
+            tempv = mins .- V
             isLessThanZero = false
             for j in tempv
                 if j < 0
@@ -519,7 +519,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,ter
             if m - K == n
                 break
             end
-            mins = tempv
+            mins .= tempv
             K = K+1
         end
         matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
@@ -533,7 +533,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,ter
         else
             gMat = finitediff_prodeval_linear!(B,A,0,K-1,gMat,temp,g_temp,ui)
         end
-        J = J - K*V
+        @. J = J - K*V
         m = m - K
     end
     return (J, gMat)

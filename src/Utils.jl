@@ -106,7 +106,6 @@ function gen_exp_vec(n, d, order=:lex)
 end
 =#
 
-
 function gen_exp_vec(n, d, order=:lex)
     result = Vector{Vector{Int64}}(undef, binomial(n+d-1,d))
     for i in 1:binomial(n+d-1,d)
@@ -353,12 +352,16 @@ PR - polynomial ring to be the parent of the return value
 order - a symbol which denotes the term order
 """
 function vector_to_polynomial(vect, n, d, PR, order=:lex)
-    res = PR()
-    mon = compute_monomials(n + 1, d, PR,order)
-    @assert length(vect) == length(mon) "vector has incorrect length for the specified degree"
+    
+    C = MPolyBuildCtx(PR)
+    R = base_ring(PR)
+    exp_vecs = gen_exp_vec(n+1,d,order)
+    @assert length(vect) == length(exp_vecs) "vector has incorrect length for the specified degree"
     for i in eachindex(vect)
-        res += PR(vect[i]) * mon[i]
+        #res += PR(vect[i]) * mon[i]
+        push_term!(C, R(vect[i]), exp_vecs[i])
     end
+    res = finish(C)
 
     res
 end
