@@ -37,6 +37,11 @@ function my_mul!(A::zzModMatrix, B::zzModMatrix, c::UInt)
     return A
 end
 
+function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt})
+    @ccall Oscar.Nemo.libflint.nmod_mat_mul_nmod_vec(z::Ptr{UInt},A::Ref{zzModMatrix},b::Ptr{UInt},length(b)::Int)::Nothing
+    return z
+end
+
 
 
 """
@@ -303,7 +308,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation;verbose=false)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation;verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -371,7 +376,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,term
     #verbose && println("Before reduction chunk: $gMat")
     #verbose && println("Before reduction chunk, I is $I")
     if fastevaluation && 1 ≤ nend-(d*n-n)
-      gMat = finitediff_prodeval_linear(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
+      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
@@ -486,7 +491,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,term
     
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=false)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=false)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -526,7 +531,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,
                 i = i+1
             end
         else
-            gMat = finitediff_prodeval_linear(B,A,0,K-1,gMat,temp,ui)
+            gMat = finitediff_prodeval_linear!(B,A,0,K-1,gMat,temp,g_temp,ui)
         end
         J = J - K*V
         m = m - K
@@ -535,7 +540,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,
 end
 
 """
-finitediff_prodeval_linear(a,b,start,stop,g,temp)
+finitediff_prodeval_linear!(a,b,start,stop,g,temp)
 
 Generic function that evaluates 
 the function F(x) = a*x + b at 
@@ -562,9 +567,7 @@ ui - a function that converts the output of Julia's mod into an unsigned integer
     (i.e. if it's negative, add the characteristic)
 
 """
-function finitediff_prodeval_linear(a,b,start,stop,g,temp,ui)
-
-
+function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui)
 
   #zero!(temp) # temp = F_k
 
@@ -574,11 +577,29 @@ function finitediff_prodeval_linear(a,b,start,stop,g,temp,ui)
   # @. Fk = stop*a + b
   #
   if start == stop
-    return temp * g
+    #Oscar.mul!(g,temp,g)
+    #g = temp * g
+    #my_matvecmul!(g,temp,g)
+    my_matvecmul!(g_temp,temp,g)
+    copy!(g,g_temp)
+    return g
   end
 
 
-  g = temp*g
+  #g = temp*g
+  #gg = copy(g)
+  #h = temp * gg
+  my_matvecmul!(g_temp,temp,g)
+  copy!(g,g_temp)
+
+  #if h != g
+  #    
+  #    println(gg)
+  #    println(temp)
+  #    println("mul! - $g")
+  #    println("naive * - $h")
+  #    error()
+  #end
 
   for k = stop-1:-1:start
     # right now, Fk = F(k+1)
@@ -587,7 +608,21 @@ function finitediff_prodeval_linear(a,b,start,stop,g,temp,ui)
     sub!(temp,temp,a)
 
     # now, Fk = F(k)
-    g = temp * g
+    #g = temp * g
+    #gg = copy(g)
+    #h = temp * gg
+    #Oscar.Nemo.mul!(g,temp,g)
+    my_matvecmul!(g_temp,temp,g)
+    copy!(g,g_temp)
+    #println(g)
+    #println(h == g)
+    #if h != g
+    #    
+    #    println(gg)
+    #    println("mul! - $g")
+    #    println("naive * - $h")
+    #    error()
+    #end
   end
 
   return g
@@ -614,10 +649,12 @@ function costadata_of_initial_term(term,n,d,p,termorder)
     V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
-    g = zeros(R,length(ev))
+    # this is UInt instead of R to get Oscar to use the fast FLINT method
+    #g = zeros(R,length(ev)) 
+    g = zeros(UInt,length(ev)) 
     for j in axes(g,1)
         if u == ev[j]
-            g[j] = gCoeff
+            g[j] = lift(gCoeff)
             break
         end
     end
@@ -775,6 +812,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
 
         #verbose && println("ωₑ: $ωₑ")
         
+        
 
         for term in ωₑ
             #verbose && println("term: $term")
@@ -789,7 +827,8 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
         for i in eachindex(ω)
             #ω[i] = reducechain...
             #verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
+            g_temp = similar(ω[i][2])
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         end
 
         poleorder = poleorder - p
@@ -810,8 +849,11 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,var
     for term in pol
         #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
+        #println(terms)
         for t in terms
-            push!(result,reducechain_naive(costadata_of_initial_term(t,n,d,p,termorder)...,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,fastevaluation,vars_reversed))
+            (u,g) = costadata_of_initial_term(t,n,d,p,termorder)
+            g_temp = similar(g)
+            push!(result,reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed))
         end
     end
     return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
@@ -840,6 +882,7 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder,var
         @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         push!(result, reduction)
     end
+    println(result)
     return result
 end
 
@@ -857,6 +900,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
         @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
         push!(result, reduction)
     end
+    println(result)
     return result
 end
 
