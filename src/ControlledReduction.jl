@@ -894,11 +894,20 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
     B = MS1()
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-    result = []
-    for pol in FT
-        #println("Reducing a new polynomial...")
+
+    @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+
+    result = similar(FT)
+
+    for i in 1:length(FT) #pol in FT
+        #A = MS1()
+        #B = MS1()
+        #temp = MS1()
+        pol = FT[i]
+        println("Reducing vector $i")
         @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
-        push!(result, reduction)
+        result[i] = reduction
+        #push!(result, reduction)
     end
     println(result)
     return result
@@ -944,6 +953,16 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     return [A,B]
 end
 
+function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
+
+    evs = gen_exp_vec(n+1,d,termorder)
+    Threads.@threads for V in evs
+        computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    end
+end
+
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -951,6 +970,8 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
     MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
+    else
+        println("New key: $V")
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
