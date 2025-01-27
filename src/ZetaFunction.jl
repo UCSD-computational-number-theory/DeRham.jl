@@ -458,11 +458,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 4
-p = 13
+n = 2
+p = 7
 F = GF(p)
-R, (x1,x2,x3,x4,x5) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3
+f = y^2*z - x^3 - x*z^2 - z^3
 @time DeRham.zeta_function(f)
 =#
