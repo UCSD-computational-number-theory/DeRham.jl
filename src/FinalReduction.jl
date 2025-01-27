@@ -15,7 +15,7 @@
 function computeT(f, Basis, M, termorder, vars_reversed)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
@@ -47,21 +47,17 @@ function computeT(f, Basis, M, termorder, vars_reversed)
             if (l-(d-1)) > 0
                 monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,termorder)
                 len_domain = length(monomials_domain)
-                #if len_basis > 0 
-                    change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder,vars_reversed)
-                    change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
-                    tmp = zero_matrix(precisionring, len_basis, len)
-                #end 
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder,vars_reversed)
+                change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
+                tmp = zero_matrix(precisionring, len_basis, len)
+                
                 for j in 1:len # indexing over monomials 
                     row_vec = convert_p_to_m([monomials[j]],exp_vec)
-
-                    #if len_basis > 0 
-                        vec = change_basis_inverse * transpose(row_vec)
+                    vec = change_basis_inverse * transpose(row_vec)
                     
-                        for k in 1:len_basis 
-                            tmp[k,j] = precisionring(ZZ(factorial(n-1-i)))*vec[k,1]
-                        end
-                    #end 
+                    for k in 1:len_basis 
+                        tmp[k,j] = precisionring(ZZ(factorial(n-1-i)))*vec[k,1]
+                    end
 
                     # standard reduction step applying Griffiths-Dwork relation 
                     term = 0

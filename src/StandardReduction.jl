@@ -25,7 +25,7 @@ function monomial_change_basis(f, l, basis, termorder, vars_reversed)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
        S = [i for i in 0:n]
-       d = degree(f,1)
+       d = total_degree(f)
        PR = parent(f)
        R = coefficient_ring(parent(f))
        PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
@@ -119,7 +119,7 @@ function stdRed_step(f, h, standard_right_inverse, e, target_exp_vec, domain_exp
        # Number of variables, n
        n = nvars(parent(poly)) - 1
        S = [i for i in 0:n]
-       d = degree(f,1)
+       d = total_degree(f)
        l = d*n - n - 1
        PR = parent(f)
        R = coefficient_ring(parent(f))

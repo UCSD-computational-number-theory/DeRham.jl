@@ -68,7 +68,12 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder,
                 ele *= p^final_val
             else
                 lifted = lift(ZZ,ele)
+                #println(typeof(ele))
+                #println("Char: \n$(characteristic(parent(ele)))")
+                #println(ele)
+                #println(lifted)
                 ele = divexact(ele,p^(-final_val)) 
+                #println(ele)
             end
             temp[i] = ele
         end 
@@ -151,6 +156,7 @@ basis -- the basis of cohomology, in the format of
 function precision_information(f,basis)
     p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
+    d = total_degree(f)
     verbose = false
 
     hodge_polygon = hodgepolygon(basis, n)
@@ -240,7 +246,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
@@ -279,6 +285,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     S = collect(0:n)
 
+    #=
     BasisTLift = []
     for i in basis
         temp = []
@@ -289,11 +296,19 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     end
 
     Basis = []
+    
     for i in 1:n
-        for j in BasisTLift[i]
-            push!(Basis,[j,i])
+        for j in 1:length(Basis[i])
+            #push!(Basis,[j,i])
+            Basis[i,j] = liftCoefficients(precisionring, precisionringpoly, Basis[i,j])
         end
     end
+    =#
+    
+    for i in 1:length(Basis)
+        Basis[i][1] = liftCoefficients(precisionring, precisionringpoly, Basis[i][1])
+    end 
+
     verbose && println("Basis of cohomology is $Basis")
 
 
@@ -354,7 +369,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
-    display(FM)
+    # display(FM)
     verbose && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)

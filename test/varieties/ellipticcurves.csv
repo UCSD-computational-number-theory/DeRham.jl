@@ -1,0 +1,8 @@
+n;p;f;zeta_function
+3;7;6*x1^3 + 6*x1*x3^2 + x2^2*x3 + 6*x3^3;ZZRingElem[7, -3, 1]
+3;11;10*x1^3 + 10*x1*x3^2 + x2^2*x3 + 10*x3^3;ZZRingElem[11, 2, 1]
+3;13;12*x1^3 + 12*x1*x3^2 + x2^2*x3 + 12*x3^3;ZZRingElem[13, 4, 1]
+3;13;12*x1^3 + 12*x1*x3^2 + x2^2*x3;ZZRingElem[13, 6, 1]
+3;7;6*x1^3 + 6*x1*x3^2 + x2^2*x3;ZZRingElem[7, 0, 1]
+3;11;10*x1^3 + 10*x1*x3^2 + x2^2*x3;ZZRingElem[11, 0, 1]
+3;7;x1^3 + x2^3 + x3^3;ZZRingElem[7, 1, 1]

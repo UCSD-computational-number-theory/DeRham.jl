@@ -14,6 +14,36 @@
 
 #verbose = false
 
+#struct ControlledReductionContext3
+#    Ruvs::Dict{Vector{Int64}, Vector{FqMatrix}} #TODO: this type might be too rigid
+#    A::FqMatrix
+#    B::FqMatrix
+#    U::Vector{Int64}
+#    V::Vector{Int64}
+#    revV::Vector{Int64}
+#    I::Vector{Int64}
+#    gVec::Vector{Int64}
+#    tweakedI::Vector{Int64}
+#end
+
+
+function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
+  @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, B::Ref{zzModMatrix}, D::Ref{zzModMatrix}, C::UInt)::Nothing
+  return A
+end
+
+function my_mul!(A::zzModMatrix, B::zzModMatrix, c::UInt)
+    @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},B::Ref{zzModMatrix},c::UInt)::Nothing
+    return A
+end
+
+function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt})
+    @ccall Oscar.Nemo.libflint.nmod_mat_mul_nmod_vec(z::Ptr{UInt},A::Ref{zzModMatrix},b::Ptr{UInt},length(b)::Int)::Nothing
+    return z
+end
+
+
+
 """
     reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
 
@@ -25,7 +55,7 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     R = coefficient_ring(PR)
     Vars = gens(PR)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     SC = []
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), V)
@@ -49,11 +79,11 @@ function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
     gc = reverse(gc)
     gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
     
-    gcpartials = reverse(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
+    reverse!(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
 
     #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
     return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
-
+c
 end
 
 """
@@ -149,7 +179,7 @@ INPUTS:
 * "d" -- integer, degree of f 
 """
 function rev_chooseV(I, d)
-    I = reverse(I)
+    reverse!(I)
 
     V = zeros(Int,length(I))
     i = 0
@@ -170,7 +200,7 @@ function rev_chooseV(I, d)
         s = s + 1
     end
 
-    V = reverse(V)
+    reverse!(V)
 
     return V
 end
@@ -278,26 +308,27 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation;verbose=false)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation;verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     
+    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
 
     
     I = u
     #TODO?
     if vars_reversed == false
-        I = reverse(I) # parity issue due to Costa's code being reverse from ours
+        reverse!(I) # parity issue due to Costa's code being reverse from ours
     end
     #println("Expanded I: $I")
 
     gMat = g
     #println(gMat)
     #chain = 0
-    I_edgar = [x//7 for x in I]
+    #I_edgar = [x//7 for x in I]
     #verbose && println("This is I: $I_edgar")
     J = copy(I)
 
@@ -312,13 +343,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
 
 
     if vars_reversed == true
-        gVec = I - rev_tweak(I,n*d-n)
+         gVec = I .- rev_tweak(I,n*d-n)
     else
-        gVec = I - tweak(I,n*d-n)
+         gVec = I .- tweak(I,n*d-n)
     end
-    ev = gen_exp_vec(n+1,n*d-n,termorder)
+    #ev = gen_exp_vec(n+1,n*d-n,termorder)
 
-    I = I - gVec
+    @. I = I - gVec
     if m - n < p
         nend = m - n
     else
@@ -327,17 +358,33 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
 
     matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
 
-    B,A = computeRPoly_LAOneVar2(matrices,reverse(I - (nend-(d*n-n))*V),reverse(V),R)
+    #TODO: the following was changed to use reverse! so 
+    #    it doesn't allocate as much, but I realized that
+    #    this isn't our bottleneck. If it ever does
+    #    become the bottleneck, fix the rest of this method
+    #    so it doesn't allocate.
+    U = I .- (nend-(d*n-n))*V
+    reverse!(U)
+
+    reverse!(V)
+    B,A = computeRPoly_LAOneVar2!(B,A,matrices,U,V,R,temp)
+    reverse!(V) # put V back to normal
+
     i = 1
+
     
     #verbose && println("Before reduction chunk: $gMat")
     #verbose && println("Before reduction chunk, I is $I")
-    if fastevaluation
-      gMat = finitediff_prodeval_linear(B,A,0,nend-(d*n-n)-1,gMat)
+    if fastevaluation && 1 ≤ nend-(d*n-n)
+      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
-        gMat = (A+B*(nend-(d*n-n)-i))*gMat
+        my_mul!(temp,B,ui(nend-(d*n-n)-i))
+        add!(temp,temp,A)
+        gMat = temp*gMat
+
+        #gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
         #verbose && println("After step $i: $gMat")
 
@@ -348,15 +395,16 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     # TODO: test how much of a difference the fast evaluation actually makes
     # i > 1 iff the while loop above is executed at least once 
     if i > 1 # TODO: this will have a problem with fastevaluation
-        I = I - (nend-(d*n-n))*V
+        # UPDATE: I think the problem with fastevaluation is fixed... right?
+        @. I = I - (nend-(d*n-n))*V
     end
     #verbose && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         if vars_reversed == true
-            y = rev_tweak(J - i*V,d*n-n) - rev_tweak(J - (i+1)*V,d*n-n)
+            y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
         else
-            y = tweak(J - i*V,d*n-n) - tweak(J - (i+1)*V,d*n-n)
+            y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
         end
         #println("V: $y")
         #verbose && println("Getting y direction reduction matrix for V = $(y)") 
@@ -365,17 +413,20 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
         
         matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
         if vars_reversed == true
-            B,A = computeRPoly_LAOneVar2(matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
+            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
         else
-            B,A = computeRPoly_LAOneVar2(matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R)
+            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
         end
         
-        gMat = (A+B)*gMat
-        #println(gMat)
+        add!(temp,A,B)
+        gMat = temp*gMat
+
+        #gMat = (A+B)*gMat
+
         #verbose && println("After step $(i+1): $gMat")
 
         i = i+1
-        I = I - y
+        @. I = I - y
         #verbose && println("After step $(i+1), I is $I")
     end
 
@@ -429,7 +480,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     #error()
     
     if nend == p
-        newI = J - p*V
+        newI = J .- p*V
         #@assert undo_rev_tweak(I,p) == newI
 
         return (newI, gMat)
@@ -440,21 +491,23 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,var
     
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=false)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=false)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
+    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
     J = rev_tweak(u,n*d-n)
     gMat = g
+
     while m > n
         V = chooseV(J,d)
         mins = copy(J)
         K = 0
         while true
-            temp = mins - V
+            tempv = mins .- V
             isLessThanZero = false
-            for j in temp
+            for j in tempv
                 if j < 0
                     isLessThanZero = true
                     break
@@ -466,11 +519,11 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reve
             if m - K == n
                 break
             end
-            mins = temp
+            mins .= tempv
             K = K+1
         end
         matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
-        B,A = computeRPoly_LAOneVar2(matrices,reverse(mins),reverse(V),R)
+        B,A = computeRPoly_LAOneVar2!(B,A,matrices,reverse(mins),reverse(V),R,temp)
         i = 1
         if fastevaluation == false
             while i <= K
@@ -478,16 +531,16 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reve
                 i = i+1
             end
         else
-            gMat = finitediff_prodeval_linear(B,A,0,K-1,gMat)
+            gMat = finitediff_prodeval_linear!(B,A,0,K-1,gMat,temp,g_temp,ui)
         end
-        J = J - K*V
+        @. J = J - K*V
         m = m - K
     end
     return (J, gMat)
 end
 
 """
-finitediff_prodeval_linear(a,b,start,stop,g)
+finitediff_prodeval_linear!(a,b,start,stop,g,temp)
 
 Generic function that evaluates 
 the function F(x) = a*x + b at 
@@ -509,32 +562,69 @@ b - constant term coefficient
 start - lowest value to evaluate at (should be an integer)
 stop - highest value to evaluate at (should be an integer)
 g - the value into which the answer is accumulated.
+temp - a temporary pre-allocated matrix that can be used in intermediate computations
+ui - a function that converts the output of Julia's mod into an unsigned integer 
+    (i.e. if it's negative, add the characteristic)
 
 """
-function finitediff_prodeval_linear(a,b,start,stop,g)
+function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui)
+
+  #zero!(temp) # temp = F_k
+
+  #Fk = stop*a + b # Fk = F(k), here k = stop
+  my_mul!(temp,a,ui(stop))
+  add!(temp,temp,b)
+  # @. Fk = stop*a + b
+  #
   if start == stop
-    return (stop*a + b) * g
+    #Oscar.mul!(g,temp,g)
+    #g = temp * g
+    #my_matvecmul!(g,temp,g)
+    my_matvecmul!(g_temp,temp,g)
+    copy!(g,g_temp)
+    return g
   end
 
-  Fk = parent(a)()
 
-  #TODO: why does broadcast allocate so much?
-  Fk = stop*a + b # Fk = F(k), here k = stop
-  # @. Fk = stop*a + b
-  # Note that broadcast is actually slower
+  #g = temp*g
+  #gg = copy(g)
+  #h = temp * gg
+  my_matvecmul!(g_temp,temp,g)
+  copy!(g,g_temp)
 
-  g = Fk*g
+  #if h != g
+  #    
+  #    println(gg)
+  #    println(temp)
+  #    println("mul! - $g")
+  #    println("naive * - $h")
+  #    error()
+  #end
 
   for k = stop-1:-1:start
     # right now, Fk = F(k+1)
     
-    # TODO: why does broadcast allocate so much?
-    #@. Fk = Fk - a
-    Fk = Fk - a
+    # Fk = Fk - a
+    sub!(temp,temp,a)
 
     # now, Fk = F(k)
-    g = Fk * g
+    #g = temp * g
+    #gg = copy(g)
+    #h = temp * gg
+    #Oscar.Nemo.mul!(g,temp,g)
+    my_matvecmul!(g_temp,temp,g)
+    copy!(g,g_temp)
+    #println(g)
+    #println(h == g)
+    #if h != g
+    #    
+    #    println(gg)
+    #    println("mul! - $g")
+    #    println("naive * - $h")
+    #    error()
+    #end
   end
+
   return g
 end
 
@@ -559,10 +649,12 @@ function costadata_of_initial_term(term,n,d,p,termorder)
     V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
-    g = zeros(R,length(ev))
+    # this is UInt instead of R to get Oscar to use the fast FLINT method
+    #g = zeros(R,length(ev)) 
+    g = zeros(UInt,length(ev)) 
     for j in axes(g,1)
         if u == ev[j]
-            g[j] = gCoeff
+            g[j] = lift(gCoeff)
             break
         end
     end
@@ -698,10 +790,10 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed, fastevaluation; verbose=false)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed, fastevaluation; verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     #verbose && println(pol)
@@ -720,6 +812,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_r
 
         #verbose && println("ωₑ: $ωₑ")
         
+        
 
         for term in ωₑ
             #verbose && println("term: $term")
@@ -734,60 +827,89 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_r
         for i in eachindex(ω)
             #ω[i] = reducechain...
             #verbose && println("u is type $(typeof(ω[i][1]))")
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=verbose)
+            g_temp = similar(ω[i][2])
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         end
 
         poleorder = poleorder - p
     end
 
+    #println("ω: $ω")
     verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
 
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation)
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
     for term in pol
         #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
+        #println(terms)
         for t in terms
-            push!(result,reducechain_naive(costadata_of_initial_term(t,n,d,p,termorder)...,t[2],S,f,pseudoInverseMat,p,Ruvs,termorder,fastevaluation,vars_reversed))
+            (u,g) = costadata_of_initial_term(t,n,d,p,termorder)
+            g_temp = similar(g)
+            push!(result,reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed))
         end
     end
     return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
 end
 
 """
-    reducetransform_costachunks_descending(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
 
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
 N_m - the precision
 """
 function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reversed,fastevaluation; verbose=false)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
     MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
+    A = MS1()
+    B = MS1()
+    temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     result = []
+    i = 1
     for pol in FT
-        reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation,verbose=verbose)
+        println("Reducing vector $i")
+        i += 1
+        @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         push!(result, reduction)
     end
+    println(result)
     return result
 end
 
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reversed,fastevaluation)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
     MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
+    A = MS1()
+    B = MS1()
+    temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-    result = []
-    for pol in FT
-        #println("Reducing a new polynomial...")
-        reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,termorder,vars_reversed,fastevaluation)
-        push!(result, reduction)
+
+    @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+
+    result = similar(FT)
+
+    for i in 1:length(FT) #pol in FT
+        #A = MS1()
+        #B = MS1()
+        #temp = MS1()
+        pol = FT[i]
+        println("Reducing vector $i")
+        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
+        result[i] = reduction
+        #push!(result, reduction)
     end
+    println(result)
     return result
 end
 
@@ -831,13 +953,25 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     return [A,B]
 end
 
+function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
+
+    evs = gen_exp_vec(n+1,d,termorder)
+    Threads.@threads for V in evs
+        computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    end
+end
+
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     R = coefficient_ring(parent(f))
     MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
+    else
+        println("New key: $V")
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
@@ -914,7 +1048,7 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
         return get(Ruvs, V, 0)
     end
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    d = total_degree(f)
     R = coefficient_ring(parent(f))
     URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
     PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
@@ -953,7 +1087,7 @@ function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
 end
 
 """
-    computeRPoly_LAOneVar2(matrices, U)
+    computeRPoly_LAOneVar2!(matrices, U)
 
 Takes a list of n+2 matrices and ouputs a list two matrices [A,B] corresponding to R_{(x0,...,xn)+yv, v} = Ay + B
 
@@ -962,16 +1096,82 @@ INPUTS:
 * "U" -- vector, U =(x0, ..., xn)
 * "R" -- ring, base ring of f
 """
-function computeRPoly_LAOneVar2(matrices, U, V, R)
-    B = matrices[1]
-    matSpace = matrix_space(R, nrows(B), ncols(B))
-    A = matSpace()
+function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
+    zero!(B)
+    add!(B,B,matrices[1])
+    #B = matrices[1]
+
+    #@assert size(B) == size(matrices[1])
+    #for i in 1:size(B,2)
+    #    for j in 1:size(B,1)
+    #        B[j,i] = matrices[1][j,i]
+    #    end
+    #end
+
+#    println(typeof(matrices[1][1,1]))
+
+    zero!(A)
+
+
+    #A = parent(A)()
+    
+    #R = base_ring(A)
+    #nrows = size(A,2)
+    #ncols = size(A,1)
+
+    #zz = zero(base_ring(A))
+    #for i in 1:nrows
+    #    for j in 1:ncols
+    #        B[i,j] = matrices[1][i,j]
+    #        A[i,j] = zz
+    #    end
+    #end
+
+    br = base_ring(A)
+
+    #ui(i) = UInt(lift(ZZ,br(i)))
+    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(br))
+
     for k in 2:(length(matrices))
-        B += matrices[k] * U[k-1]
-        A += matrices[k] * V[k-1]
+
+        #B = B + matrices[k] * U[k-1]
+        #A = A + matrices[k] * V[k-1]
+        #println(test)
+
+        my_mul!(temp,matrices[k],ui(U[k-1]))
+        add!(B,B,temp)
+        my_mul!(temp,matrices[k],ui(V[k-1]))
+        add!(A,A,temp)
+
+        #add!(B,B,matrices[k] * ui(U[k-1]))
+        #add!(A,A,matrices[k] * ui(V[k-1]))
+
+
+        #my_addmul!(B,B,ui(U[k-1]),matrices[k])
+        #my_addmul!(A,A,ui(V[k-1]),matrices[k])
+
+        #@assert BB == B
+        #@assert AA == A
+
+        #println(B)
+        #error()
+        #B += matrices[k] * U[k-1]
+        #A += matrices[k] * V[k-1]
+
+        
+
+        #ukm1 = R(U[k-1])
+        #vkm1 = R(V[k-1])
+
+        #for i in 1:nrows
+        #    for j in 1:ncols
+        #        B[i,j] = B[i,j] + matrices[k][i,j] * ukm1
+        #        A[i,j] = A[i,j] + matrices[k][i,j] * vkm1
+        #    end
+        #end
     end 
 
-    return [A, B]
+    return (A, B)
 end
 
 function printMat(M)

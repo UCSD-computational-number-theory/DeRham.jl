@@ -17,8 +17,7 @@ function test_supported_monomial_orderings()
 
     zeta_neglex = DeRham.zeta_function(f,termorder=:neglex)
 
-    # TODO: put htis line back when we've figured out precision
-    #@test zeta_invlex == zeta_lex
+    @test zeta_invlex == zeta_lex
     
     # This is brittle, but it passes, showing that we are doing something
     # correct. When we fix precision, we can go back to the above line

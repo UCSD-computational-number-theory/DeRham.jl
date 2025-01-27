@@ -19,13 +19,13 @@
 # x^4 + y^4 + z^4 + w^4 + 2xyzw
 # x^5 + y^5 + z^5 + x
 
-p = 41
-R = GF(p)
-n = 2
-d = 5
-PR, vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x, y, z = vars
-f = x^5 + y^5 + z^5 + x * y^3 * z
+#p = 41
+#R = GF(p)
+#n = 2
+#d = 5
+#PR, vars = polynomial_ring(R, ["x$i" for i in 0:n])
+#x, y, z = vars
+#f = x^5 + y^5 + z^5 + x * y^3 * z
 
 # Given $f, m$, over the ring $\texttt{PR} = R[x_0, \dots, x_n]$, computes the matrix for the map
 # $$(\mu_0, \dots, \mu_n) \mapsto \sum_{i=0}^n \mu_i \partial_i f$$
