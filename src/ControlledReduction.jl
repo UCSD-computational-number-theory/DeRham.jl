@@ -14,18 +14,35 @@
 
 #verbose = false
 
-#struct ControlledReductionContext3
-#    Ruvs::Dict{Vector{Int64}, Vector{FqMatrix}} #TODO: this type might be too rigid
-#    A::FqMatrix
-#    B::FqMatrix
-#    U::Vector{Int64}
-#    V::Vector{Int64}
-#    revV::Vector{Int64}
-#    I::Vector{Int64}
-#    gVec::Vector{Int64}
-#    tweakedI::Vector{Int64}
-#end
+"""
 
+KeyType - the type of u and v, for example Vector{Int64}
+MatrixType - the type of A and B, for example zzModMatrix
+VectorType - the type of g, for exampel Vector{UInt64}
+
+"""
+#struct ControlledReductionContext{KeyType,MatrixType,VectorType}
+#    Ruvs::Dict{KeyType, Vector{MatrixType}} #TODO: this type might be too rigid
+#    A::MatrixType
+#    B::MatrixType
+#    temp::MatrixType
+#    g::VectorType
+#    g_temp::VectorType
+#end
+#
+#function oscar_default_context(R,g_length,n)
+#    MS1 = matrix_space(R, g_length, g_length)
+#    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+#    A = MS1()
+#    B = MS1()
+#    temp = MS1()
+#    g = zeros(UInt,g_length) 
+#    g_temp = similar(g)
+#
+#    ControlledReductionContext{Vector{Int64},
+#                               zzModMatrix,
+#                               Vector{UInt64}}(Ruvs,A,B,temp,g,g_temp)
+#end
 
 function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
   @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, B::Ref{zzModMatrix}, D::Ref{zzModMatrix}, C::UInt)::Nothing
@@ -634,7 +651,7 @@ Returns the data used by costa's code given a polynomial term.
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term(term,n,d,p,termorder)
+function costadata_of_initial_term!(term,g,n,d,p,termorder)
 
     #verbose && println("p: $p")
 
@@ -651,7 +668,7 @@ function costadata_of_initial_term(term,n,d,p,termorder)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
-    g = zeros(UInt,length(ev)) 
+    fill!(g,0)
     for j in axes(g,1)
         if u == ev[j]
             g[j] = lift(gCoeff)
@@ -797,6 +814,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
     PR = parent(f)
     R = coefficient_ring(parent(f))
     #verbose && println(pol)
+    g_length = binomial(d*n,d*n-n)
 
     i = pol
     highpoleorder = i[length(i)][2]
@@ -816,7 +834,8 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
 
         for term in ωₑ
             #verbose && println("term: $term")
-            term_costadata = costadata_of_initial_term(term,n,d,p,termorder)
+            g = zeros(UInt,g_length) 
+            term_costadata = costadata_of_initial_term!(term,g,n,d,p,termorder)
             #verbose && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
@@ -840,23 +859,29 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    result = []
+    result = PR()
     for term in pol
         #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
         #println(terms)
         for t in terms
-            (u,g) = costadata_of_initial_term(t,n,d,p,termorder)
-            g_temp = similar(g)
-            push!(result,reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed))
+            (u,g) = costadata_of_initial_term!(t,g,n,d,p,termorder)
+            reduced = reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed)
+            (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,termorder)
+            @assert m == n "Controlled reduction outputted a bad pole order"
+            result += reduced_poly
         end
     end
-    return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
+
+    vars = gens(PR)
+    XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
+    [[div(result,XS), n]]
+    #return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
 end
 
 """
@@ -889,11 +914,14 @@ end
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reversed,fastevaluation)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
-    MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
+    g_length = binomial(d*n,d*n-n)
+    MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
     A = MS1()
     B = MS1()
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    g = zeros(UInt,g_length) 
+    g_temp = similar(g)
 
     @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
 
@@ -905,7 +933,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
         #temp = MS1()
         pol = FT[i]
         println("Reducing vector $i")
-        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation)
+        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
         result[i] = reduction
         #push!(result, reduction)
     end
