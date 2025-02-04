@@ -594,8 +594,8 @@ function Linverse(L)
     end
 end
 
-function LUpseudoinverse(L,U)
-    A = Linverse(L)
+function LUpseudoinverse(L,U,P1,P2)
+    A = permutecolumns(Linverse(L),P1)
     MS = matrix_space(parent(U[1,1]),ncols(U),nrows(U))
     B = MS()
     for j in 1:ncols(B)
@@ -603,7 +603,31 @@ function LUpseudoinverse(L,U)
             B[nrows(U)-i+1,ncols(B)-j+1] = (A[[nrows(U)-i+1,ncols(B)-j+1] + sum(-U[nrows(U)-i+1,ncols(B)-j+1+k]*B[nrows(U)-i+1+k,ncols(B)-j+1] for i in 1:(nrows(B)-ncols(B)))*inverse(U[nrows(U)-i+1,ncols(B)-j+1])])
         end
     end
-    return B
+    return permuterows(B,inverseperm(P2))
+end
+
+function permuterows(M,P)
+    A = copy(M)
+    for i in 1:length(P)
+        A[P[i],:] = M[i,:]
+    end
+    return A
+end
+
+function permutecolumns(M,P)
+    A = copy(M)
+    for i in 1:length(P)
+        A[:,P[i]] = M[:,i]
+    end
+    return A
+end
+
+function inverseperm(P)
+    S = copy(P)
+    for i in 1:length(P)
+        S[P[i]] = i
+    end
+    return S
 end
 
 
