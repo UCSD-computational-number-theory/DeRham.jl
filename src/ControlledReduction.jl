@@ -325,7 +325,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation;verbose=false)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation;verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -373,7 +373,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_te
         nend = p
     end
 
-    matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
 
     #TODO: the following was changed to use reverse! so 
     #    it doesn't allocate as much, but I realized that
@@ -428,7 +428,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_te
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+        matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
         if vars_reversed == true
             B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
         else
@@ -508,7 +508,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_te
     
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=false)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=false)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -539,7 +539,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,ter
             mins .= tempv
             K = K+1
         end
-        matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+        matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
         B,A = computeRPoly_LAOneVar2!(B,A,matrices,reverse(mins),reverse(V),R,temp)
         i = 1
         if fastevaluation == false
@@ -807,7 +807,7 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed, fastevaluation; verbose=false)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,termorder,vars_reversed, fastevaluation; verbose=false)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -847,7 +847,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
             #ω[i] = reducechain...
             #verbose && println("u is type $(typeof(ω[i][1]))")
             g_temp = similar(ω[i][2])
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         end
 
         poleorder = poleorder - p
@@ -859,7 +859,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termord
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -871,7 +871,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g,g_temp,term
         #println(terms)
         for t in terms
             (u,g) = costadata_of_initial_term!(t,g,n,d,p,termorder)
-            reduced = reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed)
+            reduced = reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,termorder)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -899,12 +899,13 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder,var
     B = MS1()
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    explookup = Dict{Vector{Int64}, Int64}()
     result = []
     i = 1
     for pol in FT
         println("Reducing vector $i")
         i += 1
-        @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
+        @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,termorder,vars_reversed,fastevaluation,verbose=verbose)
         push!(result, reduction)
     end
     println(result)
@@ -920,10 +921,15 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
     B = MS1()
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    explookup = Dict{Vector{Int64}, Int64}()
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    for i in 1:length(ev1)
+        get!(explookup,ev1[i],i)
+    end
     g = zeros(UInt,g_length) 
     g_temp = similar(g)
 
-    @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+    @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
 
     result = similar(FT)
 
@@ -933,7 +939,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
         #temp = MS1()
         pol = FT[i]
         println("Reducing vector $i")
-        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
+        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
         result[i] = reduction
         #push!(result, reduction)
     end
@@ -981,17 +987,17 @@ function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     return [A,B]
 end
 
-function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,termorder)
     Threads.@threads for V in evs
-        computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+        computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
     end
 end
 
-function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
+function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     R = coefficient_ring(parent(f))
@@ -1030,35 +1036,32 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,termorder,vars_reversed)
         #println("After LingAlg problem: $gJS")
         for j in 1:(n+1)
             for k in 1:length(ev3)
-                for l in 1:length(ev1)
-                    for m in 1:(n+1)
-                        if m == n+1-j+1
-                            ev3[k][m] = ev3[k][m] + Stilda[m] - 1
-                        else
-                            ev3[k][m] = ev3[k][m] + Stilda[m]
-                        end
+                for m in 1:(n+1)
+                    if m == n+1-j+1
+                        ev3[k][m] = ev3[k][m] + Stilda[m] - 1
+                    else
+                        ev3[k][m] = ev3[k][m] + Stilda[m]
                     end
-                    #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
-                    #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
-                    #println(" $(ev1[l] == ev3[k])")
-                    if ev1[l] == ev3[k]
-                        #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                        #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                        if vars_reversed == true
-                            result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                            result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                        else
-                            result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                            result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                        end
-                        #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
-                    end
-                    for m in 1:(n+1)
-                        if m == n+1-j+1
-                            ev3[k][m] = ev3[k][m] - Stilda[m] + 1
-                        else
-                            ev3[k][m] = ev3[k][m] - Stilda[m]
-                        end
+                end
+                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                #println(" $(ev1[l] == ev3[k])")
+                l = get(explookup,ev3[k],0)
+                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                if vars_reversed == true
+                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+                else
+                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+                end
+                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
+                for m in 1:(n+1)
+                    if m == n+1-j+1
+                        ev3[k][m] = ev3[k][m] - Stilda[m] + 1
+                    else
+                        ev3[k][m] = ev3[k][m] - Stilda[m]
                     end
                 end
             end

@@ -479,5 +479,5 @@ F = GF(p)
 R, (x1,x2,x3) = polynomial_ring(F, ["x$i" for i in 0:n])
 
 f = 12*x1^3 + 12*x1*x3^2 + x2^2*x3 + 12*x3^3
-@time DeRham.zeta_function(f)
+@time DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true)
 =#
