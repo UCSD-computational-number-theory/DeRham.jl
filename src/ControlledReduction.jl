@@ -21,28 +21,30 @@ MatrixType - the type of A and B, for example zzModMatrix
 VectorType - the type of g, for exampel Vector{UInt64}
 
 """
-#struct ControlledReductionContext{KeyType,MatrixType,VectorType}
-#    Ruvs::Dict{KeyType, Vector{MatrixType}} #TODO: this type might be too rigid
-#    A::MatrixType
-#    B::MatrixType
-#    temp::MatrixType
-#    g::VectorType
-#    g_temp::VectorType
-#end
-#
-#function oscar_default_context(R,g_length,n)
-#    MS1 = matrix_space(R, g_length, g_length)
-#    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-#    A = MS1()
-#    B = MS1()
-#    temp = MS1()
-#    g = zeros(UInt,g_length) 
-#    g_temp = similar(g)
-#
-#    ControlledReductionContext{Vector{Int64},
-#                               zzModMatrix,
-#                               Vector{UInt64}}(Ruvs,A,B,temp,g,g_temp)
-#end
+struct ControlledReductionContext{KeyType,MatrixType,VectorType}
+    Ruvs::Dict{KeyType, Vector{MatrixType}} #TODO: this type might be too rigid
+    A::MatrixType
+    B::MatrixType
+    temp::MatrixType
+    g::VectorType
+    g_temp::VectorType
+end
+
+const OscarReductionContext = ControlledReductionContext{Vector{Int64},
+                                                         zzModMatrix,
+                                                         Vector{UInt64}}
+function oscar_default_context(R,g_length,n)
+    MS1 = matrix_space(R, g_length, g_length)
+    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    A = MS1()
+    B = MS1()
+    temp = MS1()
+    g = zeros(UInt,g_length) 
+    g_temp = similar(g)
+
+    OscarReductionContext(Ruvs,A,B,temp,g,g_temp)
+end
+
 
 function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
   @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, B::Ref{zzModMatrix}, D::Ref{zzModMatrix}, C::UInt)::Nothing
@@ -521,13 +523,15 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,
     ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
     J = rev_tweak(u,n*d-n)
     gMat = g
+    mins = similar(J)
+    tempv = similar(J)
 
     while m > n
         V = chooseV(J,d)
-        mins = copy(J)
+        @. mins = J
         K = 0
         while true
-            tempv = mins .- V
+            @. tempv = mins - V
             isLessThanZero = false
             for j in tempv
                 if j < 0
@@ -541,7 +545,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,
             if m - K == n
                 break
             end
-            mins .= tempv
+            @. mins = tempv
             K = K+1
         end
         matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
@@ -929,30 +933,39 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
     d = total_degree(f)
     n = nvars(parent(f)) - 1
     g_length = binomial(d*n,d*n-n)
+
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
-    A = MS1()
-    B = MS1()
-    temp = MS1()
+
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+
     explookup = Dict{Vector{Int64}, Int64}()
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     for i in 1:length(ev1)
         get!(explookup,ev1[i],i)
     end
-    g = zeros(UInt,g_length) 
-    g_temp = similar(g)
-
     @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+
+    contexts = OscarReductionContext[]
+
+    for i in 1:length(FT)#Threads.nthreads()
+        A = MS1()
+        B = MS1()
+        temp = MS1()
+        g = zeros(UInt,g_length) 
+        g_temp = similar(g)
+        push!(contexts, OscarReductionContext(Ruvs,A,B,temp,g,g_temp))
+    end
 
     result = similar(FT)
 
-    for i in 1:length(FT) #pol in FT
-        #A = MS1()
-        #B = MS1()
-        #temp = MS1()
+    #TODO: can reduce allocations by changing this for loop
+    #  to a nested while inside for. Then only allocate one context
+    #  thread, instead of one per reduction vector.
+    Threads.@threads for i in 1:length(FT) #pol in FT
+        context = contexts[i]
         pol = FT[i]
         println("Reducing vector $i")
-        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
+        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context.Ruvs,explookup,context.A,context.B,context.temp,context.g,context.g_temp,termorder,vars_reversed,fastevaluation)
         result[i] = reduction
         #push!(result, reduction)
     end
