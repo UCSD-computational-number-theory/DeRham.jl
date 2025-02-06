@@ -47,10 +47,10 @@ by using the optional zeta_function argument.
 
 Examples:
 
-runtest("ellipticcurves.csv")
+runcsvtest("ellipticcurves.csv")
 
 zf = f -> DeRham.zeta_function(f,fastevaluation=true)
-runtest("ellipticcurves.csv"; zeta_function=zf)
+runcsvtest("ellipticcurves.csv"; zeta_function=zf)
 """
 function runcsvtest(filename; zeta_function=nothing)
 

@@ -278,7 +278,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #M = algorithm_precision(p,n,d,r_m,N_m)
 
     verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
-     
+    println("algorithm precision: $M, series precision: $N_m") 
     precisionring, = residue_ring(ZZ, p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 

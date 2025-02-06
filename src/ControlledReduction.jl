@@ -390,7 +390,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     i = 1
 
     
-    #verbose && println("Before reduction chunk: $gMat")
+    #verbose && println("Before reduction chunk: $(convert.(Int,gMat))")
     #verbose && println("Before reduction chunk, I is $I")
     if fastevaluation && 1 ≤ nend-(d*n-n)
       gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
@@ -403,7 +403,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
 
         #gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
-        #verbose && println("After step $i: $gMat")
+        #verbose && println("After step $i: $(convert.(Int,gMat))")
 
         i = i+1
         #println(gMat)
@@ -424,11 +424,15 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
             y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
         end
         #println("V: $y")
-        #verbose && println("Getting y direction reduction matrix for V = $(y)") 
+        #verbose && 
+        #println("Getting y direction reduction matrix for V = $(y)") 
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
         matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+        #println(matrices1)
+        #error()
+
         if vars_reversed == true
             B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
         else
@@ -440,11 +444,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
 
         #gMat = (A+B)*gMat
 
-        #verbose && println("After step $(i+1): $gMat")
+        #verbose && 
+        #println("After step $(i+1): $(gMat))")
 
         i = i+1
         @. I = I - y
-        #verbose && println("After step $(i+1), I is $I")
+        #verbose && 
+        #println("After step $(i+1), I is $I")
     end
 
       #U = I - V
@@ -504,7 +510,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     else
         return (I,gMat) # gives the "true" u
     end
-
     
 end
 
@@ -854,7 +859,11 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
     end
 
     #println("ω: $ω")
-    verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+    #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+
+    #println(gen_exp_vec(n,n*d-n-1,termorder))
+           
+    #error()
 
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
@@ -900,6 +909,10 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder,var
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
     explookup = Dict{Vector{Int64}, Int64}()
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    for i in 1:length(ev1)
+        get!(explookup,ev1[i],i)
+    end
     result = []
     i = 1
     for pol in FT
