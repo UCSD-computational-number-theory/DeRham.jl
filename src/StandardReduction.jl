@@ -20,7 +20,7 @@ INPUTS:
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis(f, l, basis, termorder, vars_reversed)
+function monomial_change_basis(f, l, basis, params)
        #println(basis)
        p = characteristic(parent(f))
        n = nvars(parent(f)) - 1
@@ -37,10 +37,10 @@ function monomial_change_basis(f, l, basis, termorder, vars_reversed)
               push!(basis_lift, liftCoefficients(ZZ,PRZZ,i,false))
        end
 
-       exp_vec = gen_exp_vec(n+1, l, termorder)
+       exp_vec = gen_exp_vec(n+1, l, params.termorder)
 
        # matrix for the map (\mu_0, \dots, \mu_n) \mapsto \sum_{i\in n} \mu_i \partial_i f 
-       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,termorder,vars_reversed)
+       change_basis_matrix = compute_controlled_matrix(f_lift,l,S,ZZ,PRZZ,params)
 
        if length(basis) == 0
               return change_basis_matrix
@@ -64,10 +64,10 @@ INPUTS:
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse(f,l,basis,termorder,vars_reversed)    
+function monomial_change_basis_inverse(f,l,basis,params)    
        PR = parent(f)
        R = coefficient_ring(PR)  
-       A = monomial_change_basis(f,l,basis,termorder, vars_reversed)
+       A = monomial_change_basis(f,l,basis,params)
        
        flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
        
@@ -89,10 +89,10 @@ INPUTS:
 * "M" -- integer, desired mod p^M precision
 * "termorder" -- the monomial ordering of vectors
 """
-function monomial_change_basis_inverse_lifted(f, l, basis, M, termorder,vars_reversed)
+function monomial_change_basis_inverse_lifted(f, l, basis, M, params)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis,termorder,vars_reversed)
+    (A, Sol_fp) = monomial_change_basis_inverse(f,l,basis,params)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)

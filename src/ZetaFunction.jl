@@ -20,6 +20,17 @@
 #
 #verbose = false
 
+struct ZetaFunctionParams
+    verbose::Bool
+    givefrobmat::Bool
+    algorithm::Symbol
+    termorder::Symbol
+    vars_reversed::Bool
+    fastevaluation::Bool
+end
+
+default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false)
+
 """
     compute_frobenius_matrix(n,d,Reductions,T)
 
@@ -32,7 +43,9 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
+    verbose = params.verbose
+    termorder = params.termorder
     verbose && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
@@ -250,9 +263,11 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation)
+
     verbose && println("Working with a degree $d hypersurface in P^$n")
 
-    basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
     Basis = []
     for i in 1:n
         for j in basis[i]
@@ -313,7 +328,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)
+    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
     #println(FBasis)
     #for e in FBasis
     #    println(length(e))
@@ -323,11 +338,11 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
+    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
 
-    T = computeT(f, basis, M, termorder, vars_reversed)
+    T = computeT(f, basis, M, params)
     verbose && println("T matrix is $T")
 
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -358,7 +373,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params) 
     if verbose
         for i in 1:length(Basis)
             basis_elt = Basis[i]
@@ -368,7 +383,7 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     end 
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
     # display(FM)
     verbose && println("The Frobenius matrix is $FM")
 

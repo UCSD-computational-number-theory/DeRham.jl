@@ -66,11 +66,11 @@ end
 # $|S| \leq i \leq n$ are of degree $l - d$.
 #
 """
-    compute_controlled_matrix(f, l, S, R, PR, termorder)
+    compute_controlled_matrix(f, l, S, R, PR, params)
 
 what does this do again?
 """
-function compute_controlled_matrix(f, l, S, R, PR, termorder, vars_reversed)
+function compute_controlled_matrix(f, l, S, R, PR, params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     vars = gens(PR)
@@ -79,8 +79,8 @@ function compute_controlled_matrix(f, l, S, R, PR, termorder, vars_reversed)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
-    in_set_mons = compute_monomials(n+1, l - (d - 1), PR, termorder)
-    not_in_set_mons = compute_monomials(n+1, l - d, PR, termorder)
+    in_set_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder)
+    not_in_set_mons = compute_monomials(n+1, l - d, PR, params.termorder)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -97,19 +97,19 @@ function compute_controlled_matrix(f, l, S, R, PR, termorder, vars_reversed)
     M = U()
 
     partials = [ derivative(f, i) for i in 1:n+1 ]
-    if vars_reversed == true
+    if params.vars_reversed == true
         partials = reverse(partials)
     end
 
     for i in 1:len_S
         for monomial in eachindex(in_set_mons)
-            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, termorder)
+            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
         end
     end
 
     for i in (len_S+1):n+1
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, termorder)
+            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
         end
     end
     return M
@@ -170,13 +170,13 @@ I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
 PR- paren(f)
 """
-function pseudo_inverse_controlled(f, S, l, R, PR, termorder,vars_reversed)
+function pseudo_inverse_controlled(f, S, l, R, PR, params)
     n = nvars(parent(f)) - 1
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
     
-    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, termorder,vars_reversed)
+    U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
 
     temp = size(U)
     
@@ -203,10 +203,10 @@ M - the absolute precision to lift to.
 termorder - the order of the monomials used for vectors
 
 """
-function pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
+function pseudo_inverse_controlled_lifted(f,S,l,M,params)
     PR = parent(f)
     R = coefficient_ring(PR)
-    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR,termorder,vars_reversed)
+    (U, Sol_fp) = pseudo_inverse_controlled(f,S,l,R,PR,params)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)

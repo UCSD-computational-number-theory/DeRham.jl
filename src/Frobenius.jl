@@ -118,7 +118,11 @@ INPUTS:
 * "N_m" -- series precision
 * "p" -- the prime
 """
-function applyFrobeniusToBasis(Basis,f,N_m,p,termorder,vars_reversed; verbose=false)
+function applyFrobeniusToBasis(Basis,f,N_m,p,params)
+    termorder = params.termorder
+    vars_reversed = params.vars_reversed
+    verbose = params.verbose
+
     n = nvars(parent(f)) - 1
     d = degree(f,1)
     PR = parent(f)
