@@ -515,14 +515,14 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,vars_reversed,fastevaluation,verbose=false)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,termorder,vars_reversed,fastevaluation,verbose=false)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
     J = rev_tweak(u,n*d-n)
-    gMat = g
+    gMat = context.g
     mins = similar(J)
     tempv = similar(J)
 
@@ -548,16 +548,16 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,
             @. mins = tempv
             K = K+1
         end
-        matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
-        B,A = computeRPoly_LAOneVar2!(B,A,matrices,reverse(mins),reverse(V),R,temp)
+        matrices = computeRuv(V,S,f,pseudoInverseMat,context.Ruvs,explookup,termorder,vars_reversed)
+        computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         i = 1
         if fastevaluation == false
             while i <= K
-                gMat = (A+B*(K-i))*gMat
+                gMat = (context.A+context.B*(K-i))*gMat
                 i = i+1
             end
         else
-            gMat = finitediff_prodeval_linear!(B,A,0,K-1,gMat,temp,g_temp,ui)
+            gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp,ui)
         end
         @. J = J - K*V
         m = m - K
@@ -872,7 +872,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
     return poly_of_end_costadatas(ω,PR,p,d,n,S,termorder)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g,g_temp,termorder,vars_reversed,fastevaluation)
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,termorder,vars_reversed,fastevaluation)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -883,8 +883,8 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g,g
         terms = termsoforder(pol,term[2])
         #println(terms)
         for t in terms
-            (u,g) = costadata_of_initial_term!(t,g,n,d,p,termorder)
-            reduced = reducechain_naive(u,g,t[2],S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,termorder,fastevaluation,vars_reversed)
+            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,termorder)
+            reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,explookup,termorder,fastevaluation,vars_reversed)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,termorder)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -965,7 +965,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,termorder,vars_reve
         context = contexts[i]
         pol = FT[i]
         println("Reducing vector $i")
-        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context.Ruvs,explookup,context.A,context.B,context.temp,context.g,context.g_temp,termorder,vars_reversed,fastevaluation)
+        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,termorder,vars_reversed,fastevaluation)
         result[i] = reduction
         #push!(result, reduction)
     end
