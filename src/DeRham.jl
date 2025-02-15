@@ -20,9 +20,9 @@ include("StandardReduction.jl")
 include("ControlledReduction.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
-
 include("CharPolyFrob.jl")
 
+include("ExamplePolynomials.jl")
 
 include("ZetaFunction.jl")
 include("PointCounts.jl")
