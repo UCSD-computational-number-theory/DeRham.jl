@@ -329,6 +329,7 @@ if the reduction hits the end, returns u as the "true" value, otherwise returns 
 """
 function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,params)
     #p = Int64(characteristic(parent(f)))
+    verbose = params.verbose
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -342,13 +343,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     if params.vars_reversed == false
         reverse!(I) # parity issue due to Costa's code being reverse from ours
     end
-    #println("Expanded I: $I")
+    (4 < verbose) && println("Expanded I: $I")
 
     gMat = g
     #println(gMat)
     #chain = 0
     #I_edgar = [x//7 for x in I]
-    #verbose && println("This is I: $I_edgar")
+    (4 < verbose) && println("This is I: $I_edgar")
     J = copy(I)
 
     #TODO?
@@ -357,8 +358,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     else
         V = chooseV(Array{Int}(divexact.(I,p)),d)
     end
-    #println("V: $V")
-    # verbose && println("LOOK! I=$I, V = $V")
+    (4 < verbose) && println("LOOK! I=$I, V = $V")
 
 
     if params.vars_reversed == true
@@ -392,8 +392,8 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     i = 1
 
     
-    #verbose && println("Before reduction chunk: $(convert.(Int,gMat))")
-    #verbose && println("Before reduction chunk, I is $I")
+    #(9 < verbose) && println("Before reduction chunk: $(convert.(Int,gMat))")
+    (4 < verbose) && println("Before reduction chunk, I is $I")
     if params.fastevaluation && 1 ≤ nend-(d*n-n)
       gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
       i = nend-(d*n-n) + 1
@@ -405,7 +405,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
 
         #gMat = (A+B*(nend-(d*n-n)-i))*gMat
 
-        #verbose && println("After step $i: $(convert.(Int,gMat))")
+        #(9 < verbose) && println("After step $i: $(convert.(Int,gMat))")
 
         i = i+1
         #println(gMat)
@@ -417,7 +417,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         # UPDATE: I think the problem with fastevaluation is fixed... right?
         @. I = I - (nend-(d*n-n))*V
     end
-    #verbose && println("After steps 1-$i, I is $I")
+    (4 < verbose) && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
         if params.vars_reversed == true
@@ -425,9 +425,8 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         else
             y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
         end
-        #println("V: $y")
-        #verbose && 
-        #println("Getting y direction reduction matrix for V = $(y)") 
+        (4 < verbose) && println("Getting y direction reduction matrix for V = $(y)") 
+        
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
@@ -446,13 +445,12 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
 
         #gMat = (A+B)*gMat
 
-        #verbose && 
-        #println("After step $(i+1): $(gMat))")
+        (4 < verbose) && println("After step $(i+1): $(gMat))")
+        
 
         i = i+1
         @. I = I - y
-        #verbose && 
-        #println("After step $(i+1), I is $I")
+        (4 < verbose) && println("After step $(i+1), I is $I")
     end
 
       #U = I - V
@@ -476,7 +474,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     end
     =#
 
-    #verbose && println("Getting reduction matrix for V = $V")
 
     #A,B = computeRPoly_LAOneVar(V,I - Int64((nend-(d*n-n)))*V,S,n,d,f,pseudoInverseMat,R,PR,termorder)
     #=
@@ -662,7 +659,7 @@ only be used at the beginning of reduction
 """
 function costadata_of_initial_term!(term,g,n,d,p,termorder)
 
-    #verbose && println("p: $p")
+    #(9 < verbose) && println("p: $p")
 
     R = base_ring(parent(term[1])) 
     i = term
@@ -686,7 +683,7 @@ function costadata_of_initial_term!(term,g,n,d,p,termorder)
     end
 
 
-    #verbose && println("creation: u is type $(typeof(II))")
+    #(9 < verbose) && println("creation: u is type $(typeof(II))")
     return (II,g)
 end
 
@@ -719,7 +716,7 @@ function incorporate_initial_term!(costadata_arr,costadata)
 
     # otherwise, push on a new term
     if !ind_already
-        #verbose && println("incorporation: u has type $(typeof(costadata[1]))")
+        #(9 < verbose) && println("incorporation: u has type $(typeof(costadata[1]))")
         push!(costadata_arr,costadata)
     end
 end
@@ -822,7 +819,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    #verbose && println(pol)
+    #(9 < verbose) && println(pol)
     g_length = binomial(d*n,d*n-n)
 
     i = pol
@@ -833,28 +830,28 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
 
     poleorder = highpoleorder
     while n < poleorder
-        params.verbose && println("pole order is $poleorder")
+        (9 < params.verbose) && println("pole order is $poleorder")
         # this is an array of polynomials
         ωₑ = termsoforder(pol,poleorder)
 
-        #verbose && println("ωₑ: $ωₑ")
+        #(9 < verbose) && println("ωₑ: $ωₑ")
         
         
 
         for term in ωₑ
-            #verbose && println("term: $term")
+            #(9 < verbose) && println("term: $term")
             g = zeros(UInt,g_length) 
             term_costadata = costadata_of_initial_term!(term,g,n,d,p,params.termorder)
-            #verbose && println("term, in Costa's format: $term_costadata")
+            #(9 < verbose) && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
         end
 
-        #verbose && println("ω: $ω")
+        #(9 < verbose) && println("ω: $ω")
         #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
         for i in eachindex(ω)
             #ω[i] = reducechain...
-            #verbose && println("u is type $(typeof(ω[i][1]))")
+            #(9 < verbose) && println("u is type $(typeof(ω[i][1]))")
             g_temp = similar(ω[i][2])
             ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,params)
         end
@@ -863,7 +860,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
     end
 
     #println("ω: $ω")
-    #verbose && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
+    #(9 < verbose) && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
 
     #println(gen_exp_vec(n,n*d-n-1,termorder))
            
@@ -921,12 +918,17 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
     result = []
     i = 1
     for pol in FT
-        println("Reducing vector $i")
+        (0 < params.verbose) && println("Reducing vector $i")
         i += 1
-        @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+        if (0 < params.verbose)
+            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+        else
+            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+        end
+
         push!(result, reduction)
     end
-    println(result)
+
     return result
 end
 
@@ -944,7 +946,13 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     for i in 1:length(ev1)
         get!(explookup,ev1[i],i)
     end
-    @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+
+    if (0 < params.verbose)
+        @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+    else
+        precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+    end
+    
 
     contexts = OscarReductionContext[]
 
@@ -965,12 +973,16 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     Threads.@threads for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
-        println("Reducing vector $i")
-        @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+        (0 < params.verbose) && println("Reducing vector $i")
+        if (0 < params.verbose)
+            @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+        else
+            reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+        end
         result[i] = reduction
         #push!(result, reduction)
     end
-    println(result)
+
     return result
 end
 
@@ -1032,7 +1044,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
-        println("New key: $V")
+        (4 < params.verbose) && println("New key: $V")
     end
     ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),params.termorder)

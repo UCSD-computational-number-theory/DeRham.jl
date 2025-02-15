@@ -55,11 +55,11 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
     if vars_reversed == false
         beta = reverse(beta)
     end
-    verbose && println("N=$N, m=$m")
-    verbose && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
+    (9 < verbose) && println("N=$N, m=$m")
+    (9 < verbose) && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
-    #verbose && println("Factorial: $Factorial")
-    #verbose && println("p: $p")
+    #(9 < verbose) && println("Factorial: $Factorial")
+    #(9 < verbose) && println("p: $p")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -69,7 +69,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
     for j in 0:(N-1)
         e = j + m
         factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
-        #verbose && println("e=$e,factorial_e=$factorial_e")
+        #(9 < verbose) && println("e=$e,factorial_e=$factorial_e")
         ev = gen_exp_vec(n+1,d*j,termorder)
         fj = f^j
         sum = 0
@@ -80,12 +80,12 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
             #coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p)))
             coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)))) # not sure whether there should be a power of p here 
             sum = sum + coefficient * monomial
-            if verbose && coefficient != 0
+            if (9 < verbose) && coefficient != 0
                 Djm = D[j+1]
                 C_jalpha = coeff(fj,alpha)
-                #println("Djm=$Djm, C_jalpha=$C_jalpha")
+                println("Djm=$Djm, C_jalpha=$C_jalpha")
             end
-            #verbose && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
+            #(9 < verbose) && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
@@ -130,7 +130,7 @@ function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     result = []
     for b in Basis
         Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder,vars_reversed,verbose=verbose)
-        verbose && println(Fmon)
+        (9 < verbose) && println(Fmon)
         push!(result, Fmon)
     end
     return result

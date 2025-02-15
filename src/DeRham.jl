@@ -6,8 +6,6 @@ using LinearAlgebra
 using Combinatorics
 using Memoize
 
-verbose = true
-
 #include("NemoAdditions.jl")
 
 include("Utils.jl")
