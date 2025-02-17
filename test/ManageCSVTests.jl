@@ -47,10 +47,10 @@ by using the optional zeta_function argument.
 
 Examples:
 
-runtest("ellipticcurves.csv")
+runcsvtest("ellipticcurves.csv")
 
 zf = f -> DeRham.zeta_function(f,fastevaluation=true)
-runtest("ellipticcurves.csv"; zeta_function=zf)
+runcsvtest("ellipticcurves.csv"; zeta_function=zf)
 """
 function runcsvtest(filename; zeta_function=nothing)
 
@@ -63,26 +63,40 @@ function runcsvtest(filename; zeta_function=nothing)
     end
 
     for test in eachrow(tests)
-        n = test.n
-        varstring = prod(["x$i," for i in 1:n])[1:end-1]
-
-        # this isn't secure!
-        codestring = """begin
-            using Oscar
-            R, ($varstring) = polynomial_ring(GF($(test.p)),$n);
-            $(test.f)
-        end
-        """
-
-        f = eval(Meta.parse(codestring))
-        zeta_result = eval(Meta.parse("begin using Oscar; $(test.zeta_function) end"))
-
-        zeta_evaluated = zeta_function(f)
-        println()
-        println("Testing: p=$(test.p), $n variables, f = $f")
-        println()
-        @test zeta_result == zeta_evaluated
+        testzetafunction(test.n,test.p,test.f,test.zeta_function,zeta_function)
     end
 
 end
 
+function teststring(ts, zeta_function=nothing)
+    if zeta_function == nothing
+        zeta_function = DeRham.zeta_function
+    end
+
+    testparts = split(ts,(";"))
+
+    n = Meta.parse(testparts[1])
+    p = Meta.parse(testparts[2])
+    testzetafunction(n,p,testparts[3],testparts[4],zeta_function)
+end
+
+function testzetafunction(n,p,fstring,correctzeta,zeta_function)
+    varstring = prod(["x$i," for i in 1:n])[1:end-1]
+
+    # this isn't secure!
+    codestring = """begin
+        using Oscar
+        R, ($varstring) = polynomial_ring(GF($(p)),$n);
+        $(fstring)
+    end
+    """
+
+    f = eval(Meta.parse(codestring))
+    zeta_result = eval(Meta.parse("begin using Oscar; $(correctzeta) end"))
+
+    println("Testing: p=$(p), $n variables, f = $f")
+    println()
+    zeta_evaluated = zeta_function(f)
+    println()
+    @test zeta_result == zeta_evaluated
+end

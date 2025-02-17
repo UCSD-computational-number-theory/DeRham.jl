@@ -276,11 +276,12 @@ end
 Computes the monomials in n variables, of degree d, in the
 variable order order, as Oscar polynonmials.
 """
-function compute_monomials(n,d,order=:lex)
-    S, vars = polynomial_ring(ZZ, ["x$i" for i in 1:n])
-
-	compute_monomials(n,d,PR,order=:lex)
-end
+# This version seems to be unused, and it breaks precompilation
+#function compute_monomials(n,d,order=:lex)
+#    S, vars = polynomial_ring(ZZ, ["x$i" for i in 1:n])
+#
+#	compute_monomials(n,d,PR,order=:lex)
+#end
 
 function compute_monomials(n,d,PR,order=:lex)
     if n < 0 || d < 0

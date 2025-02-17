@@ -9,10 +9,11 @@
 #include("StandardReduction.jl")
 
 """
-    computeT(f,Basis,M,termorder)
+    computeT(f,Basis,M,params)
 
+Computes the "T matrix" as in the notation in Costa's thesis.
 """
-function computeT(f, Basis, M, termorder, vars_reversed)
+function computeT(f, Basis, M, params)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -25,13 +26,13 @@ function computeT(f, Basis, M, termorder, vars_reversed)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     f_lift = liftCoefficients(precisionring,precisionringpoly,f)
 
-    exp_vec = gen_exp_vec(n+1, d*n-n-1, termorder)
+    exp_vec = gen_exp_vec(n+1, d*n-n-1, params.termorder)
     monomials = gen_mon(exp_vec, precisionring, precisionringpoly)
     #len = binomial(n+(d*n-n-1), n)
     len = length(monomials)
 
     partials = [ derivative(f_lift, i) for i in 1:n+1 ]
-    if vars_reversed == true
+    if params.vars_reversed == true
         partials = reverse(partials)
     end
     #println(partials)
@@ -43,11 +44,11 @@ function computeT(f, Basis, M, termorder, vars_reversed)
         basis = Basis[n-i]
         len_basis = length(basis)
         if l >=0 
-            exp_vec = gen_exp_vec(n+1,l,termorder)
+            exp_vec = gen_exp_vec(n+1,l,params.termorder)
             if (l-(d-1)) > 0
-                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,termorder)
+                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,params.termorder)
                 len_domain = length(monomials_domain)
-                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,termorder,vars_reversed)
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params)
                 change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 

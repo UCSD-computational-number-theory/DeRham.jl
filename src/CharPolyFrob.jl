@@ -8,11 +8,11 @@ INPUTS:
 divisibility of the roots.
 * "relative_precision" -- list, list of relative precisions, can be computed by "calculate_relative_precision"
 """
-function prec_vec(polygon, relative_precision)
+function prec_vec(polygon, relative_precision, verbose=0)
     vals = Int.(polygon.values)
     hodge_numbers = polygon.slopelengths
-    println(hodge_numbers)
-    println(relative_precision)
+    (0 < verbose) && println(hodge_numbers)
+    (0 < verbose) && println(relative_precision)
     prec_vec = reverse(vals)
     i = 1
     num_term = 1 
@@ -178,13 +178,13 @@ divisibility of the roots.
                         Frobenius matrix computed over the integers 
 
 """
-function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs)
+function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs, verbose=0)
     p = ZZ(p)
     dimension = n - 1  # dimension of the projective space  
     Lpoly_coeffs = [ZZ(x) for x in cp_coeffs]
-    println("initial coefficients = $Lpoly_coeffs")
+    (9 < verbose) && println("initial coefficients = $Lpoly_coeffs")
     prec_vec = DeRham.prec_vec(polygon, relative_precision)
-    println("prec_vec = $prec_vec")
+    (9 < verbose) && println("prec_vec = $prec_vec")
     d = length(cp_coeffs) - 1  # degree of characteristic polynomial 
     modulus = [ZZ(0) for i in 1:d+1]
     for i in 1:d+1
@@ -192,18 +192,18 @@ function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs)
         Lpoly_coeffs[i] = mod(Lpoly_coeffs[i], modulus[i])
     end 
     #println("modulus=$modulus")
-    println("coefficients after moding by prec = $Lpoly_coeffs")
+    (9 < verbose) && println("coefficients after moding by prec = $Lpoly_coeffs")
 
     Lpoly_coeffs[d+1] = 1  # set leading coefficient to 1 
     sign = sign_fe(n, d, p, prec_vec, Lpoly_coeffs)  # determine the sign of the functional equation 
-    println("sign of functional equation = $sign")
+    (9 < verbose) && println("sign of functional equation = $sign")
     Lpoly_coeffs[1] = sign * p^(div(d*dimension, 2))
-    println(Lpoly_coeffs[1])
+    #println(Lpoly_coeffs[1])
     Lpoly_coeffs = DeRham.apply_symmetry(n,d,p,prec_vec,Lpoly_coeffs,modulus,sign)
-    println("coefficients after apply symmetry = $Lpoly_coeffs")
+    (9 < verbose) && println("coefficients after apply symmetry = $Lpoly_coeffs")
     #println("modulus=$modulus")
     Lpoly_coeffs = DeRham.apply_newton_identity(n,d,p,prec_vec,Lpoly_coeffs,modulus)
-    println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
+    (9 < verbose) && println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
 
     return Lpoly_coeffs 
 end
