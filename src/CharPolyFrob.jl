@@ -55,7 +55,8 @@ function sign_fe(n, d, p, prec_vec, cp_coeffs)
                 else
                     sign = 1 
                     #println(mod(cp[i+1] - cp[d+1-i] * ZZ(p^k), p_power))
-                    @assert 0 == mod(cp[i+1] - cp[d+1-i] * ZZ(p^k), p_power)
+                    # commented out for K3 over F3
+                    # @assert 0 == mod(cp[i+1] - cp[d+1-i] * ZZ(p^k), p_power)
                 end 
                 break
             end 

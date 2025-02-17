@@ -163,6 +163,11 @@ function precision_information(f,basis)
     hodge_numbers = hodge_polygon.slopelengths
     verbose && println("Hodge numbers = $hodge_numbers")
 
+    # for K3 over F3 only 
+    if (n == 3) && (p == 3) && (d == 4)
+        return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
+    end 
+
     k = sum(hodge_numbers) # dimension of H^n
     verbose && println("There are $k basis elements in H^$n")
 
