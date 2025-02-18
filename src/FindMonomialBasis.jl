@@ -186,7 +186,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     if flag
         return (U,B)
     else 
-        if S == collect(0:n) and l == ((d-2)*(n+1)+1)
+        if S == collect(0:n) && l == ((d-2)*(n+1)+1)
             throw(ArgumentError("f is not smooth"))
         else
             throw(ArgumentError("matrix from f is not right invertible"))
