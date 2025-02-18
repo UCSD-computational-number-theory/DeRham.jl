@@ -6,8 +6,6 @@ using LinearAlgebra
 using Combinatorics
 using Memoize
 
-verbose = true
-
 #include("NemoAdditions.jl")
 
 include("Utils.jl")
@@ -15,16 +13,16 @@ include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
 include("PrecisionEstimate.jl")
-include("SmallestSubsetSmooth.jl")
+include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
 
 include("ControlledReduction.jl")
 include("Frobenius.jl")
 include("FinalReduction.jl")
-
 include("CharPolyFrob.jl")
 
+include("ExamplePolynomials.jl")
 
 include("ZetaFunction.jl")
 include("PointCounts.jl")

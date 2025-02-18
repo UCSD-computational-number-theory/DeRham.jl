@@ -20,6 +20,17 @@
 #
 #verbose = false
 
+struct ZetaFunctionParams
+    verbose::Int
+    givefrobmat::Bool
+    algorithm::Symbol
+    termorder::Symbol
+    vars_reversed::Bool
+    fastevaluation::Bool
+end
+
+default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false)
+
 """
     compute_frobenius_matrix(n,d,Reductions,T)
 
@@ -32,8 +43,10 @@ INPUTS:
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
 """
-function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
-    verbose && println("Terms after controlled reduction: $Reductions")
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
+    verbose = params.verbose
+    termorder = params.termorder
+    (9 < verbose) && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
@@ -42,9 +55,9 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder,
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
         N = N_m[e]
-        verbose && println("e: $e")
+        (9 < verbose) && println("e: $e")
 
-        verbose && println(p*(e+N-1)-1)
+        (9 < verbose) && println(p*(e+N-1)-1)
 
         ff = factorial(ZZ(p*(e+N-1)-1)) 
         val_ff = valuation(ff,p)
@@ -60,7 +73,7 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder,
             temp[i,1] = R(temp2[i])
         end
         temp = T * temp
-        verbose && println("temp: $temp")
+        (9 < verbose) && println("temp: $temp")
         for i in 1:length(temp)
 #            println(temp[i])
             ele = inverse_ff * temp[i]
@@ -153,18 +166,22 @@ related to f
 basis -- the basis of cohomology, in the format of 
          polynomials with pole
 """
-function precision_information(f,basis)
+function precision_information(f,basis,verbose=0)
     p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
-    verbose = false
 
     hodge_polygon = hodgepolygon(basis, n)
     hodge_numbers = hodge_polygon.slopelengths
-    verbose && println("Hodge numbers = $hodge_numbers")
+    (0 < verbose) && println("Hodge numbers = $hodge_numbers")
+
+    # for K3 over F3 only 
+    if (n == 3) && (p == 3) && (d == 4)
+        return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
+    end 
 
     k = sum(hodge_numbers) # dimension of H^n
-    verbose && println("There are $k basis elements in H^$n")
+    (0 < verbose) && println("There are $k basis elements in H^$n")
 
     r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
     #r_m = relative_precision(k, p)
@@ -226,17 +243,25 @@ end
     zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
 
 
-Wrapper function that outputs the Frobenius Matrix
+Wrapper function that outputs the zeta function of
+the projective hypersruface defined by `f`.
 
 INPUTS: 
-* "f" -- Oscar polynomial
+* "f" -- Oscar polynomial (should be homogeneous)
 
 KEYWORD ARGUMENTS:
-TODO:verboselevel -- print statements at various levels of depth
-RIGHTNOW: verbose -- print stuff
+verbose -- prints various diagnostic statements based on the level
+    verbose levels are by convention a number between 0 and 10.
+    0: print nothing
+    1: print basic diagnostic info only
+    2-9: TBD (To be determined/documented)
+    2: print the output of controlled reduction
+    5: print out the u and v information in controlled reduction
+    10: print anything that we might consider useful
 givefrobmat -- should the funciton also output the appoximated frobenius matrix
 algorithm -- the algorithm used for controlled reduction
 termorder -- the term ordering that should be used in vector representations
+fastevaluation -- should the algorithm use fast evaluation?
 >>>if you don't know what this is, ignore it.
 vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
@@ -250,9 +275,11 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
-    verbose && println("Working with a degree $d hypersurface in P^$n")
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation)
 
-    basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+    (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
+
+    basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
     Basis = []
     for i in 1:n
         for j in basis[i]
@@ -260,15 +287,15 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
         end
     end
 
-    verbose && println("Basis of cohomology is $Basis")
+    (9 < verbose) && println("Basis of cohomology is $Basis")
 
-    (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis)
+    (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
     #hodge_polygon = hodgepolygon(Basis, n)
     #hodge_numbers = hodge_polygon.slopelengths
-    #verbose && println("Hodge numbers = $hodge_numbers")
+    #(9 < verbose) && println("Hodge numbers = $hodge_numbers")
 
     #k = sum(hodge_numbers) # dimension of H^n
-    #verbose && println("There are $k basis elements in H^$n")
+    #(9 < verbose) && println("There are $k basis elements in H^$n")
 
     #r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
     ##r_m = relative_precision(k, p)
@@ -277,9 +304,15 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #N_m = series_precision(p,n,d,r_m)
     #M = algorithm_precision(p,n,d,r_m,N_m)
 
-    verbose && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
-    println("algorithm precision: $M, series precision: $N_m") 
-    precisionring, = residue_ring(ZZ, p^M)
+    (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
+    (0 < verbose) && println("algorithm precision: $M, series precision: $N_m") 
+    
+    if BigInt(2)^64 < BigInt(p)^M
+        residue = BigInt(p)^M
+    else
+        residue = p^M
+    end
+    precisionring, = residue_ring(ZZ, residue)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
@@ -309,11 +342,16 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
         Basis[i][1] = liftCoefficients(precisionring, precisionringpoly, Basis[i][1])
     end 
 
-    verbose && println("Basis of cohomology is $Basis")
+    (9 < verbose) && println("Basis of cohomology is $Basis")
 
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, termorder,vars_reversed,verbose=verbose)
+    if (0 < verbose)
+        println("Applying Frobenius to basis...")
+        @time FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+    else
+        FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+    end
     #println(FBasis)
     #for e in FBasis
     #    println(length(e))
@@ -323,12 +361,19 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,termorder,vars_reversed)
+
+    if (0 < verbose)
+        println("Starting linear algebra problem")
+        @time pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+    else
+        pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+    end
+
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
 
-    T = computeT(f, basis, M, termorder, vars_reversed)
-    verbose && println("T matrix is $T")
+    T = computeT(f, basis, M, params)
+    (9 < verbose) && println("T matrix is $T")
 
     for i in 1:nrows(pseudo_inverse_mat_new)
         for j in 1:ncols(pseudo_inverse_mat_new)
@@ -358,27 +403,30 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     #TODO: check which algorithm we're using
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p, termorder,algorithm,vars_reversed,fastevaluation,verbose=verbose)
-    if verbose
-        for i in 1:length(Basis)
-            basis_elt = Basis[i]
-            after_reduction = Reductions[i]
-            println("Basis element $basis_elt becomes $after_reduction after controlled reduction")
-        end 
-    end 
+    (2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params) 
+    (1 < verbose) && println(Reductions)
+    #if (1 < verbose)
+    #    for i in 1:length(Basis)
+    #        basis_elt = Basis[i]
+    #        after_reduction = Reductions[i]
+    #        println("Basis element $basis_elt becomes $after_reduction after controlled reduction")
+    #        println()
+    #    end 
+    #end 
     ev = gen_exp_vec(n+1,n*d-n-1,termorder)
-    verbose && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, termorder, verbose)
+    (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
     # display(FM)
-    verbose && println("The Frobenius matrix is $FM")
+    (9 < verbose) && println("The Frobenius matrix is $FM")
 
     #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
 
-    #verbose && println("convert_p_to_m is $reductions_verbose")
+    #(9 < verbose) && println("convert_p_to_m is $reductions_verbose")
 
     #FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
 
-   # verbose && println("The Frobenius matrix is $FM")
+   # (9 < verbose) && println("The Frobenius matrix is $FM")
 
     if givefrobmat
         (FM,LPolynomial(FM,n,q,hodge_polygon,r_m))
