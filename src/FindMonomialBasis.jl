@@ -172,6 +172,7 @@ PR- paren(f)
 """
 function pseudo_inverse_controlled(f, S, l, R, PR, params)
     n = nvars(parent(f)) - 1
+    d = total_degree(f)
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
@@ -185,7 +186,11 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     if flag
         return (U,B)
     else 
-        throw(ArgumentError("matrix from f is not right invertible"))
+        if S == collect(0:n) and l == ((d-2)*(n+1)+1)
+            throw(ArgumentError("f is not smooth"))
+        else
+            throw(ArgumentError("matrix from f is not right invertible"))
+        end 
     end
 end
 

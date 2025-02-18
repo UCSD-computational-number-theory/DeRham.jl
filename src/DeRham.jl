@@ -13,7 +13,7 @@ include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
 include("PrecisionEstimate.jl")
-include("SmallestSubsetSmooth.jl")
+include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
 
