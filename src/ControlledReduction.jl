@@ -1036,6 +1036,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reverse
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
     for i in 1:n+2
@@ -1064,15 +1065,15 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reverse
             for k in 1:length(ev3)
                 for m in 1:(n+1)
                     if m == n+1-j+1
-                        ev3[k][m] = ev3[k][m] + Stilda[m] - 1
+                        temp[m] = ev3[k][m] + Stilda[m] - 1
                     else
-                        ev3[k][m] = ev3[k][m] + Stilda[m]
+                        temp[m] = ev3[k][m] + Stilda[m]
                     end
                 end
                 #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                 #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                 #println(" $(ev1[l] == ev3[k])")
-                l = get(explookup,ev3[k],0)
+                l = get(explookup,temp,0)
                 #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                 #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                 if vars_reversed == true
@@ -1083,13 +1084,148 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reverse
                     result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
                 end
                 #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
+            end
+        end
+    end
+    get!(Ruvs, V, result)
+    return result
+end
+
+function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+    R = coefficient_ring(parent(f))
+    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    else
+        println("New key: $V")
+    end
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    temp = Vector{Int64}(undef, n+1)
+    MS2 = matrix_space(R, length(ev2),1)
+    result = Vector{typeof(MS1())}(undef, n+2)
+    for i in 1:n+2
+        result[i] = MS1(0)
+    end
+    Stilda = zeros(Int, n+1)
+    for i in 1:3
+        Stilda[n+1-i] = 1
+    end
+    distances = Vector{Int64}(undef, n+1)
+    for i in 1:(n+1)
+        if Stilda[i] == 1
+            distances[i] = binomial(d*n-n-2,n)
+        else
+            distances[i] = binomial(d*n-n-3,n)
+        end
+    end
+    distance = 0
+    for i in 1:length(ev1)
+        mon = Vector{Int64}(undef, n+1)
+        for m in 1:(n+1)
+            mon[m] = ev1[i][m] + V[m] - Stilda[m]
+        end
+        gVec = MS2()
+        for j in 1:length(ev2)
+            if ev2[j] == mon
+                gVec[j] = R(1)
+            else
+                gVec[j] = R(0)
+            end
+        end
+        gJS = pseudoInverseMat*gVec
+        #println("After LingAlg problem: $gJS")
+        for j in 1:(n+1)
+            distance = 0
+            for k in 1:length(ev3)
                 for m in 1:(n+1)
                     if m == n+1-j+1
-                        ev3[k][m] = ev3[k][m] - Stilda[m] + 1
+                        temp[m] = ev3[k][m] + Stilda[m] - 1
                     else
-                        ev3[k][m] = ev3[k][m] - Stilda[m]
+                        temp[m] = ev3[k][m] + Stilda[m]
                     end
                 end
+                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                #println(" $(ev1[l] == ev3[k])")
+                l = get(explookup,temp,0)
+                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k-1,1]
+                if Stilda[n+1-j+1] == 1
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k-1,1]
+                else
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k-1,1] + gJS[distance+k-1,1]
+                end
+                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
+            end
+        end
+        distance = distance + distances[n+1-j+1]
+    end
+    get!(Ruvs, V, result)
+    return result
+end
+
+function computeRuvNoSTilda(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+    R = coefficient_ring(parent(f))
+    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    if haskey(Ruvs, V)
+        return get(Ruvs, V, 0)
+    else
+        println("New key: $V")
+    end
+    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    temp = Vector{Int64}(undef, n+1)
+    MS2 = matrix_space(R, length(ev2),1)
+    result = Vector{typeof(MS1())}(undef, n+2)
+    for i in 1:n+2
+        result[i] = MS1(0)
+    end
+    for i in 1:length(ev1)
+        mon = Vector{Int64}(undef, n+1)
+        for m in 1:(n+1)
+            mon[m] = ev1[i][m] + V[m] - 1
+        end
+        gVec = MS2()
+        for j in 1:length(ev2)
+            if ev2[j] == mon
+                gVec[j] = R(1)
+            else
+                gVec[j] = R(0)
+            end
+        end
+        gJS = pseudoInverseMat*gVec
+        #println("After LingAlg problem: $gJS")
+        for j in 1:(n+1)
+            for k in 1:length(ev3)
+                for m in 1:(n+1)
+                    if m == n+1-j+1
+                        temp[m] = ev3[k][m]
+                    else
+                        temp[m] = ev3[k][m] + 1
+                    end
+                end
+                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                #println(" $(ev1[l] == ev3[k])")
+                l = get(explookup,temp,0)
+                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                if vars_reversed == true
+                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+                else
+                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+                end
+                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
             end
         end
     end
