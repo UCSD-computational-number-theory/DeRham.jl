@@ -20,6 +20,16 @@ KeyType - the type of u and v, for example Vector{Int64}
 MatrixType - the type of A and B, for example zzModMatrix
 VectorType - the type of g, for exampel Vector{UInt64}
 
+
+#const OscarSmallReductionContext = ControlledReductionContext{Vector{Int64},
+#                                                         zzModMatrix,
+#                                                         Vector{UInt64}}
+#const OscarBigReductionContext = ControlledReductionContext{Vector{Int64},
+#                                                         ZZModMatrix,
+#                                                         Vector{ZZRingElem}}
+
+In the future: make a GPUReductionContext
+
 """
 struct ControlledReductionContext{KeyType,MatrixType,VectorType}
     Ruvs::Dict{KeyType, Vector{MatrixType}} #TODO: this type might be too rigid
@@ -30,38 +40,71 @@ struct ControlledReductionContext{KeyType,MatrixType,VectorType}
     g_temp::VectorType
 end
 
-const OscarReductionContext = ControlledReductionContext{Vector{Int64},
-                                                         zzModMatrix,
-                                                         Vector{UInt64}}
-function oscar_default_context(R,g_length,n)
-    MS1 = matrix_space(R, g_length, g_length)
-    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-    A = MS1()
-    B = MS1()
-    temp = MS1()
-    g = zeros(UInt,g_length) 
-    g_temp = similar(g)
+#
+#function oscar_default_context(R,g_length,n)
+#    MS1 = matrix_space(R, g_length, g_length)
+#    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+#    A = MS1()
+#    B = MS1()
+#    temp = MS1()
+#    g = zeros(UInt,g_length) 
+#    g_temp = similar(g)
+#
+#    OscarReductionContext(Ruvs,A,B,temp,g,g_temp)
+#end
 
-    OscarReductionContext(Ruvs,A,B,temp,g,g_temp)
-end
-
+### The following is derived from Nemo.jl, and needs to be licensed with the GPL 
 
 function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
-  @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, B::Ref{zzModMatrix}, D::Ref{zzModMatrix}, C::UInt)::Nothing
+  @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, 
+                                                       B::Ref{zzModMatrix}, 
+                                                       D::Ref{zzModMatrix}, 
+                                                       C::UInt)::Nothing
   return A
 end
 
-function my_mul!(A::zzModMatrix, B::zzModMatrix, c::UInt)
-    @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},B::Ref{zzModMatrix},c::UInt)::Nothing
+function my_mul!(A::zzModMatrix, B::zzModMatrix, c)
+    c = UInt(c)
+    @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},
+                                                   B::Ref{zzModMatrix},
+                                                   c::UInt)::Nothing
+    return A
+end
+
+function my_mul!(A::ZZModMatrix, B::ZZModMatrix, c::Int)
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_scalar_mul_si(A::Ref{ZZModMatrix}, 
+                                               B::Ref{ZZModMatrix}, 
+                                               c::Int, 
+                                               base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+    return A 
+end
+
+function my_mul!(A::ZZModMatrix, B::ZZModMatrix, c::ZZRingElem)
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_scalar_mul_fmpz(A::Ref{ZZModMatrix}, 
+                                                 B::Ref{ZZModMatrix},
+                                                 C::Ref{ZZRingElem},
+                                                 base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
     return A
 end
 
 function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt})
-    @ccall Oscar.Nemo.libflint.nmod_mat_mul_nmod_vec(z::Ptr{UInt},A::Ref{zzModMatrix},b::Ptr{UInt},length(b)::Int)::Nothing
+    @ccall Oscar.Nemo.libflint.nmod_mat_mul_nmod_vec(z::Ptr{UInt},
+                                                     A::Ref{zzModMatrix},
+                                                     b::Ptr{UInt},
+                                                     length(b)::Int)::Nothing
     return z
 end
 
+function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec_ptr(z::Ptr{Ref{ZZRingElem}}, 
+                                                  A::Ref{ZZModMatrix}, 
+                                                  b::Ptr{Ref{ZZRingElem}}, 
+                                                  length(b)::Int, 
+                                                  base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+    return z
+end
 
+### END stuff derived from Nemo.jl
 
 """
     reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
@@ -335,7 +378,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     PR = parent(f)
     R = coefficient_ring(parent(f))
     
-    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
+#    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
 
     
     I = u
@@ -399,7 +442,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
-        my_mul!(temp,B,ui(nend-(d*n-n)-i))
+        my_mul!(temp,B,nend-(d*n-n)-i)
         add!(temp,temp,A)
         gMat = temp*gMat
 
@@ -517,7 +560,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
+    #ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
     J = rev_tweak(u,n*d-n)
     gMat = context.g
     mins = similar(J)
@@ -554,7 +597,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
                 i = i+1
             end
         else
-            gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp,ui)
+            gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         end
         @. J = J - K*V
         m = m - K
@@ -590,12 +633,12 @@ ui - a function that converts the output of Julia's mod into an unsigned integer
     (i.e. if it's negative, add the characteristic)
 
 """
-function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui)
+function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
 
   #zero!(temp) # temp = F_k
 
   #Fk = stop*a + b # Fk = F(k), here k = stop
-  my_mul!(temp,a,ui(stop))
+  my_mul!(temp,a,stop)
   add!(temp,temp,b)
   # @. Fk = stop*a + b
   #
@@ -662,12 +705,12 @@ function costadata_of_initial_term!(term,g,n,d,p,termorder)
     #(9 < verbose) && println("p: $p")
 
     R = base_ring(parent(term[1])) 
+    #mod = modulus(R)
     i = term
 
     o = ones(Int,length(exponent_vector(i[1],1)))
     II = exponent_vector(i[1],1) + o # doh't use I since it's overloaded with the id matrix
     gCoeff = coeff(i[1],1)
-    
 
     V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
@@ -932,6 +975,27 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
     return result
 end
 
+function oscar_default_context(matspace,Ruvs)
+    g_length = number_of_rows(matspace)
+    B = base_ring(matspace)
+    m = modulus(B)
+
+    A = matspace()
+    B = matspace()
+    temp = matspace()
+
+    if ZZ(2)^64 < ZZ(m)
+        # Big modulus
+        g = zeros(ZZ,g_length)
+    else
+        # Small modulus
+        g = zeros(UInt,g_length) 
+    end
+
+    g_temp = similar(g)
+    ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
+end
+
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
@@ -948,21 +1012,16 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     end
 
     if (0 < params.verbose)
+        println("Caclulating the R_uv...")
         @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     else
         precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     end
     
-
-    contexts = OscarReductionContext[]
+    contexts = ControlledReductionContext[]
 
     for i in 1:length(FT)#Threads.nthreads()
-        A = MS1()
-        B = MS1()
-        temp = MS1()
-        g = zeros(UInt,g_length) 
-        g_temp = similar(g)
-        push!(contexts, OscarReductionContext(Ruvs,A,B,temp,g,g_temp))
+        push!(contexts, oscar_default_context(MS1,Ruvs))
     end
 
     result = similar(FT)
@@ -1208,9 +1267,9 @@ function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
         #A = A + matrices[k] * V[k-1]
         #println(test)
 
-        my_mul!(temp,matrices[k],ui(U[k-1]))
+        my_mul!(temp,matrices[k],U[k-1])
         add!(B,B,temp)
-        my_mul!(temp,matrices[k],ui(V[k-1]))
+        my_mul!(temp,matrices[k],V[k-1])
         add!(A,A,temp)
 
         #add!(B,B,matrices[k] * ui(U[k-1]))

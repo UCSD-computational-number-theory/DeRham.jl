@@ -301,7 +301,13 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
     (0 < verbose) && println("algorithm precision: $M, series precision: $N_m") 
-    precisionring, = residue_ring(ZZ, p^M)
+    
+    if BigInt(2)^64 < BigInt(p)^M
+        residue = BigInt(p)^M
+    else
+        residue = p^M
+    end
+    precisionring, = residue_ring(ZZ, residue)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
@@ -335,7 +341,12 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
 
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
-    FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+    if (0 < verbose)
+        println("Applying Frobenius to basis...")
+        @time FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+    else
+        FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+    end
     #println(FBasis)
     #for e in FBasis
     #    println(length(e))
@@ -345,7 +356,14 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     #    end
     #end
     l = d * n - n + d - length(S)
-    pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+
+    if (0 < verbose)
+        println("Starting linear algebra problem")
+        @time pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+    else
+        pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+    end
+
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
 
