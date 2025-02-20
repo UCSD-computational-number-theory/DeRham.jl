@@ -268,12 +268,12 @@ vars_reversed -- reverses the order of basis vectors at various places
 
 """
 function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
-    p = Int64(characteristic(parent(f)))
-    q = p
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
     PR = parent(f)
-    R = coefficient_ring(parent(f))
+    p = Int64(characteristic(PR))
+    q = p
+    n = nvars(PR) - 1
+    d = total_degree(f)
+    R = coefficient_ring(PR)
 
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation)
 

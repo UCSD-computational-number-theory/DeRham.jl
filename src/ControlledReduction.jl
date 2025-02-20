@@ -1096,6 +1096,7 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
 end
 
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    termorder = params.termorder
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     R = coefficient_ring(parent(f))
