@@ -1,5 +1,6 @@
 name = "DeRham"
 uuid = "0ea6bb9e-09b2-4dc0-b975-f97753fde228"
+version = "0.1.0"
 
 [deps]
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
