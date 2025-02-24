@@ -590,7 +590,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
             @. mins = tempv
             K = K+1
         end
-        matrices = computeRuvS012(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
+        matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         i = 1
         if params.fastevaluation == false
@@ -1093,11 +1093,11 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
 
     evs = gen_exp_vec(n+1,d,params.termorder)
     Threads.@threads for V in evs
-        computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     end
 end
 
-function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
@@ -1167,7 +1167,7 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     return result
 end
 
-function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
@@ -1221,7 +1221,6 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
             distance = 0
             if Stilda[n+1-j+1] == 1
                 for k in 1:length(ev3)
-                    println(ev3[k])
                     for m in 1:(n+1)
                         if m == n+1-j+1
                             temp[m] = ev3[k][m] + Stilda[m] - 1
@@ -1229,15 +1228,14 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                             temp[m] = ev3[k][m] + Stilda[m]
                         end
                     end
-                    println(temp)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
                     l = get(explookup,temp,-1)
                     #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k-1,1]
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             else
@@ -1253,13 +1251,13 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                     l = get(explookup,temp,-1)
                     #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev4[k][n+1-j+1])*gJS[distance+k-1,1] + gJS[distance+k-1,1]
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev4[k][n+1-j+1])*gJS[distance+k,1] + gJS[distance+k,1]
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             end
+            distance = distance + distances[n+1-j+1]
         end
-        distance = distance + distances[n+1-j+1]
     end
     get!(Ruvs, V, result)
     return result
