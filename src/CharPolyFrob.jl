@@ -117,11 +117,11 @@ INPUTS:
 function apply_newton_identity(n, d, p, prec_vec, cp_coeffs, modulus)
     e = [ZZ(0) for i in 1:d+1]  # e[k] = (k-1)-th elementary symmetric polynomial evaluated at the roots
     s = [ZZ(0) for i in 1:d+1]  # s[k] = k-th power sum of the roots 
-    for k in 1:d+1 
-        if (k-1)%2 == 0
-            e[k] = cp_coeffs[d+2-k]  # FIXME: check the index 
+    for k in 0:d 
+        if k%2 == 0
+            e[k+1] = cp_coeffs[d+1-k]  # FIXME: check the index 
         else
-            e[k] = -cp_coeffs[d+2-k]
+            e[k+1] = -cp_coeffs[d+1-k]
         end
     end 
 
@@ -135,32 +135,35 @@ function apply_newton_identity(n, d, p, prec_vec, cp_coeffs, modulus)
             end  
         end 
         if k%2 == 0
-            #s[k+1] = sum - k * e[k+1]
-            s[k+1] = -(sum + k * e[k+1])
+            s[k+1] = sum - k * e[k+1]
+            #s[k+1] = -(sum + k * e[k+1])
         else
-            #s[k+1] = -1 * (sum - k * e[k+1])
-            s[k+1] = sum + k * e[k+1]
+            s[k+1] = -1 * (sum - k * e[k+1])
+            #s[k+1] = sum + k * e[k+1]
         end 
         
 
-        pN = k * modulus[d+1-k]
+        pN = ZZ(k) * modulus[d+1-k]
         s[k+1] = mod(s[k+1], pN)
         #println(s[k+1])
         
-        if ZZ(s[k+1])^2 > (ZZ(d)*ZZ(d)*p^((n-1)*k))
+        if ZZ(s[k+1])^2 > (ZZ(d)*ZZ(d)*ZZ(p)^((n-1)*k))
             s[k+1] = -mod(-s[k+1], pN)
         end 
         #println(s[k+1])
 
         if k%2 == 0
-            #e[k+1] = div(sum-s[k+1], k)
-            e[k+1] = div(-s[k+1]-sum, k)
+            e[k+1] = div(sum-s[k+1], k)
+            #e[k+1] = div(-s[k+1]-sum, k)
             cp_coeffs[d+1-k] = e[k+1]
         else
-            #e[k+1] = div(sum+s[k+1], k)
-            e[k+1] = div(s[k+1]-sum, k)
+            e[k+1] = div(sum+s[k+1], k)
+            #e[k+1] = div(s[k+1]-sum, k)
             cp_coeffs[d+1-k] = -e[k+1]
         end
+        #println("k=$k")
+        #println("e=$e")
+        #println("s=$s")
 
     end 
     return cp_coeffs
@@ -182,28 +185,27 @@ function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs, verbo
     p = ZZ(p)
     dimension = n - 1  # dimension of the projective space  
     Lpoly_coeffs = [ZZ(x) for x in cp_coeffs]
-    (9 < verbose) && println("initial coefficients = $Lpoly_coeffs")
+    (1 == verbose) && println("initial coefficients = $Lpoly_coeffs")
     prec_vec = DeRham.prec_vec(polygon, relative_precision)
-    (9 < verbose) && println("prec_vec = $prec_vec")
+    (1 == verbose) && println("prec_vec = $prec_vec")
     d = length(cp_coeffs) - 1  # degree of characteristic polynomial 
     modulus = [ZZ(0) for i in 1:d+1]
     for i in 1:d+1
         modulus[i] = p^prec_vec[i]
         Lpoly_coeffs[i] = mod(Lpoly_coeffs[i], modulus[i])
     end 
-    #println("modulus=$modulus")
-    (9 < verbose) && println("coefficients after moding by prec = $Lpoly_coeffs")
+    (1 == verbose) && println("coefficients after moding by prec = $Lpoly_coeffs")
 
     Lpoly_coeffs[d+1] = 1  # set leading coefficient to 1 
     sign = sign_fe(n, d, p, prec_vec, Lpoly_coeffs)  # determine the sign of the functional equation 
-    (9 < verbose) && println("sign of functional equation = $sign")
+    (1 == verbose) && println("sign of functional equation = $sign")
     Lpoly_coeffs[1] = sign * p^(div(d*dimension, 2))
     #println(Lpoly_coeffs[1])
     Lpoly_coeffs = DeRham.apply_symmetry(n,d,p,prec_vec,Lpoly_coeffs,modulus,sign)
-    (9 < verbose) && println("coefficients after apply symmetry = $Lpoly_coeffs")
+    (1 == verbose) && println("coefficients after apply symmetry = $Lpoly_coeffs")
     #println("modulus=$modulus")
     Lpoly_coeffs = DeRham.apply_newton_identity(n,d,p,prec_vec,Lpoly_coeffs,modulus)
-    (9 < verbose) && println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
+    (1 == verbose) && println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
 
     return Lpoly_coeffs 
 end

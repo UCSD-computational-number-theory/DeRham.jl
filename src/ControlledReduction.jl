@@ -64,7 +64,9 @@ function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
 end
 
 function my_mul!(A::zzModMatrix, B::zzModMatrix, c)
-    c = UInt(c)
+    p = characteristic(base_ring(parent(A)))
+    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + p)
+    c = ui(c)
     @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},
                                                    B::Ref{zzModMatrix},
                                                    c::UInt)::Nothing
@@ -1096,6 +1098,7 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
 end
 
 function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
     d = total_degree(f)

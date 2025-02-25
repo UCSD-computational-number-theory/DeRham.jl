@@ -129,7 +129,7 @@ INPUT:
 * "FM" -- Frobenius matrix 
 """
 
-function LPolynomial(FM, n, q, polygon, relative_precision)
+function LPolynomial(FM, n, q, polygon, relative_precision, verbose)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
     P, T = polynomial_ring(ZZ, "T")
@@ -137,7 +137,7 @@ function LPolynomial(FM, n, q, polygon, relative_precision)
 
     f = charpoly(P, lift_to_int(FM))
     cp_coeffs = collect(coefficients(f))
-    return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs)
+    return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs, verbose)
     
 
     """
@@ -429,9 +429,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
    # (9 < verbose) && println("The Frobenius matrix is $FM")
 
     if givefrobmat
-        (FM,LPolynomial(FM,n,q,hodge_polygon,r_m))
+        (FM,LPolynomial(FM,n,q,hodge_polygon,r_m, verbose))
     else
-        LPolynomial(FM,n,q,hodge_polygon,r_m)
+        LPolynomial(FM,n,q,hodge_polygon,r_m, verbose)
     end
 end
 
