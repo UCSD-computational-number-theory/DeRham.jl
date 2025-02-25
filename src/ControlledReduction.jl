@@ -590,7 +590,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
             @. mins = tempv
             K = K+1
         end
-        matrices = computeRuv(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
+        matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         i = 1
         if params.fastevaluation == false
@@ -1093,11 +1093,11 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
 
     evs = gen_exp_vec(n+1,d,params.termorder)
     Threads.@threads for V in evs
-        computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     end
 end
 
-function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
@@ -1167,7 +1167,9 @@ function computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     return result
 end
 
-function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    vars_reversed = params.vars_reversed
+    termorder = params.termorder
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     R = coefficient_ring(parent(f))
@@ -1180,6 +1182,7 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_rev
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev4 = gen_exp_vec(n+1,n*d-n-length(S),termorder)
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
@@ -1187,15 +1190,15 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_rev
         result[i] = MS1(0)
     end
     Stilda = zeros(Int, n+1)
-    for i in 1:3
+    for i in S
         Stilda[n+1-i] = 1
     end
     distances = Vector{Int64}(undef, n+1)
     for i in 1:(n+1)
         if Stilda[i] == 1
-            distances[i] = binomial(d*n-n-2,n)
+            distances[i] = binomial(d*n-n-length(S)+1,n)
         else
-            distances[i] = binomial(d*n-n-3,n)
+            distances[i] = binomial(d*n-n-length(S),n)
         end
     end
     distance = 0
@@ -1216,30 +1219,45 @@ function computeRuvS012(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_rev
         #println("After LingAlg problem: $gJS")
         for j in 1:(n+1)
             distance = 0
-            for k in 1:length(ev3)
-                for m in 1:(n+1)
-                    if m == n+1-j+1
-                        temp[m] = ev3[k][m] + Stilda[m] - 1
-                    else
-                        temp[m] = ev3[k][m] + Stilda[m]
+            if Stilda[n+1-j+1] == 1
+                for k in 1:length(ev3)
+                    for m in 1:(n+1)
+                        if m == n+1-j+1
+                            temp[m] = ev3[k][m] + Stilda[m] - 1
+                        else
+                            temp[m] = ev3[k][m] + Stilda[m]
+                        end
                     end
+                    #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                    #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                    #println(" $(ev1[l] == ev3[k])")
+                    l = get(explookup,temp,-1)
+                    #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
+                    #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
-                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
-                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
-                #println(" $(ev1[l] == ev3[k])")
-                l = get(explookup,temp,0)
-                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k-1,1]
-                if Stilda[n+1-j+1] == 1
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k-1,1]
-                else
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k-1,1] + gJS[distance+k-1,1]
+            else
+                for k in 1:length(ev4)
+                    println(ev4[k])
+                    for m in 1:(n+1)
+                        temp[m] = ev4[k][m] + Stilda[m]
+                    end
+                    println(temp)
+                    #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+                    #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+                    #println(" $(ev1[l] == ev3[k])")
+                    l = get(explookup,temp,-1)
+                    #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev4[k][n+1-j+1])*gJS[distance+k,1] + gJS[distance+k,1]
+                    #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
-                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
             end
+            distance = distance + distances[n+1-j+1]
         end
-        distance = distance + distances[n+1-j+1]
     end
     get!(Ruvs, V, result)
     return result

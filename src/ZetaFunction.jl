@@ -267,7 +267,11 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
+function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
+    p = Int64(characteristic(parent(f)))
+    q = p
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
     PR = parent(f)
     p = Int64(characteristic(PR))
     q = p
@@ -316,7 +320,9 @@ function zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachun
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
-    S = collect(0:n)
+    if S == [-1]
+        S = collect(0:n)
+    end
 
     #=
     BasisTLift = []
