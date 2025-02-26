@@ -420,7 +420,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         nend = p
     end
 
-    matrices = computeRuv(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    matrices = computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
 
     #TODO: the following was changed to use reverse! so 
     #    it doesn't allocate as much, but I realized that
@@ -475,7 +475,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRuv(y,S,f,pseudoInverseMat,Ruvs,explookup,params)
+        matrices1 = computeRuvS(y,S,f,pseudoInverseMat,Ruvs,explookup,params)
         #println(matrices1)
         #error()
 

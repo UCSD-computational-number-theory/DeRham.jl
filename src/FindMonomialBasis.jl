@@ -76,6 +76,8 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
     vars = gens(PR)
 
     len_S = length(S)
+    notS = setdiff(collect(0:n),S)
+    len_notS = length(notS)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
@@ -98,20 +100,26 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
 
     partials = [ derivative(f, i) for i in 1:n+1 ]
     if params.vars_reversed == true
-        partials = reverse(partials)
+        partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
+        notS = reverse(notS)
     end
 
     for i in 1:len_S
+        var = S[i]
         for monomial in eachindex(in_set_mons)
-            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
+            M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[len_notS+1+var], n+1, R, PR, params.termorder)
+            #M[:, in_set_section * (i-1) + monomial] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
         end
     end
 
     for i in (len_S+1):n+1
+        var = notS[i-len_S]
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
+            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[var+1] * partials[i-len_S], n+1, R, PR, params.termorder)
+            #M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
         end
     end
+    println(rank(M))
     return M
 end
 

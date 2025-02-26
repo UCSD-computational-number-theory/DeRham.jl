@@ -16,18 +16,19 @@ function find_Ssmooth_model(f, M, S_target, params)
     SLn = special_linear_group(n + 1, GF(q))
     d = total_degree(f)
     vars = gens(PR)
-    l = l = d * n - n + d - length(S_target)
+    l = d * n - n + d - length(S_target)
     
     bool = true 
+    f_transformed = f
     while bool
-        mat = rand(SLn)
-        new_vars = mat * vars
-        f_transformed = evaluate(f, new_vars)
         try 
             pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params)
             bool = false
             return f_transformed, pseudo_inverse_mat_new
         catch e
+            mat = rand(SLn)
+            new_vars = matrix(mat) * vars
+            f_transformed = evaluate(f, new_vars)
         end 
     end 
     

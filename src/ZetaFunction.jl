@@ -294,6 +294,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
+    #print(find_Ssmooth_model(f, M, S, params))
     #hodge_polygon = hodgepolygon(Basis, n)
     #hodge_numbers = hodge_polygon.slopelengths
     #(9 < verbose) && println("Hodge numbers = $hodge_numbers")

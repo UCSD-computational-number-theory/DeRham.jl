@@ -134,12 +134,13 @@ function apply_newton_identity(n, d, p, prec_vec, cp_coeffs, modulus)
                 sum = sum - e[k+1-i] * s[i+1]
             end  
         end 
+        #println("sum=$sum")
         if k%2 == 0
-            s[k+1] = sum - k * e[k+1]
-            #s[k+1] = -(sum + k * e[k+1])
+            #s[k+1] = sum - k * e[k+1]
+            s[k+1] = -(sum + k * e[k+1])
         else
-            s[k+1] = -1 * (sum - k * e[k+1])
-            #s[k+1] = sum + k * e[k+1]
+            #s[k+1] = -1 * (sum - k * e[k+1])
+            s[k+1] = sum + k * e[k+1]
         end 
         
 
@@ -153,12 +154,12 @@ function apply_newton_identity(n, d, p, prec_vec, cp_coeffs, modulus)
         #println(s[k+1])
 
         if k%2 == 0
-            e[k+1] = div(sum-s[k+1], k)
-            #e[k+1] = div(-s[k+1]-sum, k)
+            #e[k+1] = div(sum-s[k+1], k)
+            e[k+1] = div(-s[k+1]-sum, k)
             cp_coeffs[d+1-k] = e[k+1]
         else
-            e[k+1] = div(sum+s[k+1], k)
-            #e[k+1] = div(s[k+1]-sum, k)
+            #e[k+1] = div(sum+s[k+1], k)
+            e[k+1] = div(s[k+1]-sum, k)
             cp_coeffs[d+1-k] = -e[k+1]
         end
         #println("k=$k")
@@ -195,15 +196,18 @@ function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs, verbo
         Lpoly_coeffs[i] = mod(Lpoly_coeffs[i], modulus[i])
     end 
     (1 == verbose) && println("coefficients after moding by prec = $Lpoly_coeffs")
+    #println("coefficients after moding by prec = $Lpoly_coeffs")
 
     Lpoly_coeffs[d+1] = 1  # set leading coefficient to 1 
     sign = sign_fe(n, d, p, prec_vec, Lpoly_coeffs)  # determine the sign of the functional equation 
     (1 == verbose) && println("sign of functional equation = $sign")
     Lpoly_coeffs[1] = sign * p^(div(d*dimension, 2))
     #println(Lpoly_coeffs[1])
+    #println("prec_vec=$prec_vec")
     Lpoly_coeffs = DeRham.apply_symmetry(n,d,p,prec_vec,Lpoly_coeffs,modulus,sign)
     (1 == verbose) && println("coefficients after apply symmetry = $Lpoly_coeffs")
-    #println("modulus=$modulus")
+    #println("prec_vec=$prec_vec")
+    #println("coefficients after apply symmetry = $Lpoly_coeffs")
     Lpoly_coeffs = DeRham.apply_newton_identity(n,d,p,prec_vec,Lpoly_coeffs,modulus)
     (1 == verbose) && println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
 
