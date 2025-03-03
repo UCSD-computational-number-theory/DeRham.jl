@@ -294,20 +294,6 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
-    #print(find_Ssmooth_model(f, M, S, params))
-    #hodge_polygon = hodgepolygon(Basis, n)
-    #hodge_numbers = hodge_polygon.slopelengths
-    #(9 < verbose) && println("Hodge numbers = $hodge_numbers")
-
-    #k = sum(hodge_numbers) # dimension of H^n
-    #(9 < verbose) && println("There are $k basis elements in H^$n")
-
-    #r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
-    ##r_m = relative_precision(k, p)
-    ##N_m = series_precision(r_m, p, n) # series precision 
-    ##M = algorithm_precision(r_m, N_m, p)
-    #N_m = series_precision(p,n,d,r_m)
-    #M = algorithm_precision(p,n,d,r_m,N_m)
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
     (0 < verbose) && println("algorithm precision: $M, series precision: $N_m") 
@@ -323,6 +309,14 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
     if S == [-1]
         S = collect(0:n)
+    end
+
+    if (0 < verbose)
+        println("Starting linear algebra problem")
+        @time f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params)
+    else
+        #pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
+        f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params)
     end
 
     #=
@@ -369,12 +363,6 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     #end
     l = d * n - n + d - length(S)
 
-    if (0 < verbose)
-        println("Starting linear algebra problem")
-        @time pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
-    else
-        pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
-    end
 
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()

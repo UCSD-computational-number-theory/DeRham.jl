@@ -59,16 +59,16 @@ function compute_basis_matrix(f, l, m, R, PR, termorder)
     return M
 end
 
-# Given $f, m, l$, over the ring $\texttt{PR} = R[x_0, \dots, x_n]$, and the set $S\subseteq \{0, ..., n\}$, computes
-# the matrix for the map
-# $$(\mu_0, \dots, \mu_n) \mapsto \sum_{i\in S} \mu_i \partial_i f + \sum_{i\not\in S} \mu_i x_i \partial_i f$$
-# where $\mu_i$ for $0\leq i < |S|$ are of degree $l - (d - 1)$ and $\mu_i$ for
-# $|S| \leq i \leq n$ are of degree $l - d$.
-#
+
 """
     compute_controlled_matrix(f, l, S, R, PR, params)
 
-what does this do again?
+Given f, m, l, over the ring PR = R[x_0, ..., x_n], and the set S subseteq {0, ..., n}, computes
+the matrix for the map
+(mu_0, ..., mu_n) |--> sum_{i in S} mu_i partial_i f + sum_{i notin S} mu_i x_i partial_i f
+ where mu_i for 0<= i < |S| are of degree l - (d - 1) and mu_i for
+ |S| <= i <= n are of degree l - d.
+
 """
 function compute_controlled_matrix(f, l, S, R, PR, params)
     n = nvars(parent(f)) - 1
@@ -103,7 +103,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
         partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
         notS = reverse(notS)
     end
-
+    
     for i in 1:len_S
         var = S[i]
         for monomial in eachindex(in_set_mons)
@@ -112,14 +112,16 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
         end
     end
 
+    ind_S = in_set_section * len_S
+
     for i in (len_S+1):n+1
         var = notS[i-len_S]
         for monomial in eachindex(not_in_set_mons)
-            M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[var+1] * partials[i-len_S], n+1, R, PR, params.termorder)
+            M[:, ind_S + not_in_set_section * (i-len_S-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[var+1] * partials[i-len_S], n+1, R, PR, params.termorder)
             #M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
         end
     end
-    println(rank(M))
+    
     return M
 end
 
