@@ -1177,7 +1177,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
-        println("New key: $V")
+        (4 < params.verbose) && println("New key: $V")
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
