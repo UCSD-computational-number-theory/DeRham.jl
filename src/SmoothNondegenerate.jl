@@ -18,6 +18,11 @@ function find_Ssmooth_model(f, M, S_target, params)
     vars = gens(PR)
     l = d * n - n + d - length(S_target)
     
+    #TODO: fix the anti-pattern below and remove this band-aid
+    if !check_smoothness(f)
+        error("f is not smooth")
+    end
+
     bool = true 
     f_transformed = f
     while bool
