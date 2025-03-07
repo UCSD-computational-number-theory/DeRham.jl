@@ -393,7 +393,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     gMat = g
     #println(gMat)
     #chain = 0
-    #I_edgar = [x//7 for x in I]
+    I_edgar = [x//7 for x in I]
     (4 < verbose) && println("This is I: $I_edgar")
     J = copy(I)
 
@@ -1014,7 +1014,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     end
 
     if (0 < params.verbose)
-        println("Caclulating the R_uv...")
+        println("Calculating the R_uv...")
         @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     else
         precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
