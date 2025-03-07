@@ -1240,11 +1240,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                 end
             else
                 for k in 1:length(ev4)
-                    println(ev4[k])
                     for m in 1:(n+1)
                         temp[m] = ev4[k][m] + Stilda[m]
                     end
-                    println(temp)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
