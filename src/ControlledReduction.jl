@@ -1149,7 +1149,7 @@ function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                 #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                 #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                 #println(" $(ev1[l] == ev3[k])")
-                l = get(explookup,temp,0)
+                l = get(explookup,temp,-1)
                 #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                 #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                 if params.vars_reversed == true
@@ -1177,7 +1177,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
-        println("New key: $V")
+        (4 < params.verbose) && println("New key: $V")
     end
     ev1 = gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
@@ -1196,9 +1196,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     distances = Vector{Int64}(undef, n+1)
     for i in 1:(n+1)
         if Stilda[i] == 1
-            distances[i] = binomial(d*n-n-length(S)+1,n)
+            distances[i] = length(ev3)
         else
-            distances[i] = binomial(d*n-n-length(S),n)
+            distances[i] = length(ev4)
         end
     end
     distance = 0
@@ -1217,8 +1217,8 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
         end
         gJS = pseudoInverseMat*gVec
         #println("After LingAlg problem: $gJS")
+        distance = 0
         for j in 1:(n+1)
-            distance = 0
             if Stilda[n+1-j+1] == 1
                 for k in 1:length(ev3)
                     for m in 1:(n+1)

@@ -176,9 +176,9 @@ function precision_information(f,basis,verbose=0)
     (0 < verbose) && println("Hodge numbers = $hodge_numbers")
 
     # for K3 over F3 only 
-    if (n == 3) && (p == 3) && (d == 4)
-        return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
-    end 
+    #if (n == 3) && (p == 3) && (d == 4)
+    #    return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
+    #end 
 
     k = sum(hodge_numbers) # dimension of H^n
     (0 < verbose) && println("There are $k basis elements in H^$n")
@@ -516,11 +516,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 4
-p = 13
+n = 3
+p = 11
 F = GF(p)
-R, (x1,x2,x3,x4,x5) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3,x4) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = x1^3 + x2^3 + x3^3 + x4^3 + x5^3
+f = x1^4 + x2^4 + x3^4 + x4^4
 @time DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true)
 =#
