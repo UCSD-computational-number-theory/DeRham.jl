@@ -394,7 +394,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     #println(gMat)
     #chain = 0
     #I_edgar = [x//7 for x in I]
-    (4 < verbose) && println("This is I: $I_edgar")
+    #(4 < verbose) && println("This is I: $I_edgar")
     J = copy(I)
 
     #TODO?
@@ -567,9 +567,15 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     gMat = context.g
     mins = similar(J)
     tempv = similar(J)
+    (4 < params.verbose) && println("Starting: J = $J")
+    (5 < params.verbose) && println("Starting: g = $(Int.(gMat))")
+
+    firsttime = true
+
 
     while m > n
         V = chooseV(J,d)
+        (4 < params.verbose) && print("Chose V = $V; ")
         @. mins = J
         K = 0
         while true
@@ -591,6 +597,9 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
             K = K+1
         end
         matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
+
+        (6 < params.verbose && V == [1,2,0] && firsttime) && begin println(matrices); firsttime=false end
+
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         i = 1
         if params.fastevaluation == false
@@ -603,6 +612,13 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         end
         @. J = J - K*V
         m = m - K
+        (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
+        (4 < params.verbose) && println("J = $J")
+        if (5 < params.verbose) 
+            g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
+            println("g = $(Int.(gMat)) = $g")
+        end
+        
     end
     return (J, gMat)
 end
@@ -702,7 +718,7 @@ Returns the data used by costa's code given a polynomial term.
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term!(term,g,n,d,p,termorder)
+function costadata_of_initial_term!(term,g,n,d,p,S,termorder)
 
     #(9 < verbose) && println("p: $p")
 
@@ -710,11 +726,13 @@ function costadata_of_initial_term!(term,g,n,d,p,termorder)
     #mod = modulus(R)
     i = term
 
-    o = ones(Int,length(exponent_vector(i[1],1)))
-    II = exponent_vector(i[1],1) + o # doh't use I since it's overloaded with the id matrix
+    ss = zeros(Int,n+1)
+    ss[S .+ 1] .= 1
+    #o = ones(Int,length(exponent_vector(i[1],1)))
+    II = exponent_vector(i[1],1) + ss
     gCoeff = coeff(i[1],1)
 
-    V = chooseV(Array{Int}(divexact.(II,p)),d)
+    #V = chooseV(Array{Int}(divexact.(II,p)),d)
     u = II - rev_tweak(II,n*d-n)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
@@ -772,12 +790,13 @@ after reduction.
 
 Thus, the pole order is n.
 """
-function poly_of_end_costadata(costadata,PR,p,d,n,termorder)
+function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
     vars = gens(PR)
 
-    g = vector_to_polynomial(g_vec,n,d*n-n,PR,termorder)
+    g = vector_to_polynomial(g_vec,n,d*n-n,PR,params.termorder)
 
+    (5 < params.verbose) && println("$(Int.(g_vec)) --> $g")
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
     [prod(vars .^ u) * g, n]
@@ -791,11 +810,11 @@ after reduction.
 Thus, the pole order is always n.
 
 """
-function poly_of_end_costadatas(costadatas,PR,p,d,n,S,termorder)
+function poly_of_end_costadatas(costadatas,PR,p,d,n,S,params)
     res = PR(0)
     vars = gens(PR)
     for costadata in costadatas
-        res += poly_of_end_costadata(costadata,PR,p,d,n,termorder)[1]
+        res += poly_of_end_costadata(costadata,PR,p,d,n,params)[1]
     end
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(res,XS), n]]
@@ -886,7 +905,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
         for term in ωₑ
             #(9 < verbose) && println("term: $term")
             g = zeros(UInt,g_length) 
-            term_costadata = costadata_of_initial_term!(term,g,n,d,p,params.termorder)
+            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,params.termorder)
             #(9 < verbose) && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
@@ -911,7 +930,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
            
     #error()
 
-    return poly_of_end_costadatas(ω,PR,p,d,n,S,params.termorder)
+    return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
 
 function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
@@ -925,9 +944,9 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
         terms = termsoforder(pol,term[2])
         #println(terms)
         for t in terms
-            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,params.termorder)
+            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params.termorder)
             reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,explookup,params)
-            (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params.termorder)
+            (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
         end
@@ -936,7 +955,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
     vars = gens(PR)
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(result,XS), n]]
-    #return poly_of_end_costadatas(result,PR,p,d,n,S,termorder)
+    #return poly_of_end_costadatas(result,PR,p,d,n,S,params)
 end
 
 """
@@ -1031,7 +1050,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    Threads.@threads for i in 1:length(FT) #pol in FT
+#TODO:remove    Threads.@threads for i in 1:length(FT) #pol in FT
+    for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
