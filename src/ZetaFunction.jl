@@ -516,11 +516,11 @@ include("Frobenius.jl")
 include("FinalReduction.jl")
 include("ZetaFunction.jl")
 verbose = false
-n = 3
+n = 2
 p = 11
 F = GF(p)
-R, (x1,x2,x3,x4) = polynomial_ring(F, ["x$i" for i in 0:n])
+R, (x1,x2,x3) = polynomial_ring(F, ["x$i" for i in 0:n])
 
-f = x1^4 + x2^4 + x3^4 + x4^4
+f = 5*x1^6*x2 + 3*x1^6*x3 + 7*x1^5*x2^2 + 9*x1^5*x2*x3 + x1^5*x3^2 + 8*x1^4*x2^3 + x1^4*x2^2*x3 + 5*x1^4*x2*x3^2 + 6*x1^3*x2^4 + 6*x1^3*x2^3*x3 + 9*x1^3*x2^2*x3^2 + 8*x1^3*x2*x3^3 + 5*x1^3*x3^4 + 5*x1^2*x2^5 + 2*x1^2*x2^4*x3 + 7*x1^2*x2^3*x3^2 + 4*x1^2*x2*x3^4 + 10*x1^2*x3^5 + 7*x1*x2^6 + 3*x1*x2^5*x3 + 5*x1*x2^4*x3^2 + 8*x1*x2^3*x3^3 + 2*x1*x2^2*x3^4 + 3*x1*x2*x3^5 + 5*x1*x3^6 + 2*x2^7 + 4*x2^6*x3 + 2*x2^5*x3^2 + 2*x2^4*x3^3 + 9*x2^3*x3^4 + 7*x2^2*x3^5 + 4*x2*x3^6 + 2*x3^7
 @time DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true)
 =#

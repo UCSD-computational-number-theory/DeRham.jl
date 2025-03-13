@@ -19,9 +19,9 @@ function find_Ssmooth_model(f, M, S_target, params)
     l = d * n - n + d - length(S_target)
     
     #TODO: fix the anti-pattern below and remove this band-aid
-    if !check_smoothness(f)
-        error("f is not smooth")
-    end
+    #if !check_smoothness(f)
+    #    error("f is not smooth")
+    #end
 
     bool = true 
     f_transformed = f
@@ -31,9 +31,14 @@ function find_Ssmooth_model(f, M, S_target, params)
             bool = false
             return f_transformed, pseudo_inverse_mat_new
         catch e
-            mat = rand(SLn)
-            new_vars = matrix(mat) * vars
-            f_transformed = evaluate(f, new_vars)
+            if isa(e, ArgumentError) && e.msg == "f is not smooth"
+                throw(ArgumentError("f is not smooth"))
+                bool = false  
+            else
+                mat = rand(SLn)
+                new_vars = matrix(mat) * vars
+                f_transformed = evaluate(f, new_vars)
+            end
         end 
     end 
     
