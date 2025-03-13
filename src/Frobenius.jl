@@ -69,21 +69,21 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
     for j in 0:(N-1)
         e = j + m
         factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
-        #(9 < verbose) && println("e=$e,factorial_e=$factorial_e")
         ev = gen_exp_vec(n+1,d*j,termorder)
         fj = f^j
+        #println("f^j = $fj")
         sum = 0
         for alpha in ev
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1),Int64(p) * (beta + alpha + o))
             monomial = div(finish(B), X1)
             #coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p)))
-            coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)))) # not sure whether there should be a power of p here 
+            coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)))) # needs to act by Frobenius on coeff() if base field is not FF_p
             sum = sum + coefficient * monomial
             if (9 < verbose) && coefficient != 0
                 Djm = D[j+1]
                 C_jalpha = coeff(fj,alpha)
-                println("Djm=$Djm, C_jalpha=$C_jalpha")
+                println("Djm=$Djm, C_jalpha=$C_jalpha\n")
             end
             #(9 < verbose) && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
             #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
@@ -124,7 +124,8 @@ function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     verbose = params.verbose
 
     n = nvars(parent(f)) - 1
-    d = degree(f,1)
+    #d = degree(f,1)
+    d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     result = []
