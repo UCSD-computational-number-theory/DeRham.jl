@@ -301,7 +301,8 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     if BigInt(2)^64 < BigInt(p)^M
         residue = BigInt(p)^M
     else
-        residue = p^M
+        # If we use UInt, we get things between 2^63 and 2^64
+        residue = p^M#UInt(p)^M 
     end
     precisionring, = residue_ring(ZZ, residue)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
@@ -401,6 +402,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     (2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params) 
     (1 < verbose) && println(Reductions)
+    #return Reductions
     #if (1 < verbose)
     #    for i in 1:length(Basis)
     #        basis_elt = Basis[i]

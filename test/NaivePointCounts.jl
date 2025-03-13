@@ -17,7 +17,7 @@ function get_fermat_bad_primes()
 end
 
 function test_fermat_cubic_naive()
-  ps = [2
+  ps = [3
   5
   7
  11

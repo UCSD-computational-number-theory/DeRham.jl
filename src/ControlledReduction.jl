@@ -106,6 +106,14 @@ function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem
     return z
 end
 
+function alt_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec(z::Ref{ZZRingElem},
+                                                         A::Ref{ZZModMatrix},
+                                                         b::Ref{ZZRingElem},
+                                                         length(b)::Int,
+                                                         base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+end
+
 ### END stuff derived from Nemo.jl
 
 """
@@ -568,7 +576,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     mins = similar(J)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
-    (5 < params.verbose) && println("Starting: g = $(Int.(gMat))")
+    (5 < params.verbose) && println("Starting: g = $((gMat))")
 
     firsttime = true
 
@@ -598,9 +606,20 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         end
         matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
 
-        (6 < params.verbose && V == [1,2,0] && firsttime) && begin println(matrices); firsttime=false end
+        (6 < params.verbose && V == [1,1,4] && firsttime) && begin println(matrices); firsttime=false end
+        #(5 < params.verbose && firsttime) && begin 
+        #    for i in 1:length(matrices)
+        #        println(matrices[i][:,end])
+        #    end
+        #end
 
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
+        #(5 < params.verbose && firsttime) && begin 
+        #    println("---")
+        #    println(context.A[:,end])
+        #    println(context.B[:,end])
+        #end
+
         i = 1
         if params.fastevaluation == false
             while i <= K
@@ -616,7 +635,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         (4 < params.verbose) && println("J = $J")
         if (5 < params.verbose) 
             g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            println("g = $(Int.(gMat)) = $g")
+            println("g = $((gMat)) = $g")
         end
         
     end
@@ -665,6 +684,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #g = temp * g
     #my_matvecmul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
+    #alt_matvecmul!(g_temp,temp,g)
     copy!(g,g_temp)
     return g
   end
@@ -674,6 +694,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
   #gg = copy(g)
   #h = temp * gg
   my_matvecmul!(g_temp,temp,g)
+  #alt_matvecmul!(g_temp,temp,g)
   copy!(g,g_temp)
 
   #if h != g
@@ -697,6 +718,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #h = temp * gg
     #Oscar.Nemo.mul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
+    #alt_matvecmul!(g_temp,temp,g)
     copy!(g,g_temp)
     #println(g)
     #println(h == g)
@@ -1007,13 +1029,16 @@ function oscar_default_context(matspace,Ruvs)
 
     if ZZ(2)^64 < ZZ(m)
         # Big modulus
-        g = zeros(ZZ,g_length)
+        g = [ZZ(0) for i in 1:g_length]
+        g_temp = [ZZ(0) for i in 1:g_length]
     else
         # Small modulus
         g = zeros(UInt,g_length) 
+        g_temp = similar(g)
     end
 
-    g_temp = similar(g)
+    # NOTE: can't use `similar` for a pointer type
+#    g_temp = zeros(eltype(g),length(g))
     ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
 end
 
@@ -1050,8 +1075,10 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-#TODO:remove    Threads.@threads for i in 1:length(FT) #pol in FT
+#TODO:remove    
+    #Threads.@threads for i in 1:length(FT) #pol in FT
     for i in 1:length(FT) #pol in FT
+        #i=1
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
