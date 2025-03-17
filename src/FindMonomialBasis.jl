@@ -81,6 +81,11 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
     
     @assert(len_S >= 0 && len_S <= n+1)
 
+    Stilda = zeros(Int, n+1)
+    for i in S
+        Stilda[i+1] = 1
+    end
+
     in_set_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder)
     not_in_set_mons = compute_monomials(n+1, l - d, PR, params.termorder)
 
@@ -101,9 +106,27 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
     partials = [ derivative(f, i) for i in 1:n+1 ]
     if params.vars_reversed == true
         partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
-        notS = reverse(notS)
+        Stilda = reverse(Stilda)
+        vars = reverse(vars)
+        #notS = reverse(notS)
     end
+
+    col_idx = 1
+    for i in 1:(n+1)
+        if Stilda[i] == 1
+            for monomial in eachindex(in_set_mons)
+                M[:, col_idx] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
+                col_idx = col_idx + 1
+            end
+        else
+            for monomial in eachindex(not_in_set_mons)
+                M[:, col_idx] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
+                col_idx = col_idx + 1
+            end
+        end 
+    end 
     
+    #=
     for i in 1:len_S
         var = S[i]
         for monomial in eachindex(in_set_mons)
@@ -121,6 +144,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
             #M[:, not_in_set_section * (i-1) + monomial] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
         end
     end
+    =#
     
     return M
 end
