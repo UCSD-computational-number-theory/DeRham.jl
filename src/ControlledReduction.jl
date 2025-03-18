@@ -1027,15 +1027,15 @@ function oscar_default_context(matspace,Ruvs)
     B = matspace()
     temp = matspace()
 
-    if ZZ(2)^64 < ZZ(m)
+    #if ZZ(2)^64 < ZZ(m)
         # Big modulus
         g = [ZZ(0) for i in 1:g_length]
         g_temp = [ZZ(0) for i in 1:g_length]
-    else
-        # Small modulus
-        g = zeros(UInt,g_length) 
-        g_temp = similar(g)
-    end
+    #else
+    #    # Small modulus
+    #    g = zeros(UInt,g_length) 
+    #    g_temp = similar(g)
+    #end
 
     # NOTE: can't use `similar` for a pointer type
 #    g_temp = zeros(eltype(g),length(g))
