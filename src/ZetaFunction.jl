@@ -188,6 +188,7 @@ function precision_information(f,basis,verbose=0)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d,r_m)
+    N_m[N_m .== 0] .= 1 #TODO: understand the meaning of zero precision better
     M = algorithm_precision(p,n,d,r_m,N_m)
 
     (hodge_polygon,r_m,N_m,M)
