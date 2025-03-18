@@ -584,6 +584,16 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     while m > n
         V = chooseV(J,d)
         (4 < params.verbose) && print("Chose V = $V; ")
+        (6 < params.verbose) && begin
+            # the way that chooseV works right now,
+            # the following if statement will never hit.
+            for i in 1:length(V)
+                if V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+                    print("Illegal choice of V!")
+                    println("J = $J, S = $S")
+                end
+            end
+        end
         @. mins = J
         K = 0
         while true
@@ -606,12 +616,12 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         end
         matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
 
-        (6 < params.verbose && V == [1,1,4] && firsttime) && begin println(matrices); firsttime=false end
         #(5 < params.verbose && firsttime) && begin 
         #    for i in 1:length(matrices)
         #        println(matrices[i][:,end])
         #    end
         #end
+        (6 < params.verbose && V == [1,2,0] && firsttime) && begin println(matrices); firsttime=false end
 
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         #(5 < params.verbose && firsttime) && begin 
@@ -1075,10 +1085,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-#TODO:remove    
-    #Threads.@threads for i in 1:length(FT) #pol in FT
-    for i in 1:length(FT) #pol in FT
-        #i=1
+    Threads.@threads for i in 1:length(FT) #pol in FT
+    #for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1140,7 +1148,14 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
 
     evs = gen_exp_vec(n+1,d,params.termorder)
     Threads.@threads for V in evs
+    #for V in evs
         computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    end
+
+    
+    (6 < params.verbose) && begin 
+        println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
+        println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
     end
 end
 
@@ -1283,6 +1298,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
                     result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
+                    if V == [0,2,1] && ev1[i] == [0,0,4]
+                        println("distance: $distance")
+                        println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
+                        println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
+                    end
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             else
