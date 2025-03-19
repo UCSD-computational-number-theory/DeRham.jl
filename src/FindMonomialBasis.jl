@@ -77,6 +77,8 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
 
     len_S = length(S)
     notS = setdiff(collect(0:n),S)
+    # notS = [2]
+    # Stilda = [1,1,0]
     len_notS = length(notS)
     
     @assert(len_S >= 0 && len_S <= n+1)
@@ -103,7 +105,8 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
     U = matrix_space(R, binomial(n + l, n), cols)
     M = U()
 
-    partials = [ derivative(f, i) for i in 1:n+1 ]
+    partials = [ derivative(f, i) for i in 1:n+1 ] # ∂_0, ∂_1, ∂_2
+    
     if params.vars_reversed == true
         partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
         Stilda = reverse(Stilda)

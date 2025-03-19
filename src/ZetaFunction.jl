@@ -27,9 +27,10 @@ struct ZetaFunctionParams
     termorder::Symbol
     vars_reversed::Bool
     fastevaluation::Bool
+    always_use_bigints::Bool
 end
 
-default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false)
+default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false,false)
 
 """
     compute_frobenius_matrix(n,d,Reductions,T)
@@ -188,6 +189,7 @@ function precision_information(f,basis,verbose=0)
     #N_m = series_precision(r_m, p, n) # series precision 
     #M = algorithm_precision(r_m, N_m, p)
     N_m = series_precision(p,n,d,r_m)
+    N_m[N_m .== 0] .= 1 #TODO: understand the meaning of zero precision better
     M = algorithm_precision(p,n,d,r_m,N_m)
 
     (hodge_polygon,r_m,N_m,M)
@@ -267,7 +269,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false)
+function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -279,7 +281,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     d = total_degree(f)
     R = coefficient_ring(PR)
 
-    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation)
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints)
 
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
@@ -297,12 +299,19 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
     (0 < verbose) && println("algorithm precision: $M, series precision: $N_m") 
-    
-    if BigInt(2)^64 < BigInt(p)^M
+
+    if always_use_bigints || BigInt(2)^64 < BigInt(p)^M
         residue = BigInt(p)^M
+    elseif BigInt(2)^63 < BigInt(p)^M
+        # If we use UInt, we get things between 2^63 and 2^64
+        residue = UInt(p)^M
     else
         residue = p^M
     end
+
+    # FOR DEBUGGING
+    #residue = BigInt(p)^M
+
     precisionring, = residue_ring(ZZ, residue)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
@@ -401,6 +410,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     (2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params) 
     (1 < verbose) && println(Reductions)
+    #return Reductions
     #if (1 < verbose)
     #    for i in 1:length(Basis)
     #        basis_elt = Basis[i]

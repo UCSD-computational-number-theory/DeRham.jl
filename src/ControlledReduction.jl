@@ -106,7 +106,39 @@ function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem
     return z
 end
 
+#function alt_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
+#    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec(z::Ref{ZZRingElem},
+#                                                         A::Ref{ZZModMatrix},
+#                                                         b::Ref{ZZRingElem},
+#                                                         length(b)::Int,
+#                                                         base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+#end
+
 ### END stuff derived from Nemo.jl
+
+function my_copy!(a,b)
+    copy!(a,b)
+end
+
+function my_copy!(a::Vector{ZZRingElem},b::Vector{ZZRingElem})
+    for i in 1:length(a)
+        Oscar.Nemo.set!(a[i],b[i])
+    end
+end
+
+function my_zero!(a)
+    zero!(a)
+end
+
+
+function my_zero!(a::Vector{ZZRingElem})
+    for i in 1:length(a)
+        Oscar.Nemo.set!(a[i],0)
+    end
+end
+
+
+
 
 """
     reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
@@ -568,7 +600,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     mins = similar(J)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
-    (5 < params.verbose) && println("Starting: g = $(Int.(gMat))")
+    (5 < params.verbose) && println("Starting: g = $((gMat))")
 
     firsttime = true
 
@@ -576,6 +608,16 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
     while m > n
         V = chooseV(J,d)
         (4 < params.verbose) && print("Chose V = $V; ")
+        (6 < params.verbose) && begin
+            # the way that chooseV works right now,
+            # the following if statement will never hit.
+            for i in 1:length(V)
+                if V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+                    print("Illegal choice of V!")
+                    println("J = $J, S = $S")
+                end
+            end
+        end
         @. mins = J
         K = 0
         while true
@@ -598,9 +640,20 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         end
         matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
 
+        #(5 < params.verbose && firsttime) && begin 
+        #    for i in 1:length(matrices)
+        #        println(matrices[i][:,end])
+        #    end
+        #end
         (6 < params.verbose && V == [1,2,0] && firsttime) && begin println(matrices); firsttime=false end
 
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
+        #(5 < params.verbose && firsttime) && begin 
+        #    println("---")
+        #    println(context.A[:,end])
+        #    println(context.B[:,end])
+        #end
+
         i = 1
         if params.fastevaluation == false
             while i <= K
@@ -616,7 +669,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
         (4 < params.verbose) && println("J = $J")
         if (5 < params.verbose) 
             g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            println("g = $(Int.(gMat)) = $g")
+            println("g = $((gMat)) = $g")
         end
         
     end
@@ -665,7 +718,9 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #g = temp * g
     #my_matvecmul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
-    copy!(g,g_temp)
+    #alt_matvecmul!(g_temp,temp,g)
+    #g,g_temp = g_temp,g
+    my_copy!(g,g_temp)
     return g
   end
 
@@ -674,7 +729,10 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
   #gg = copy(g)
   #h = temp * gg
   my_matvecmul!(g_temp,temp,g)
-  copy!(g,g_temp)
+  #alt_matvecmul!(g_temp,temp,g)
+  #g,g_temp = g_temp,g
+  #copy!(g,g_temp)
+  my_copy!(g,g_temp)
 
   #if h != g
   #    
@@ -697,7 +755,10 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #h = temp * gg
     #Oscar.Nemo.mul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
-    copy!(g,g_temp)
+    #alt_matvecmul!(g_temp,temp,g)
+    #g,g_temp = g_temp,g
+    #copy!(g,g_temp)
+    my_copy!(g,g_temp)
     #println(g)
     #println(h == g)
     #if h != g
@@ -708,6 +769,9 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #    error()
     #end
   end
+
+  # we don't know whether g_temp or g is the "real" g anymore
+  #my_copy!(g_temp,g)
 
   return g
 end
@@ -737,7 +801,9 @@ function costadata_of_initial_term!(term,g,n,d,p,S,termorder)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
-    fill!(g,0)
+    #TODO: put a check to make see if we are using BigInts here
+    my_zero!(g)
+
     for j in axes(g,1)
         if u == ev[j]
             g[j] = lift(gCoeff)
@@ -996,7 +1062,7 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
     return result
 end
 
-function oscar_default_context(matspace,Ruvs)
+function oscar_default_context(matspace,Ruvs,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
@@ -1005,15 +1071,18 @@ function oscar_default_context(matspace,Ruvs)
     B = matspace()
     temp = matspace()
 
-    if ZZ(2)^64 < ZZ(m)
-        # Big modulus
-        g = zeros(ZZ,g_length)
+    if params.always_use_bigints || ZZ(2)^64 < ZZ(m)
+       # Big modulus
+       g = [ZZ(0) for i in 1:g_length]
+       g_temp = [ZZ(0) for i in 1:g_length]
     else
         # Small modulus
         g = zeros(UInt,g_length) 
+        g_temp = similar(g)
     end
 
-    g_temp = similar(g)
+    # NOTE: can't use `similar` for a pointer type
+#    g_temp = zeros(eltype(g),length(g))
     ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
 end
 
@@ -1042,7 +1111,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     contexts = ControlledReductionContext[]
 
     for i in 1:length(FT)#Threads.nthreads()
-        push!(contexts, oscar_default_context(MS1,Ruvs))
+        push!(contexts, oscar_default_context(MS1,Ruvs,params))
     end
 
     result = similar(FT)
@@ -1050,9 +1119,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-#TODO:remove    Threads.@threads for i in 1:length(FT) #pol in FT
+    Threads.@threads for i in 1:length(FT) #pol in FT
     #for i in 1:length(FT) #pol in FT
-    Threads.@threads for i in 1:length(FT)
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1113,8 +1181,15 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,params.termorder)
-    Threads.@threads for V in evs
+    #Threads.@threads for V in evs
+    for V in evs
         computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    end
+
+    
+    (6 < params.verbose) && begin 
+        println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
+        println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
     end
 end
 
@@ -1257,6 +1332,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
                     result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
+                    if V == [0,2,1] && ev1[i] == [0,0,4]
+                        println("distance: $distance")
+                        println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
+                        println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
+                    end
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             else
@@ -1278,6 +1358,10 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
             distance = distance + distances[j]
         end
     end
+    #TODO: there is some sort of race condition on 
+    # our dictionary, and putting this print statement here 
+    # fixes it. Later, we'll need to fix this for reals
+    (1 < Threads.nthreads()) && println("New key: $V")
     get!(Ruvs, V, result)
     return result
 end

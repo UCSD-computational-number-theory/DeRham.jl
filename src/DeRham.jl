@@ -6,6 +6,9 @@ using LinearAlgebra
 using Combinatorics
 using Memoize
 
+# comment this out when not debugging
+#using Debugger
+
 #include("NemoAdditions.jl")
 
 include("Utils.jl")
