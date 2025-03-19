@@ -719,7 +719,8 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #my_matvecmul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
     #alt_matvecmul!(g_temp,temp,g)
-    g,g_temp = g_temp,g
+    #g,g_temp = g_temp,g
+    my_copy!(g,g_temp)
     return g
   end
 
@@ -756,6 +757,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     my_matvecmul!(g_temp,temp,g)
     #alt_matvecmul!(g_temp,temp,g)
     #g,g_temp = g_temp,g
+    #copy!(g,g_temp)
     my_copy!(g,g_temp)
     #println(g)
     #println(h == g)
