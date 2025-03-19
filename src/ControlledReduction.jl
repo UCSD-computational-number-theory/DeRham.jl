@@ -1062,7 +1062,7 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
     return result
 end
 
-function oscar_default_context(matspace,Ruvs)
+function oscar_default_context(matspace,Ruvs,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
@@ -1071,7 +1071,7 @@ function oscar_default_context(matspace,Ruvs)
     B = matspace()
     temp = matspace()
 
-    if ZZ(2)^64 < ZZ(m)
+    if params.always_use_bigints || ZZ(2)^64 < ZZ(m)
        # Big modulus
        g = [ZZ(0) for i in 1:g_length]
        g_temp = [ZZ(0) for i in 1:g_length]
@@ -1111,7 +1111,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     contexts = ControlledReductionContext[]
 
     for i in 1:length(FT)#Threads.nthreads()
-        push!(contexts, oscar_default_context(MS1,Ruvs))
+        push!(contexts, oscar_default_context(MS1,Ruvs,params))
     end
 
     result = similar(FT)
@@ -1119,8 +1119,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    #Threads.@threads for i in 1:length(FT) #pol in FT
-    for i in 1:length(FT) #pol in FT
+    Threads.@threads for i in 1:length(FT) #pol in FT
+    #for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1181,8 +1181,8 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,params.termorder)
-    Threads.@threads for V in evs
-    #for V in evs
+    #Threads.@threads for V in evs
+    for V in evs
         computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     end
 
@@ -1358,6 +1358,10 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
             distance = distance + distances[n+1-j+1]
         end
     end
+    #TODO: there is some sort of race condition on 
+    # our dictionary, and putting this print statement here 
+    # fixes it. Later, we'll need to fix this for reals
+    (1 < Threads.nthreads()) && println("New key: $V")
     get!(Ruvs, V, result)
     return result
 end
