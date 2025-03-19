@@ -106,15 +106,39 @@ function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem
     return z
 end
 
-function alt_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
-    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec(z::Ref{ZZRingElem},
-                                                         A::Ref{ZZModMatrix},
-                                                         b::Ref{ZZRingElem},
-                                                         length(b)::Int,
-                                                         base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
-end
+#function alt_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
+#    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec(z::Ref{ZZRingElem},
+#                                                         A::Ref{ZZModMatrix},
+#                                                         b::Ref{ZZRingElem},
+#                                                         length(b)::Int,
+#                                                         base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+#end
 
 ### END stuff derived from Nemo.jl
+
+function my_copy!(a,b)
+    copy!(a,b)
+end
+
+function my_copy!(a::Vector{ZZRingElem},b::Vector{ZZRingElem})
+    for i in 1:length(a)
+        Oscar.Nemo.set!(a[i],b[i])
+    end
+end
+
+function my_zero!(a)
+    zero!(a)
+end
+
+
+function my_zero!(a::Vector{ZZRingElem})
+    for i in 1:length(a)
+        Oscar.Nemo.set!(a[i],0)
+    end
+end
+
+
+
 
 """
     reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
@@ -695,7 +719,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #my_matvecmul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
     #alt_matvecmul!(g_temp,temp,g)
-    copy!(g,g_temp)
+    g,g_temp = g_temp,g
     return g
   end
 
@@ -705,7 +729,9 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
   #h = temp * gg
   my_matvecmul!(g_temp,temp,g)
   #alt_matvecmul!(g_temp,temp,g)
-  copy!(g,g_temp)
+  #g,g_temp = g_temp,g
+  #copy!(g,g_temp)
+  my_copy!(g,g_temp)
 
   #if h != g
   #    
@@ -729,7 +755,8 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #Oscar.Nemo.mul!(g,temp,g)
     my_matvecmul!(g_temp,temp,g)
     #alt_matvecmul!(g_temp,temp,g)
-    copy!(g,g_temp)
+    #g,g_temp = g_temp,g
+    my_copy!(g,g_temp)
     #println(g)
     #println(h == g)
     #if h != g
@@ -740,6 +767,9 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     #    error()
     #end
   end
+
+  # we don't know whether g_temp or g is the "real" g anymore
+  #my_copy!(g_temp,g)
 
   return g
 end
@@ -769,7 +799,9 @@ function costadata_of_initial_term!(term,g,n,d,p,S,termorder)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
-    fill!(g,0)
+    #TODO: put a check to make see if we are using BigInts here
+    my_zero!(g)
+
     for j in axes(g,1)
         if u == ev[j]
             g[j] = lift(gCoeff)
@@ -1037,15 +1069,15 @@ function oscar_default_context(matspace,Ruvs)
     B = matspace()
     temp = matspace()
 
-    #if ZZ(2)^64 < ZZ(m)
-        # Big modulus
-        g = [ZZ(0) for i in 1:g_length]
-        g_temp = [ZZ(0) for i in 1:g_length]
-    #else
-    #    # Small modulus
-    #    g = zeros(UInt,g_length) 
-    #    g_temp = similar(g)
-    #end
+    if ZZ(2)^64 < ZZ(m)
+       # Big modulus
+       g = [ZZ(0) for i in 1:g_length]
+       g_temp = [ZZ(0) for i in 1:g_length]
+    else
+        # Small modulus
+        g = zeros(UInt,g_length) 
+        g_temp = similar(g)
+    end
 
     # NOTE: can't use `similar` for a pointer type
 #    g_temp = zeros(eltype(g),length(g))
@@ -1085,8 +1117,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    Threads.@threads for i in 1:length(FT) #pol in FT
-    #for i in 1:length(FT) #pol in FT
+    #Threads.@threads for i in 1:length(FT) #pol in FT
+    for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
