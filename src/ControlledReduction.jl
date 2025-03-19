@@ -1226,7 +1226,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     for i in 1:length(ev1)
         mon = Vector{Int64}(undef, n+1)
         for m in 1:(n+1)
-            mon[m] = ev1[i][m] + V[m] - Stilda[m]
+            mon[m] = ev1[i][m] + V[m] - Stilda[n+1-m+1]
         end
         gVec = MS2()
         for j in 1:length(ev2)
@@ -1240,13 +1240,13 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
         #println("After LingAlg problem: $gJS")
         distance = 0
         for j in 1:(n+1)
-            if Stilda[n+1-j+1] == 1
+            if Stilda[j] == 1
                 for k in 1:length(ev3)
                     for m in 1:(n+1)
                         if m == n+1-j+1
-                            temp[m] = ev3[k][m] + Stilda[m] - 1
+                            temp[m] = ev3[k][m] + Stilda[n+1-m+1] - 1
                         else
-                            temp[m] = ev3[k][m] + Stilda[m]
+                            temp[m] = ev3[k][m] + Stilda[n+1-m+1]
                         end
                     end
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
@@ -1262,7 +1262,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
             else
                 for k in 1:length(ev4)
                     for m in 1:(n+1)
-                        temp[m] = ev4[k][m] + Stilda[m]
+                        temp[m] = ev4[k][m] + Stilda[n+1-m+1]
                     end
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
@@ -1275,7 +1275,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             end
-            distance = distance + distances[n+1-j+1]
+            distance = distance + distances[j]
         end
     end
     get!(Ruvs, V, result)
