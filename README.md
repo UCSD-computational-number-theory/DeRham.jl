@@ -18,14 +18,9 @@ Dependencies: Need to install Julia and Oscar [ToDo: Add installation guides]. W
 
 Here is an example for how to use the code. Execute the following lines in Julia REPL:  
 ```
-include("ZetaFunction.jl")
-using Oscar
-n = 2
-d = 3
+include("DeRham.jl")
 p = 7
-R = GF(p,1)
-PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-x,y,z = Vars
+R, (x,y,z) = polynomial_ring(GF(p), ["x","y","z"])
 f = y^2*z - x^3 - x*z^2 - z^3
-ZetaFunction.computeAll(n,d,f,7,p,R,PR,Vars)
+DeRham.zeta_function(f,fastevaluation=true,algorithm=:naive)
 ```
