@@ -18,10 +18,10 @@ end
 Gets the exponent vector cache for the degree d,
 returning it as a vector.
 
-This throws an error if 
+This throws an error if the cached degree doesn't exist.
 """
 function Base.getindex(c::PolyExpCache,d::Int)
-    if exp_vec_pieces[d] == nothing
+    if c.exp_vec_pieces[d] == nothing
         errormsg = "This PolyExpCache does not have degree=$d stored. "* 
                    "This probably means that the PolyExpCache hasn't been "* 
                    "fully initialized, or there is a bug. If you want to "* 
@@ -29,8 +29,29 @@ function Base.getindex(c::PolyExpCache,d::Int)
                    "`get_forward` function."
         throw(ArgumentError(errormsg))
     end
-    exp_vec_pieces[d]
+    c.exp_vec_pieces[d]
 end
+
+function Base.getindex(c::PolyExpCache,d::Int,kind::Symbol)
+    if kind == :forward
+        c[d]
+    elseif kind == :reverse
+
+        if c.rev_look_pieces[d] == nothing
+            errormsg = "This PolyExpCache does not have degree=$d stored for "*
+                       "reverse lookup. "* 
+                       "This probably means that the PolyExpCache hasn't been "* 
+                       "fully initialized, or there is a bug. If you want to "* 
+                       "initialize this cache to work for degree $d, use the "*
+                       "`get_forward` function."
+            throw(ArgumentError(errormsg))
+        end
+        c.rev_look_pieces[d]
+    else
+        throw(ArgumentError("Invalid option for indexing PolyExpCache"))
+    end
+end
+
 
 function Base.show(io::IO, c::PolyExpCache)
     msg = """PolyExpCache for the graded ring k[x_1, ..., x_$(c.n)]

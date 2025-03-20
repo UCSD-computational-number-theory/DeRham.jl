@@ -414,7 +414,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,params)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,g_temp,params)
     #p = Int64(characteristic(parent(f)))
     verbose = params.verbose
     n = nvars(parent(f)) - 1
@@ -462,7 +462,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         nend = p
     end
 
-    matrices = computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+    matrices = computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
 
     #TODO: the following was changed to use reverse! so 
     #    it doesn't allocate as much, but I realized that
@@ -517,7 +517,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRuvS(y,S,f,pseudoInverseMat,Ruvs,explookup,params)
+        matrices1 = computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
         #println(matrices1)
         #error()
 
@@ -599,7 +599,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B
     
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params)
+function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -648,7 +648,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,explookup,params
             @. mins = tempv
             K = K+1
         end
-        matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,explookup,params)
+        matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,cache,params)
 
         #(5 < params.verbose && firsttime) && begin 
         #    for i in 1:length(matrices)
@@ -953,7 +953,7 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -993,7 +993,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
             #ω[i] = reducechain...
             #(9 < verbose) && println("u is type $(typeof(ω[i][1]))")
             g_temp = similar(ω[i][2])
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,g_temp,params)
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,g_temp,params)
         end
 
         poleorder = poleorder - p
@@ -1009,7 +1009,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,te
     return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -1021,7 +1021,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
         #println(terms)
         for t in terms
             (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params.termorder)
-            reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,explookup,params)
+            reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -1035,13 +1035,13 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
 end
 
 """
-    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,termorder)
+    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
 N_m - the precision
 """
-function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
+function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     d = total_degree(f)
     n = nvars(parent(f)) - 1
@@ -1050,20 +1050,15 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
     B = MS1()
     temp = MS1()
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-    explookup = Dict{Vector{Int64}, Int64}()
-    ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    for i in 1:length(ev1)
-        get!(explookup,ev1[i],i)
-    end
     result = []
     i = 1
     for pol in FT
         (0 < params.verbose) && println("Reducing vector $i")
         i += 1
         if (0 < params.verbose)
-            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
         else
-            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,explookup,A,B,temp,params)
+            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
         end
 
         push!(result, reduction)
@@ -1096,7 +1091,7 @@ function oscar_default_context(matspace,Ruvs,params)
     ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
 end
 
-function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
+function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
     g_length = binomial(d*n,d*n-n)
@@ -1105,17 +1100,17 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
 
     Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
 
-    explookup = Dict{Vector{Int64}, Int64}()
-    ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    for i in 1:length(ev1)
-        get!(explookup,ev1[i],i)
-    end
+    #explookup = Dict{Vector{Int64}, Int64}()
+    #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
+    #for i in 1:length(ev1)
+    #    get!(explookup,ev1[i],i)
+    #end
 
     if (0 < params.verbose)
         println("Calculating the R_uv...")
-        @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+        @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     else
-        precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+        precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     end
     
     contexts = ControlledReductionContext[]
@@ -1135,9 +1130,9 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
         if (0 < params.verbose)
-            @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+            @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
         else
-            reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,explookup,params)
+            reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
         end
         result[i] = reduction
         #push!(result, reduction)
@@ -1146,54 +1141,54 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
     return result
 end
 
-function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params)
+function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache)
     if params.algorithm == :costachunks
-        reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,params)
+        reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     elseif params.algorithm == :naive
-        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,params)
+        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else
         throw(ArgumentError("Unsupported Algorithm: $algorithm"))
     end
 end
 
-"""
-computes reduction matrices
-"""
-function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
-    YRing, y = polynomial_ring(R, "y")
-    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
-    yV = []
-    for i in axes(V,1)
-        push!(yV, y*V[i])
-    end
-    UVars = mins + yV
-    ev = gen_exp_vec(n+1,n*d-n,termorder)
-    monomials = gen_mon(ev,YRing,PYRing)
-    reductions = []
-    for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PYRing,termorder)[1])
-    end
-    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
-    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
-    A = matSpace()
-    B = matSpace()
-    for i in 1:nrows(polyMatrix)
-        for j in 1:ncols(polyMatrix)
-            A[i,j] = coeff(polyMatrix[i,j],0)
-            B[i,j] = coeff(polyMatrix[i,j],1)
-        end
-    end
-    return [A,B]
-end
+#"""
+#computes reduction matrices
+#"""
+#function computeRPoly_LAOneVar(V,mins,S,n,d,f,pseudoInverseMat,R,PR,termorder)
+#    YRing, y = polynomial_ring(R, "y")
+#    PYRing, Vars = polynomial_ring(YRing, ["x$i" for i in 0:n])
+#    yV = []
+#    for i in axes(V,1)
+#        push!(yV, y*V[i])
+#    end
+#    UVars = mins + yV
+#    ev = gen_exp_vec(n+1,n*d-n,termorder)
+#    monomials = gen_mon(ev,YRing,PYRing)
+#    reductions = []
+#    for m in monomials
+#        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PYRing,termorder)[1])
+#    end
+#    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
+#    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
+#    A = matSpace()
+#    B = matSpace()
+#    for i in 1:nrows(polyMatrix)
+#        for j in 1:ncols(polyMatrix)
+#            A[i,j] = coeff(polyMatrix[i,j],0)
+#            B[i,j] = coeff(polyMatrix[i,j],1)
+#        end
+#    end
+#    return [A,B]
+#end
 
-function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
+function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,params.termorder)
     #Threads.@threads for V in evs
     for V in evs
-        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     end
 
     
@@ -1203,21 +1198,25 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,explookup,params)
     end
 end
 
-function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     R = coefficient_ring(parent(f))
     MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    if S != collect(0:n-1)
+        throw(ArgumentError("computeRuvOld only works for S={0...n-1}"))
+    end
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
         (4 < params.verbose) && println("New key: $V")
     end
-    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev1 = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    explookup = cache[n*d - n,:reverse]
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
@@ -1273,7 +1272,7 @@ function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     return result
 end
 
-function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
+function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
@@ -1285,10 +1284,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     else
         (4 < params.verbose) && println("New key: $V")
     end
-    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    ev4 = gen_exp_vec(n+1,n*d-n-length(S),termorder)
+    ev1 = cache[n*d - n]#gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev4 = cache[n*d-n-length(S)]#gen_exp_vec(n+1,n*d-n-length(S),termorder)
+    explookup = cache[n*d - n,:reverse]
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     result = Vector{typeof(MS1())}(undef, n+2)
@@ -1376,115 +1376,115 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,explookup,params)
     return result
 end
 
-function computeRuvNoSTilda(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    R = coefficient_ring(parent(f))
-    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
-    if haskey(Ruvs, V)
-        return get(Ruvs, V, 0)
-    else
-        println("New key: $V")
-    end
-    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    temp = Vector{Int64}(undef, n+1)
-    MS2 = matrix_space(R, length(ev2),1)
-    result = Vector{typeof(MS1())}(undef, n+2)
-    for i in 1:n+2
-        result[i] = MS1(0)
-    end
-    for i in 1:length(ev1)
-        mon = Vector{Int64}(undef, n+1)
-        for m in 1:(n+1)
-            mon[m] = ev1[i][m] + V[m] - 1
-        end
-        gVec = MS2()
-        for j in 1:length(ev2)
-            if ev2[j] == mon
-                gVec[j] = R(1)
-            else
-                gVec[j] = R(0)
-            end
-        end
-        gJS = pseudoInverseMat*gVec
-        #println("After LingAlg problem: $gJS")
-        for j in 1:(n+1)
-            for k in 1:length(ev3)
-                for m in 1:(n+1)
-                    if m == n+1-j+1
-                        temp[m] = ev3[k][m]
-                    else
-                        temp[m] = ev3[k][m] + 1
-                    end
-                end
-                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
-                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
-                #println(" $(ev1[l] == ev3[k])")
-                l = get(explookup,temp,0)
-                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
-                if vars_reversed == true
-                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                else
-                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                end
-                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
-            end
-        end
-    end
-    get!(Ruvs, V, result)
-    return result
-end
+#function computeRuvNoSTilda(V,S,f,pseudoInverseMat,Ruvs,explookup,termorder,vars_reversed)
+#    n = nvars(parent(f)) - 1
+#    d = total_degree(f)
+#    R = coefficient_ring(parent(f))
+#    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+#    if haskey(Ruvs, V)
+#        return get(Ruvs, V, 0)
+#    else
+#        println("New key: $V")
+#    end
+#    ev1 = gen_exp_vec(n+1,n*d-n,termorder)
+#    ev2 = gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+#    ev3 = gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+#    temp = Vector{Int64}(undef, n+1)
+#    MS2 = matrix_space(R, length(ev2),1)
+#    result = Vector{typeof(MS1())}(undef, n+2)
+#    for i in 1:n+2
+#        result[i] = MS1(0)
+#    end
+#    for i in 1:length(ev1)
+#        mon = Vector{Int64}(undef, n+1)
+#        for m in 1:(n+1)
+#            mon[m] = ev1[i][m] + V[m] - 1
+#        end
+#        gVec = MS2()
+#        for j in 1:length(ev2)
+#            if ev2[j] == mon
+#                gVec[j] = R(1)
+#            else
+#                gVec[j] = R(0)
+#            end
+#        end
+#        gJS = pseudoInverseMat*gVec
+#        #println("After LingAlg problem: $gJS")
+#        for j in 1:(n+1)
+#            for k in 1:length(ev3)
+#                for m in 1:(n+1)
+#                    if m == n+1-j+1
+#                        temp[m] = ev3[k][m]
+#                    else
+#                        temp[m] = ev3[k][m] + 1
+#                    end
+#                end
+#                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+#                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+#                #println(" $(ev1[l] == ev3[k])")
+#                l = get(explookup,temp,0)
+#                #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+#                #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
+#                if vars_reversed == true
+#                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+#                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+#                else
+#                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+#                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+#                end
+#                #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
+#            end
+#        end
+#    end
+#    get!(Ruvs, V, result)
+#    return result
+#end
 
-"""
-Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
-"""
-function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,termorder)
-    if haskey(Ruvs, V)
-        return get(Ruvs, V, 0)
-    end
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    R = coefficient_ring(parent(f))
-    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
-    PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
-    #=
-    yV = []
-    for i in axes(V,1)
-        push!(yV, UVars[1]*V[i])
-    end
-    U = UVars[2:(n+2)] + yV
-    =#
-    ev = gen_exp_vec(n+1,n*d-n,termorder)
-    monomials = gen_mon(ev,URing,PURing)
-    #monomials = gen_mon(ev,R,parent(f))
-    reductions = []
-    for m in monomials
-        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing,termorder)[1])
-    end
-    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
-    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
-    matrices = []
-    for k in 0:(n+1)
-        tempMat = matSpace()
-        tempExpVec = zeros(Int,n+1)
-        if k >= 1
-            tempExpVec[n+1-k+1] = 1
-        end
-        for i in 1:nrows(polyMatrix)
-            for j in 1:ncols(polyMatrix)
-                tempMat[i,j] = coeff(polyMatrix[i,j], tempExpVec)
-            end
-        end
-        push!(matrices, tempMat)
-    end
-    get!(Ruvs, V, matrices)
-    return matrices
-end
+#"""
+#Computes the Ruv matrix with the u being variables, stores this as n+2 matrices
+#"""
+#function computeRPoly_LAOneVar1(V,S,f,pseudoInverseMat,Ruvs,cache,termorder)
+#    if haskey(Ruvs, V)
+#        return get(Ruvs, V, 0)
+#    end
+#    n = nvars(parent(f)) - 1
+#    d = total_degree(f)
+#    R = coefficient_ring(parent(f))
+#    URing, UVars = polynomial_ring(R, ["u$i" for i in 0:n])
+#    PURing, Vars = polynomial_ring(URing, ["x$i" for i in 0:n])
+#    #=
+#    yV = []
+#    for i in axes(V,1)
+#        push!(yV, UVars[1]*V[i])
+#    end
+#    U = UVars[2:(n+2)] + yV
+#    =#
+#    ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
+#    monomials = gen_mon(ev,URing,PURing)
+#    #monomials = gen_mon(ev,R,parent(f))
+#    reductions = []
+#    for m in monomials
+#        push!(reductions, reduce_LA(UVars,V,S,f,pseudoInverseMat,[m,1],PURing,termorder)[1])
+#    end
+#    polyMatrix = Matrix(transpose(convert_p_to_m(reductions,ev)))
+#    matSpace = matrix_space(R,nrows(polyMatrix),ncols(polyMatrix))
+#    matrices = []
+#    for k in 0:(n+1)
+#        tempMat = matSpace()
+#        tempExpVec = zeros(Int,n+1)
+#        if k >= 1
+#            tempExpVec[n+1-k+1] = 1
+#        end
+#        for i in 1:nrows(polyMatrix)
+#            for j in 1:ncols(polyMatrix)
+#                tempMat[i,j] = coeff(polyMatrix[i,j], tempExpVec)
+#            end
+#        end
+#        push!(matrices, tempMat)
+#    end
+#    get!(Ruvs, V, matrices)
+#    return matrices
+#end
 
 """
     computeRPoly_LAOneVar2!(matrices, U)
