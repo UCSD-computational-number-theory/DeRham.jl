@@ -137,7 +137,17 @@ function my_zero!(a::Vector{ZZRingElem})
     end
 end
 
+function my_sub!(A,B,C)
+    Oscar.Nemo.sub!(A,B,C)
+end
 
+function my_sub!(A::ZZModMatrix,B::ZZModMatrix,C::ZZModMatrix)
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_add(A::Ref{ZZModMatrix},
+                                                B::Ref{ZZModMatrix},
+                                                C::Ref{ZZModMatrix},
+                                                base_ring(B).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
+    return A
+end
 
 
 """
@@ -747,7 +757,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     # right now, Fk = F(k+1)
     
     # Fk = Fk - a
-    sub!(temp,temp,a)
+    my_sub!(temp,temp,a)
 
     # now, Fk = F(k)
     #g = temp * g
