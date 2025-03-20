@@ -28,7 +28,7 @@ partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
 # TODO: Ensure partials are not all zero.
 
 """
-t   gen_exp_vec(n, d, order)
+   gen_exp_vec(n, d, order)
 
 Returns all nonnegative integer lists of length n who entires sum to d
 

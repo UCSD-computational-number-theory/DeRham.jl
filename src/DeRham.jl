@@ -12,6 +12,7 @@ using Memoize
 #include("NemoAdditions.jl")
 
 include("Utils.jl")
+include("GradedExpCache.jl")
 include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
