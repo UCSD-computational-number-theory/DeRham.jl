@@ -1278,7 +1278,8 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     R = coefficient_ring(parent(f))
-    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    #MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    g_length = binomial(n*d,n*d-n)
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
@@ -1291,9 +1292,10 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     explookup = cache[n*d - n,:reverse]
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
-    result = Vector{typeof(MS1())}(undef, n+2)
+    matrixtype = eltype(valtype(Ruvs))
+    result = Vector{matrixtype}(undef, n+2)
     for i in 1:n+2
-        result[i] = MS1(0)
+        result[i] = zero_matrix(R,g_length,g_length)
     end
     Stilda = zeros(Int, n+1)
     for i in S
@@ -1372,6 +1374,15 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     # our dictionary, and putting this print statement here 
     # fixes it. Later, we'll need to fix this for reals
     (1 < Threads.nthreads()) && println("New key: $V")
+    (2 < params.verbose) && begin
+        nnzs = count.(!=(0),result)
+        total_entries = g_length^2
+        percentages = nnzs * 100 ./ total_entries 
+        println("Ruv calculated for V = $V with densities")
+        for i in 1:length(result)
+            println("    Matrix $i: $(nnzs[i]) of $total_entries entreis, $(percentages[i]) %")
+        end
+    end
     get!(Ruvs, V, result)
     return result
 end
