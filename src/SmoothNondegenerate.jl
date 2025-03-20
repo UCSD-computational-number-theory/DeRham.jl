@@ -23,9 +23,11 @@ function find_Ssmooth_model(f, M, S_target, params)
     #    error("f is not smooth")
     #end
 
-    bool = true 
+    #bool = true 
     f_transformed = f
-    while bool
+    #while bool
+    num_iter = 100
+    for i in 1:num_iter 
         try 
             pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params)
             bool = false
@@ -34,6 +36,7 @@ function find_Ssmooth_model(f, M, S_target, params)
             if isa(e, ArgumentError) && e.msg == "f is not smooth"
                 throw(ArgumentError("f is not smooth"))
                 bool = false  
+                return false 
             else
                 mat = rand(SLn)
                 new_vars = matrix(mat) * vars
