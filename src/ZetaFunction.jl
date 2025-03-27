@@ -34,6 +34,48 @@ end
 default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false,false,false)
 
 """
+Give the minimal PolyExpCache needed for controlled reduction
+as in Prop 1.15 of Costa's thesis.
+
+n in this function is the number of variables minus one,
+i.e. the weight of the affine Monsky-Washnitzer homology module.
+
+the d we need are
+
+FORWARD:
+h*d - n - 1 for h in 1:n (if such values are positive)
+d*n - n 
+d*n - n - 1
+d*n - n - length(S),
+d*n - n - length(S) + 1,
+d*n - n + d - length(S) + 1,
+d
+
+REVERSE:
+d
+n*d - n
+
+"""
+function controlled_reduction_cache(n,d,S,termorder)
+    degsforward = [d*n - n,
+                   d*n - n - 1,
+                   d*n - n - length(S),
+                   d*n - n - length(S) + 1,
+                   d*n - n + d - length(S),
+                   d]
+    for h in 1:n
+        if 0 < h*d - n - 1
+            append!(degsforward,h*d - n - 1)
+        end
+    end
+    #append!(degsforward,[h*d - n - 1 for h in 1:n])
+
+    degsreverse = [d,n*d - n]
+
+    PolyExpCache(n+1,termorder,degsforward,degsreverse)
+end
+
+"""
     compute_frobenius_matrix(n,d,Reductions,T)
 
 Computes Frobenius Matrix
@@ -44,15 +86,18 @@ INPUTS:
 * "N" -- integer, series precision
 * "Reductions" -- output of computeReductionOfTransformLA
 * "T" -- output of computeT
+* "Basis" -- ?????
+* "params" -- the ControlledReductionParamaters
+* "cache" -- the GradedExpCache used for this controlled reduction
 """
-function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
+function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, cache)
     verbose = params.verbose
     termorder = params.termorder
     (9 < verbose) && println("Terms after controlled reduction: $Reductions")
     R = parent(T[1,1])
     frob_mat_temp = []
     denomArray = []
-    ev = gen_exp_vec(n+1,d*n-n-1,termorder)
+    ev = cache[d*n-n-1]#gen_exp_vec(n+1,d*n-n-1,termorder)
     VS = matrix_space(R,length(ev),1)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
@@ -281,8 +326,13 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     n = nvars(PR) - 1
     d = total_degree(f)
     R = coefficient_ring(PR)
+    if S == [-1]
+        S = collect(0:n)
+    end
 
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
+
+    cache = controlled_reduction_cache(n,d,S,termorder)
 
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
@@ -317,9 +367,6 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
 
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
-    if S == [-1]
-        S = collect(0:n)
-    end
 
     if (0 < verbose)
         println("Starting linear algebra problem")
@@ -409,7 +456,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     #end
     #TODO: check which algorithm we're using
     (2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params) 
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache) 
     (1 < verbose) && println(Reductions)
     #return Reductions
     #if (1 < verbose)
@@ -420,9 +467,10 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     #        println()
     #    end 
     #end 
-    ev = gen_exp_vec(n+1,n*d-n-1,termorder)
+    ev = cache[n*d - n - 1] 
+    #ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
-    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params)
+    FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, cache)
     # display(FM)
     (9 < verbose) && println("The Frobenius matrix is $FM")
 

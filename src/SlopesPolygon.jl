@@ -103,18 +103,22 @@ end
 """
 Given an array of vertices
 """
-function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
+#function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
+function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
     #TODO implement
     
     n = length(vertices)-1
     slopelengths = zeros(Int,n)
     slopes = zeros(Rational{Int},n)
-    for i = 2:n
+    for i = 2:n+1
         slopevec = vertices[i] .- vertices[i-1]
-        push!(slopes, slopevec[2] // slopevec[1])
-        push!(slopelengths,slopevec[2])
+        #push!(slopes, slopevec[2] // slopevec[1])
+        #push!(slopelengths,slopevec[2])
+        slopes[i-1] = slopevec[2] // slopevec[1]
+        slopelengths[i-1] = slopevec[2]
     end
-
+    println(slopelengths)
+    println(slopes)
     SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
 end
 

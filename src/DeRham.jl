@@ -14,6 +14,7 @@ using Memoize
 #include("NemoAdditions.jl")
 
 include("Utils.jl")
+include("GradedExpCache.jl")
 include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
@@ -31,6 +32,7 @@ include("ExamplePolynomials.jl")
 
 include("ZetaFunction.jl")
 include("PointCounts.jl")
+include("NewtonPolygon.jl")
 
 # TODO: export Zeta Function functions
 
