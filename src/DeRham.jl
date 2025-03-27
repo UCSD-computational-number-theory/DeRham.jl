@@ -30,6 +30,7 @@ include("ExamplePolynomials.jl")
 
 include("ZetaFunction.jl")
 include("PointCounts.jl")
+include("NewtonPolygon.jl")
 
 # TODO: export Zeta Function functions
 
