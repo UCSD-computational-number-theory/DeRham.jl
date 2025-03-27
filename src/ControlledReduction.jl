@@ -142,7 +142,7 @@ function my_sub!(A,B,C)
 end
 
 function my_sub!(A::ZZModMatrix,B::ZZModMatrix,C::ZZModMatrix)
-    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_add(A::Ref{ZZModMatrix},
+    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_sub(A::Ref{ZZModMatrix},
                                                 B::Ref{ZZModMatrix},
                                                 C::Ref{ZZModMatrix},
                                                 base_ring(B).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
@@ -610,7 +610,13 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
     mins = similar(J)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
-    (5 < params.verbose) && println("Starting: g = $((gMat))")
+    (5 < params.verbose) && begin
+        if params.always_use_bigints
+            println("Starting: g = $((gMat))")
+        else
+            println("Strting: g = $(Int.(gMat))")
+        end
+    end
 
     firsttime = true
 
@@ -655,7 +661,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         #        println(matrices[i][:,end])
         #    end
         #end
-        (6 < params.verbose && V == [1,2,0] && firsttime) && begin println(matrices); firsttime=false end
+        (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
 
         computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
         #(5 < params.verbose && firsttime) && begin 
@@ -679,7 +685,11 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         (4 < params.verbose) && println("J = $J")
         if (5 < params.verbose) 
             g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            println("g = $((gMat)) = $g")
+            if params.always_use_bigints
+                println("g = $((gMat)) = $g")
+            else
+                println("g = $(Int.(gMat)) = $g")
+            end
         end
         
     end
@@ -1124,8 +1134,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    Threads.@threads for i in 1:length(FT) #pol in FT
-    #for i in 1:length(FT) #pol in FT
+    #Threads.@threads for i in 1:length(FT) #pol in FT
+    for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1192,10 +1202,10 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     end
 
     
-    (6 < params.verbose) && begin 
-        println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
-        println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
-    end
+    #(6 < params.verbose) && begin 
+    #    println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
+    #    println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
+    #end
 end
 
 function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
