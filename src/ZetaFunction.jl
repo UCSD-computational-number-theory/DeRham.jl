@@ -28,9 +28,10 @@ struct ZetaFunctionParams
     vars_reversed::Bool
     fastevaluation::Bool
     always_use_bigints::Bool
+    use_gpu::Bool
 end
 
-default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false,false)
+default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false,false,false)
 
 """
     compute_frobenius_matrix(n,d,Reductions,T)
@@ -269,7 +270,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false)
+function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -281,7 +282,7 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
     d = total_degree(f)
     R = coefficient_ring(PR)
 
-    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints)
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
 
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
