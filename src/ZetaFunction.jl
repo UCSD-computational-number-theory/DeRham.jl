@@ -376,6 +376,15 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
         f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params)
     end
 
+    basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
+    println(basis)
+
     #=
     BasisTLift = []
     for i in basis
