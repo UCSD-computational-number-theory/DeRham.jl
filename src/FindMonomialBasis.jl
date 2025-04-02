@@ -113,6 +113,9 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
         vars = reverse(vars)
         #notS = reverse(notS)
     end
+    #println("partials = $partials")
+    #println("Stilda = $Stilda")
+    #println("vars = $vars")
 
     col_idx = 1
     for i in 1:(n+1)

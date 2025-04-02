@@ -315,7 +315,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     p = Int64(characteristic(parent(f)))
     q = p
     n = nvars(parent(f)) - 1
@@ -370,20 +370,23 @@ function zeta_function(f; S=[-1], verbose=false, givefrobmat=false, algorithm=:c
 
     if (0 < verbose)
         println("Starting linear algebra problem")
-        @time f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params)
+        @time f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     else
-        #pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f,S,l,M,params)
-        f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params)
+        f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     end
 
-    basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
-    Basis = []
-    for i in 1:n
-        for j in basis[i]
-            push!(Basis,[j,i])
+    # recomputes basis if f is different 
+    if f_changed 
+        (9 < verbose) && println("New model is $f")
+        basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
+        Basis = []
+        for i in 1:n
+            for j in basis[i]
+                push!(Basis,[j,i])
+            end
         end
-    end
-    println(basis)
+        (9 < verbose) && println("New basis of cohomology is $Basis")
+    end 
 
     #=
     BasisTLift = []
