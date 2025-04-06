@@ -221,7 +221,8 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
 
     p = characteristic(base_ring(parent(f)))
-    fix(x) = x < 0 ? x+p : x % p
+    #fix(x) = x < 0 ? x+p : x % p
+    fix(x) = ((x % p) + p) % p
     U .= fix.(U)
     (6 < params.verbose) && println("controlled matrix: \n$U")
 
