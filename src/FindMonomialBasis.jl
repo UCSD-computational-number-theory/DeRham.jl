@@ -216,13 +216,39 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
+
     
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
 
+    p = characteristic(base_ring(parent(f)))
+    fix(x) = x < 0 ? x+p : x % p
+    U .= fix.(U)
+    (6 < params.verbose) && println("controlled matrix: \n$U")
+
+#=    println(typeof(U))
+    U = matrix(ZZ,[0   0   0   0   0   0  0  0  0  0  0  0  6  0  0  0  0  0
+  4   0   0   0   0   0  0  0  0  0  0  0  0  6  0  0  0  0
+  0   4   0   0   0   0  9  0  0  0  0  0  0  0  6  0  0  0
+  0   0   4   0   0   0  0  9  0  0  0  0  0  0  0  0  0  0
+  0   0   0   0   0   0  0  0  9  0  0  0  0  0  0  0  0  0
+  0   0   0   0   0   0  4  0  0  0  0  0  0  0  0  6  0  0
+  2   0   0   4   0   0  0  4  0  0  0  0  4  0  0  0  6  0
+  0   2   0   0   4   0  0  0  4  9  0  0  0  4  0  0  0  0
+  0   0   2   0   0   0  0  0  0  0  9  0  0  0  4  0  0  0
+ 18   0   0   0   0   0  1  0  0  4  0  0  0  0  0  0  0  6
+  0  18   0   2   0   4  0  1  0  0  4  0  0  0  0  4  0  0
+  0   0  18   0   2   0  0  0  1  0  0  9  0  0  0  0  4  0
+  0   0   0  18   0   0  0  0  0  1  0  4  0  0  0  0  0  0
+  0   0   0   0  18   2  0  0  0  0  1  0  0  0  0  0  0  4
+  0   0   0   0   0  18  0  0  0  0  0  1  0  0  0  0  0  0])
+  =#
+  
     temp = size(U)
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
+    (6 < params.verbose) && println("pinv mod p: \n$B")
+
     if flag
         return (U,B)
     else 
