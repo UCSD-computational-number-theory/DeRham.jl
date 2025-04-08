@@ -20,13 +20,14 @@ function find_Ssmooth_model(f, M, S_target, params, changef)
 
     #bool = true 
     f_transformed = f
-    #while bool
+    #println(f_transformed)
     num_iter = 100
     f_changed = false 
     for i in 1:num_iter 
         try 
             pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params)
             #bool = false
+            
             return f_changed, f_transformed, pseudo_inverse_mat_new
         catch e
             if !changef
@@ -45,6 +46,7 @@ function find_Ssmooth_model(f, M, S_target, params, changef)
                 f_changed = true 
             end
         end 
-    end 
+    end
+    return false 
     
 end 

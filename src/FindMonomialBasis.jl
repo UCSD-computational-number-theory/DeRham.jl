@@ -88,18 +88,20 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
         Stilda[i+1] = 1
     end
 
-    in_set_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder)
-    not_in_set_mons = compute_monomials(n+1, l - d, PR, params.termorder)
+    in_S_mons_vec = gen_exp_vec(n+1, l-(d-1), params.termorder)
+    not_in_S_mons_vec = gen_exp_vec(n+1, l-d, params.termorder)
+    #in_set_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder)
+    #not_in_set_mons = compute_monomials(n+1, l - d, PR, params.termorder)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
     cols = len_S * in_set_section + (n + 1 - len_S) * not_in_set_section
 
     if len_S > 0
-        @assert(length(in_set_mons) > 0)
+        @assert(length(in_S_mons_vec) > 0)
     end
     if len_S < n+1
-        @assert(length(not_in_set_mons) > 0)
+        @assert(length(not_in_S_mons_vec) > 0)
     end
     
     U = matrix_space(R, binomial(n + l, n), cols)
@@ -111,22 +113,33 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
         partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
         Stilda = reverse(Stilda)
         vars = reverse(vars)
-        #notS = reverse(notS)
+        #in_S_mons = gen_mon([reverse(tmp) for tmp in in_S_mons_vec],R,PR)
+        #not_in_S_mons = gen_mon([reverse(tmp) for tmp in not_in_S_mons_vec],R,PR)
+        
+        # this is the correct one
+        in_S_mons = gen_mon(in_S_mons_vec, R, PR)
+        not_in_S_mons = gen_mon(not_in_S_mons_vec, R, PR)
+    else
+        in_S_mons = gen_mon(in_S_mons_vec, R, PR)
+        not_in_S_mons = gen_mon(not_in_S_mons_vec, R, PR)
     end
     #println("partials = $partials")
     #println("Stilda = $Stilda")
     #println("vars = $vars")
+    #println("in_S_mons = $in_S_mons")
 
     col_idx = 1
     for i in 1:(n+1)
         if Stilda[i] == 1
-            for monomial in eachindex(in_set_mons)
-                M[:, col_idx] = polynomial_to_vector(in_set_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
+            for monomial in eachindex(in_S_mons)
+                #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, R, PR, params.termorder, params.vars_reversed)
+                M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, R, PR, params.termorder)
                 col_idx = col_idx + 1
             end
         else
-            for monomial in eachindex(not_in_set_mons)
-                M[:, col_idx] = polynomial_to_vector(not_in_set_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
+            for monomial in eachindex(not_in_S_mons)
+                #M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder, params.vars_reversed)
+                M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, R, PR, params.termorder)
                 col_idx = col_idx + 1
             end
         end 
@@ -216,8 +229,11 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
     fLift = liftCoefficients(ZZ,PRZZ,f)
-    
+    #println("fLift=$fLift")
+
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
+    #U = compute_controlled_matrix(f, l, S, R, PR, params)
+    println("U=$U")
 
     temp = size(U)
     
@@ -255,10 +271,12 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params)
     lift_to_int64(s) = Int64.(map(x -> lift(ZZ,x),s))
 
     Sol_mod_p_int = lift_to_int64(Sol_fp)
+    #U_int = lift_to_int64(U)
 
     #println("Solution mod p: $Sol_fp")
+    #println("U lifted: $U_int")
 
-    p = characteristic(parent(f))
+    p = characteristic(PR)
     return henselLift(p,M,U,Sol_mod_p_int)
 end
 

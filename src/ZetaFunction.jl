@@ -374,10 +374,11 @@ function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false
     else
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     end
+    println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
     # recomputes basis if f is different 
     if f_changed 
-        (9 < verbose) && println("New model is $f")
+        (0 < verbose) && println("New model is $f")
         basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
         Basis = []
         for i in 1:n

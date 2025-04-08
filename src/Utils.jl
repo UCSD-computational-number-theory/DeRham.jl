@@ -323,15 +323,21 @@ R - the base ring
 PR - the polynomial ring, i.e. it is parent(f)
 order - a symbol which denotes the term order
 """
-function polynomial_to_vector(f, n, R, PR, order=:lex)
-    vars = gens(PR)
+function polynomial_to_vector(f, n, R, PR, order=:lex, vars_reversed=false)
+    #vars = gens(PR)
 
     #TODO: if f turns out to be zero, we don't know what the degree should be.
     #
     #How best to fix this?
     d = total_degree(f)
+    mon_vec = gen_exp_vec(n,d,order)
+    if vars_reversed 
+        mon = gen_mon([reverse(tmp) for tmp in mon_vec], R, PR)
+    else 
+        mon = compute_monomials(n, d, PR, order)
+    end 
 
-    mon = compute_monomials(n, d,PR,order)
+    #mon = compute_monomials(n, d,PR,order)
     res = fill(R(0), length(mon))
     for i in eachindex(mon)
         res[i] = coeff(f, mon[i])
@@ -347,7 +353,7 @@ vector_to_polynomial(vect, n, d, PR, order=:lex)
 Convert vector to polynomial with specified order. Default is lexicographic.
 
 vect - vector of coefficients
-n - number of variables
+n - number of variables-1
 d - homogeneous degree
 PR - polynomial ring to be the parent of the return value
 order - a symbol which denotes the term order
