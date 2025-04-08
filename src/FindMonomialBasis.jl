@@ -234,11 +234,13 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
     println("U=$U")
-
+  
     temp = size(U)
     
     flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     
+    (6 < params.verbose) && println("pinv mod p: \n$B")
+
     if flag
         return (U,B)
     else 
