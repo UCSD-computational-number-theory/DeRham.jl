@@ -222,10 +222,10 @@ function precision_information(f,basis,verbose=0)
     hodge_numbers = hodge_polygon.slopelengths
     (0 < verbose) && println("Hodge numbers = $hodge_numbers")
 
-    if verbose == -1 
+    #if verbose == -1 
     #if (n == 3) && (p == 3) && (d == 4)
-       return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
-    end 
+    #   return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
+    #end 
 
     k = sum(hodge_numbers) # dimension of H^n
     (0 < verbose) && println("There are $k basis elements in H^$n")
@@ -316,16 +316,13 @@ vars_reversed -- reverses the order of basis vectors at various places
 
 """
 function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
-    p = Int64(characteristic(parent(f)))
-    q = p
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
     PR = parent(f)
+    R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
     q = p
     n = nvars(PR) - 1
     d = total_degree(f)
-    R = coefficient_ring(PR)
+    
     if S == [-1]
         S = collect(0:n)
     end
@@ -374,7 +371,13 @@ function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false
     else
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     end
-    println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
+
+    if !f 
+        println("f is not smooth and we're done. ")
+        return false
+    end 
+
+    (9 < verbose) && println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
     # recomputes basis if f is different 
     if f_changed 
