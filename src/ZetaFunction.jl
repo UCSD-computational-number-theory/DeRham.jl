@@ -372,7 +372,7 @@ function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     end
 
-    if !f 
+    if (f == false)
         println("f is not smooth and we're done. ")
         return false
     end 
