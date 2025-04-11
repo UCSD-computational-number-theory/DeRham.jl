@@ -234,6 +234,8 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
     #println("U=$U")
+    
+    (6 < params.verbose) && println("controlled matrix: \n$U")
   
     temp = size(U)
     
