@@ -1143,8 +1143,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    #Threads.@threads for i in 1:length(FT) #pol in FT
-    for i in 1:length(FT) #pol in FT
+    Threads.@threads for i in 1:length(FT) #pol in FT
+    #for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
