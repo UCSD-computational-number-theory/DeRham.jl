@@ -1363,11 +1363,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
                     result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
-                    if V == [0,2,1] && ev1[i] == [0,0,4]
-                        println("distance: $distance")
-                        println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
-                        println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
-                    end
+                    #if V == [0,2,1] && ev1[i] == [0,0,4]
+                    #    println("distance: $distance")
+                    #    println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
+                    #    println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
+                    #end
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             else
