@@ -64,8 +64,8 @@ function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
 end
 
 function my_mul!(A::zzModMatrix, B::zzModMatrix, c)
-    p = characteristic(base_ring(parent(A)))
-    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + p)
+    n = characteristic(base_ring(parent(A)))
+    ui(i) = 0 ≤ i ? UInt(i % n) : UInt((i % n) + n)
     c = ui(c)
     @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},
                                                    B::Ref{zzModMatrix},
@@ -1143,8 +1143,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    Threads.@threads for i in 1:length(FT) #pol in FT
-    #for i in 1:length(FT) #pol in FT
+    #Threads.@threads for i in 1:length(FT) #pol in FT
+    for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
