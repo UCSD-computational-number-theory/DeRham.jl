@@ -1134,8 +1134,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    #Threads.@threads for i in 1:length(FT) #pol in FT
-    for i in 1:length(FT) #pol in FT
+    Threads.@threads for i in 1:length(FT) #pol in FT
+    #for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1196,8 +1196,8 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,params.termorder)
-    #Threads.@threads for V in evs
-    for V in evs
+    Threads.@threads for V in evs
+    #for V in evs
         computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     end
 

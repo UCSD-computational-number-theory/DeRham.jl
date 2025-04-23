@@ -29,7 +29,7 @@ function zeta_function_k3f3(f; S=[-1],verbose=false, precise=true, changef=true,
 
     (9 < verbose) && println("Basis of cohomology is $Basis")
     
-    hodge_polygon = hodgepolygon([1, 19, 1])
+    hodge_polygon = SlopesPolygon([1, 19, 1])
 
     if precise 
         (r_m, N_m, M) = ([3, 4, 5], [7, 7, 8], 16)  # guaranteed to give the correct zeta function
@@ -64,8 +64,8 @@ function zeta_function_k3f3(f; S=[-1],verbose=false, precise=true, changef=true,
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
     end
 
-    if !f 
-        println("f is not smooth and we're done. ")
+    if f == false 
+        println("f is not smooth and we're done.")
         return false
     end 
 
