@@ -31,7 +31,7 @@ struct ZetaFunctionParams
     use_gpu::Bool
 end
 
-default_params() = ZetaFunctionParams(false,false,:costachunks,:invlex,true,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,true,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -220,7 +220,7 @@ function precision_information(f,basis,verbose=0)
 
     hodge_polygon = hodgepolygon(basis, n)
     hodge_numbers = hodge_polygon.slopelengths
-    (0 < verbose) && println("Hodge numbers = $hodge_numbers")
+    (0 < verbose) && print_precision_info(n,d,p)
 
     #if verbose == -1 
     #if (n == 3) && (p == 3) && (d == 4)
@@ -315,7 +315,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -331,6 +331,7 @@ function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false
 
     cache = controlled_reduction_cache(n,d,S,termorder)
 
+    (0 < verbose) && println("p = $p")
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
     basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
@@ -346,7 +347,6 @@ function zeta_function(f; S=[-1], verbose=false, changef=true, givefrobmat=false
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
-    (0 < verbose) && println("algorithm precision: $M, series precision: $N_m") 
 
     if always_use_bigints || BigInt(2)^64 < BigInt(p)^M
         residue = BigInt(p)^M

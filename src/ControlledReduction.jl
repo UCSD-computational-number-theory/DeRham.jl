@@ -64,8 +64,8 @@ function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
 end
 
 function my_mul!(A::zzModMatrix, B::zzModMatrix, c)
-    p = characteristic(base_ring(parent(A)))
-    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + p)
+    n = characteristic(base_ring(parent(A)))
+    ui(i) = 0 ≤ i ? UInt(i % n) : UInt((i % n) + n)
     c = ui(c)
     @ccall Oscar.Nemo.libflint.nmod_mat_scalar_mul(A::Ref{zzModMatrix},
                                                    B::Ref{zzModMatrix},
@@ -127,7 +127,9 @@ function my_copy!(a::Vector{ZZRingElem},b::Vector{ZZRingElem})
 end
 
 function my_zero!(a)
-    zero!(a)
+    fill!(a,zero(eltype(a)))
+    # apparently, the following is not implemented in Julia, it's an Oscar method
+    #zero!(a)
 end
 
 
@@ -687,8 +689,10 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
             g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
             if params.always_use_bigints
                 println("g = $((gMat)) = $g")
-            else
+            elseif params.fastevaluation
                 println("g = $(Int.(gMat)) = $g")
+            else 
+                println("g = $(gMat) = $g")
             end
         end
         
@@ -821,7 +825,6 @@ function costadata_of_initial_term!(term,g,n,d,p,S,termorder)
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
-    #TODO: put a check to make see if we are using BigInts here
     my_zero!(g)
 
     for j in axes(g,1)
@@ -882,7 +885,13 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
 
     g = vector_to_polynomial(g_vec,n,d*n-n,PR,params.termorder)
 
-    (5 < params.verbose) && println("$(Int.(g_vec)) --> $g")
+    (5 < params.verbose) && begin
+        if params.fastevaluation
+            println("$(Int.(g_vec)) --> $g")
+        else
+            println("$(g_vec) --> $g")
+        end
+    end
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
     [prod(vars .^ u) * g, n]
@@ -1354,11 +1363,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
                     result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
-                    if V == [0,2,1] && ev1[i] == [0,0,4]
-                        println("distance: $distance")
-                        println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
-                        println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
-                    end
+                    #if V == [0,2,1] && ev1[i] == [0,0,4]
+                    #    println("distance: $distance")
+                    #    println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
+                    #    println("constsant : $((ev3[k][n+1-j+1])*gJS[distance+k,1]) for term $(ev3[k])")
+                    #end
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             else

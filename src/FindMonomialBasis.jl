@@ -50,6 +50,9 @@ function compute_basis_matrix(f, l, m, R, PR, termorder)
 
     partials = [ derivative(f, i) for i in 1:n+1 ]
 
+    #TODO: if the user makes a mistake and puts in a surface that
+    #has two few variables, the error happens here.
+    #We should probably double check for this in ZetaFunction.jl
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
             M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, R, PR, termorder)
@@ -233,7 +236,8 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params)
 
     U = compute_controlled_matrix(fLift, l, S, ZZ, PRZZ, params)
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
-    println("U=$U")
+    
+    (6 < params.verbose) && println("controlled matrix: \n$U")
   
     temp = size(U)
     

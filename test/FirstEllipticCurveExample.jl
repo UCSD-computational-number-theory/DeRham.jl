@@ -1,12 +1,15 @@
 #module TestControlledReduction
 
 
+# vars_reversed =true, do not use fast evaluation, bigints, or the gpu
+first_ellcurve_params() = DeRham.ZetaFunctionParams(0,true,:costachunks,:invlex,true,false,false,false)
+
 function testEllCurve1_7()
     n = 2
-    d = 3
+    #d = 3
     p = 7
-    series_precision = 2
-    absolute_precision = 3
+    #series_precision = 2
+    #absolute_precision = 3
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
@@ -18,13 +21,14 @@ end
 
 function testMonomialBasis()
     n = 2
-    d = 3
+    #d = 3
     p = 7
     R = GF(p)
     PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
-    @test DeRham.compute_monomial_bases(f,R,PR,:invlex) == [[1],[z^3]]
+    params = first_ellcurve_params()
+    @test DeRham.compute_monomial_bases(f,R,PR,params.termorder) == [[1],[z^3]]
 end
 
 function testLinAlgProb()
@@ -39,7 +43,8 @@ function testLinAlgProb()
     S = [0,1,2]
     l = d * n - n + d - length(S)
     M = 3
-    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,:invlex,true)) == 
+    params = first_ellcurve_params()
+    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,params)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -92,7 +97,9 @@ function testFrobTrans()
     end
     #M = 15
 
-    frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p,:invlex,true)
+    params = first_ellcurve_params()
+
+    frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p,params)
 
     x0,x1,x2 = PVars
 
@@ -150,6 +157,7 @@ function testRedOfTerms()
     S = [0,1,2]
     N = [2,2]
     M = 3
+    params = first_ellcurve_params()
     
     # TODO: change other instances of pseudo_inverse_controlled in this file and ZetaFunction.jl to this method
     S = [0,1,2]
@@ -193,14 +201,16 @@ function testRedOfTerms()
             push!(Basis,[j,i])
         end
     end
-    FBasis = DeRham.applyFrobeniusToBasis(Basis, fLift, N, p, :invlex,true)
+    FBasis = DeRham.applyFrobeniusToBasis(Basis, fLift, N, p, params)
     #pseudoInverseMat = zeros(PrecisionRing,nrows(pseudoInverseMatTemp),ncols(pseudoInverseMatTemp))
     #for i in 1:nrows(pseudoInverseMat)
     #    for j in 1:ncols(pseudoInverseMat) 
     #        pseudoInverseMat[i,j] = PrecisionRing(lift(ZZ,pseudoInverseMatTemp[i,j]))
     #    end
     #end
-    Reductions = DeRham.reducetransform(FBasis, N, S, fLift, matrix(PrecisionRing,pseudo_inverse_mat), p, :invlex, :costachunks,true,false)
+    cache = DeRham.controlled_reduction_cache(n,d,[0,1,2],params.termorder)
+
+    Reductions = DeRham.reducetransform(FBasis, N, S, fLift, matrix(PrecisionRing,pseudo_inverse_mat), p, params,cache)
     ev = DeRham.gen_exp_vec(n+1,n*d-n-1,:invlex)
     reductions_as_rows = DeRham.convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
     RR = parent(reductions_as_rows[1,1])
@@ -218,10 +228,11 @@ function testT()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     M = 3
+    params = first_ellcurve_params()
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     basis = DeRham.compute_monomial_bases(f,R,PR,:invlex)
-    @test Array(DeRham.computeT(f,basis,M,:invlex,true)) == 
+    @test Array(DeRham.computeT(f,basis,M,params)) == 
     [257 0 85 0 0 0 172 257 0 0;
      172 0 52 0 114 0 0 170 0 1]
 end

@@ -241,7 +241,7 @@ function calculate_series_precision(p,n,r_m)
     
     N = [(r_m[m] == 0 ? 0 : r_m[m] - m + 1 + bounds[p*m]) for m in 1:n]
 
-    println("Series precision: $N")
+    #println("Series precision: $N")
     N
 end
 
