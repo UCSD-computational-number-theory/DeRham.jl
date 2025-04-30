@@ -55,6 +55,7 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
     if vars_reversed == false
         beta = reverse(beta)
     end
+    (9 < verbose) && println("Applying Frobenius to $beta with pole order $m")
     (9 < verbose) && println("N=$N, m=$m")
     (9 < verbose) && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
@@ -131,7 +132,7 @@ function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     result = []
     for b in Basis
         Fmon = applyFrobeniusToMon(n,d,f,N_m[b[2]],p,exponent_vector(b[1],1),b[2],R,PR,termorder,vars_reversed,verbose=verbose)
-        (9 < verbose) && println(Fmon)
+        (9 < verbose) && println("Applying Frobenius to $b gives $Fmon")
         push!(result, Fmon)
     end
     return result

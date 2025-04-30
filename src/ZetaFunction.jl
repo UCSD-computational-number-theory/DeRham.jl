@@ -373,7 +373,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     end
 
     if (f == false)
-        println("f is not smooth and we're done. ")
+        println("f is not smooth (or not S-smooth) and we're done. ")
         return false
     end 
 
@@ -421,7 +421,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     if (0 < verbose)
-        println("Applying Frobenius to basis...")
+        println("Applying Frobenius to basis elements")
         @time FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
     else
         FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
@@ -471,7 +471,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #    end
     #end
     #TODO: check which algorithm we're using
-    (2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
+    #(2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache) 
     (1 < verbose) && println(Reductions)
     #return Reductions

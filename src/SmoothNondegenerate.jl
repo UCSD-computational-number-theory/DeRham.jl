@@ -32,7 +32,7 @@ function find_Ssmooth_model(f, M, S_target, params, changef)
         catch e
             if !changef
                 throw(ArgumentError("f is not $S_target smooth"))
-                return false
+                return false, false, false 
             end 
             (0 < params.verbose) && println("This f is not S-smooth, changing to one that is")
             if isa(e, ArgumentError) && e.msg == "f is not smooth"

@@ -358,7 +358,7 @@ d - homogeneous degree
 PR - polynomial ring to be the parent of the return value
 order - a symbol which denotes the term order
 """
-function vector_to_polynomial(vect, n, d, PR, order=:lex)
+function vector_to_polynomial(vect, n, d, PR, order=:lex, vars_reversed=false)
     
     C = MPolyBuildCtx(PR)
     R = base_ring(PR)
@@ -366,7 +366,11 @@ function vector_to_polynomial(vect, n, d, PR, order=:lex)
     @assert length(vect) == length(exp_vecs) "vector has incorrect length for the specified degree"
     for i in eachindex(vect)
         #res += PR(vect[i]) * mon[i]
-        push_term!(C, R(vect[i]), exp_vecs[i])
+        if vars_reversed
+            push_term!(C, R(vect[i]), reverse(exp_vecs[i]))
+        else 
+            push_term!(C, R(vect[i]), exp_vecs[i])
+        end
     end
     res = finish(C)
 
