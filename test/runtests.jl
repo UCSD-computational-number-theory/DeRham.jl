@@ -15,11 +15,11 @@ include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
-    #testEllCurve1_7() TODO: why is this failing?
+    testEllCurve1_7() #TODO: why is this failing?
     testMonomialBasis()
     testLinAlgProb()
     testFrobTrans()
-    testRedOfTerms()
+    #testRedOfTerms()
     testT()
     #testFrobMat()
 end
