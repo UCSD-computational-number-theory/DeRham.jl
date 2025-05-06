@@ -93,8 +93,8 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
 
     in_S_mons_vec = gen_exp_vec(n+1, l-(d-1), params.termorder)
     not_in_S_mons_vec = gen_exp_vec(n+1, l-d, params.termorder)
-    #in_set_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder)
-    #not_in_set_mons = compute_monomials(n+1, l - d, PR, params.termorder)
+    in_S_mons = gen_mon(in_S_mons_vec, R, PR)
+    not_in_S_mons = gen_mon(not_in_S_mons_vec, R, PR)
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -115,16 +115,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params)
     if params.vars_reversed == true
         partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
         Stilda = reverse(Stilda)
-        vars = reverse(vars)
-        #in_S_mons = gen_mon([reverse(tmp) for tmp in in_S_mons_vec],R,PR)
-        #not_in_S_mons = gen_mon([reverse(tmp) for tmp in not_in_S_mons_vec],R,PR)
-        
-        # this is the correct one
-        in_S_mons = gen_mon(in_S_mons_vec, R, PR)
-        not_in_S_mons = gen_mon(not_in_S_mons_vec, R, PR)
-    else
-        in_S_mons = gen_mon(in_S_mons_vec, R, PR)
-        not_in_S_mons = gen_mon(not_in_S_mons_vec, R, PR)
+        vars = reverse(vars)        
     end
     #println("partials = $partials")
     #println("Stilda = $Stilda")

@@ -150,6 +150,13 @@ end
     runcsvtest("dim_1_deg_4_many.csv",zeta_function=zf)
 end
 
+@testset "CPU Cubic Surfaces" begin
+    # do dimension 2, degree 3 and 
+    zf = f -> DeRham.zeta_function(f,S=[1,2],algorithm=:naive,fastevaluation=true)
+
+    runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
+end 
+
 #@testset "Threefolds" begin
 #    runcsvtest("threefolds.csv")
 #end

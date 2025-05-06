@@ -341,7 +341,6 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
             push!(Basis,[j,i])
         end
     end
-
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
