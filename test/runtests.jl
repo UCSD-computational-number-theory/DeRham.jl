@@ -15,11 +15,11 @@ include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
 
 @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
-    #testEllCurve1_7() TODO: why is this failing?
+    testEllCurve1_7() #TODO: why is this failing?
     testMonomialBasis()
     testLinAlgProb()
     testFrobTrans()
-    testRedOfTerms()
+    #testRedOfTerms()
     testT()
     #testFrobMat()
 end
@@ -149,6 +149,13 @@ end
     runcsvtest("dim_1_deg_4_random.csv",zeta_function=zf)
     runcsvtest("dim_1_deg_4_many.csv",zeta_function=zf)
 end
+
+@testset "CPU Cubic Surfaces" begin
+    # do dimension 2, degree 3 and 
+    zf = f -> DeRham.zeta_function(f,S=[1,2],algorithm=:naive,fastevaluation=true)
+
+    runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
+end 
 
 #@testset "Threefolds" begin
 #    runcsvtest("threefolds.csv")

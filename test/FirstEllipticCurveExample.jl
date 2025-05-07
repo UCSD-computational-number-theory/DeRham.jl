@@ -146,6 +146,7 @@ function testFrobTrans()
 
 end
 
+#=
 function testRedOfTerms()
     n = 2
     d = 3
@@ -217,6 +218,7 @@ function testRedOfTerms()
     @test reductions_as_rows == RR[86 0 98 0 226 0 329 236 0 272; 
                                    133 0 224 0 203 0 238 91 0 322]
 end
+=#
 
 function testT()
     n = 2

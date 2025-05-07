@@ -195,18 +195,21 @@ c
 end
 
 """
-    chooseV(I, d)
+    chooseV(I, d, S)
 Choose the direction of reduction V following Edgar's method
 
 INPUTS: 
 * "I" -- list/tuple, exponents of monomials
-* "d" -- integer, degree of f 
+* "d" -- integer, degree of f
+* "S" -- list 
 """
-function chooseV(I, d)
+function chooseV(I, d, S)
     v = zeros(Int,length(I))
     n = length(I)
 
     sum = 0
+    
+    #=
     for i in 1:n 
         if I[i] > 0
             v[i] = v[i] + 1
@@ -216,6 +219,19 @@ function chooseV(I, d)
             end
         end 
     end 
+    =#
+    
+    
+    for i in S 
+        if I[n-i] > 0
+            v[n-i] = v[n-i] + 1
+            sum = sum + 1
+            if sum >= d 
+                break
+            end
+        end 
+    end 
+    
 
     while sum < d
         for i in 0:(n-1) 
@@ -347,7 +363,7 @@ end
 
 
 """
-    rev_tweak(I,m)
+    rev_tweak(J,m)
 
 If for a vectors of ints, I, we let |I| = sum(I[i]). This function returns I after removing an integer vector, J, with |J| = m
 from it
@@ -445,7 +461,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     if params.vars_reversed == false
         V = rev_chooseV(Array{Int}(divexact.(I,p)),d)
     else
-        V = chooseV(Array{Int}(divexact.(I,p)),d)
+        V = chooseV(Array{Int}(divexact.(I,p)),d, S)
     end
     (4 < verbose) && println("LOOK! I=$I, V = $V")
 
@@ -472,11 +488,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     #    become the bottleneck, fix the rest of this method
     #    so it doesn't allocate.
     U = I .- (nend-(d*n-n))*V
-    reverse!(U)
+    #reverse!(U)
 
-    reverse!(V)
+    #reverse!(V)
     B,A = computeRPoly_LAOneVar2!(B,A,matrices,U,V,R,temp)
-    reverse!(V) # put V back to normal
+    #reverse!(V) # put V back to normal
 
     i = 1
 
@@ -524,9 +540,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
         #error()
 
         if params.vars_reversed == true
-            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
+            #B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
+            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y,R,temp)
         else
-            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
+            #B,A = computeRPoly_LAOneVar2!(B,A,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
+            B,A = computeRPoly_LAOneVar2!(B,A,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y,R,temp)
         end
         
         add!(temp,A,B)
@@ -607,16 +625,20 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     #ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
+    (9 < params.verbose) && println("u = $u") 
+    
+
     J = rev_tweak(u,n*d-n)
     gMat = context.g
     mins = similar(J)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
     (5 < params.verbose) && begin
+        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
         if params.always_use_bigints
-            println("Starting: g = $((gMat))")
-        else
-            println("Strting: g = $(Int.(gMat))")
+            println("Starting: g = $((gMat)) = $g_poly")
+        else    
+            println("Starting: g = $(Int.(gMat)) = $g_poly")
         end
     end
 
@@ -624,13 +646,13 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
 
 
     while m > n
-        V = chooseV(J,d)
+        V = chooseV(J, d, S)
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement will never hit.
             for i in 1:length(V)
-                if V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+                if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
                     print("Illegal choice of V!")
                     println("J = $J, S = $S")
                 end
@@ -665,7 +687,8 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         #end
         (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
 
-        computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
+        #computeRPoly_LAOneVar2!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
+        computeRPoly_LAOneVar2!(context.B,context.A,matrices,mins,V,R,context.temp)
         #(5 < params.verbose && firsttime) && begin 
         #    println("---")
         #    println(context.A[:,end])
@@ -674,10 +697,22 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
 
         i = 1
         if params.fastevaluation == false
+
+            params.verbose == 11 && println("gMat before is $gMat")
             while i <= K
                 gMat = (context.A+context.B*(K-i))*gMat
                 i = i+1
+                if params.verbose == 11
+                    A = context.A
+                    B = context.B
+                    #println("context.A is $A")
+                    #println("context.B is $B")
+                    g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
+                    println("gMat after $i is $gMat = $g")
+                    #error()
+                end
             end
+             
         else
             gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         end
@@ -801,42 +836,65 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
 end
 
 """
+    costadata_of_intial_term
 Returns the data used by costa's code given a polynomial term.
+More specifically, given a polynomial h, it writes h in the form 
+h = x^{rev_tweak(U)}g
 
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term!(term,g,n,d,p,S,termorder)
-
-    #(9 < verbose) && println("p: $p")
+function costadata_of_initial_term!(term,g,n,d,p,S,params)
+    termorder = params.termorder
+    vars_reversed = params.vars_reversed
 
     R = base_ring(parent(term[1])) 
-    #mod = modulus(R)
     i = term
 
-    ss = zeros(Int,n+1)
-    ss[S .+ 1] .= 1
+    Stilda = zeros(Int, n+1)
+    for i in S
+        Stilda[i+1] = 1
+    end
+
+    #ss = zeros(Int,n+1)
+    #ss[S .+ 1] .= 1
     #o = ones(Int,length(exponent_vector(i[1],1)))
-    II = exponent_vector(i[1],1) + ss
+    if vars_reversed
+        U = reverse(exponent_vector(i[1],1) + Stilda)
+    else
+        U = exponent_vector(i[1],1) + Stilda  # renamed II to U 
+    end
+    
     gCoeff = coeff(i[1],1)
 
     #V = chooseV(Array{Int}(divexact.(II,p)),d)
-    u = II - rev_tweak(II,n*d-n)
+    if vars_reversed 
+        g_exps = U - rev_tweak(U,n*d-n)  # renamed u to g_exps
+    else
+        g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
+    end 
     ev = gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
     my_zero!(g)
 
     for j in axes(g,1)
-        if u == ev[j]
-            g[j] = lift(gCoeff)
-            break
-        end
+        if vars_reversed
+            if g_exps == reverse(ev[j])
+                g[j] = lift(gCoeff)
+                break
+            end 
+        else
+            if g_exps == ev[j]
+                g[j] = lift(gCoeff)
+                break
+            end
+        end 
     end
 
 
     #(9 < verbose) && println("creation: u is type $(typeof(II))")
-    return (II,g)
+    return (U,g)
 end
 
 """
@@ -894,7 +952,11 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
     end
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
-    [prod(vars .^ u) * g, n]
+    if params.vars_reversed
+        return [prod(vars .^ reverse(u)) * g, n]
+    else
+        return [prod(vars .^ u) * g, n]
+    end
 end
 
 
@@ -1000,7 +1062,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
         for term in ωₑ
             #(9 < verbose) && println("term: $term")
             g = zeros(UInt,g_length) 
-            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,params.termorder)
+            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,params)
             #(9 < verbose) && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
@@ -1039,7 +1101,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
         terms = termsoforder(pol,term[2])
         #println(terms)
         for t in terms
-            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params.termorder)
+            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params)
             reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
@@ -1143,8 +1205,8 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #TODO: can reduce allocations by changing this for loop
     #  to a nested while inside for. Then only allocate one context
     #  thread, instead of one per reduction vector.
-    #Threads.@threads for i in 1:length(FT) #pol in FT
-    for i in 1:length(FT) #pol in FT
+    Threads.@threads for i in 1:length(FT) #pol in FT
+    #for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
@@ -1205,8 +1267,8 @@ function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     n = nvars(parent(f)) - 1
 
     evs = gen_exp_vec(n+1,d,params.termorder)
-    #Threads.@threads for V in evs
-    for V in evs
+    Threads.@threads for V in evs
+    #for V in evs
         computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     end
 
@@ -1291,6 +1353,10 @@ function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     return result
 end
 
+"""
+    computeRuvS
+Returns a list of n+2 matrices for the Ruv map as in Proposition 1.15
+"""
 function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
@@ -1304,11 +1370,29 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     else
         (4 < params.verbose) && println("New key: $V")
     end
-    ev1 = cache[n*d - n]#gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    ev4 = cache[n*d-n-length(S)]#gen_exp_vec(n+1,n*d-n-length(S),termorder)
+    ev1 = deepcopy(cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = deepcopy(cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = deepcopy(cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev4 = deepcopy(cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
     explookup = cache[n*d - n,:reverse]
+    if vars_reversed
+        for vec in ev1
+            reverse!(vec)
+        end 
+
+        for vec in ev2
+            reverse!(vec)
+        end 
+
+        for vec in ev3
+            reverse!(vec)
+        end 
+
+        for vec in ev4
+            reverse!(vec)
+        end     
+    end 
+    
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     matrixtype = eltype(valtype(Ruvs))
@@ -1318,7 +1402,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     end
     Stilda = zeros(Int, n+1)
     for i in S
-        Stilda[n+1-i] = 1
+        if vars_reversed
+            Stilda[n+1-i] = 1
+        else
+            Stilda[i+1] = 1
+        end
     end
     distances = Vector{Int64}(undef, n+1)
     for i in 1:(n+1)
@@ -1329,10 +1417,10 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
         end
     end
     distance = 0
-    for i in 1:length(ev1)
+    for i in 1:length(ev1)  # indexing over the columns of the Ruv matrices 
         mon = Vector{Int64}(undef, n+1)
-        for m in 1:(n+1)
-            mon[m] = ev1[i][m] + V[m] - Stilda[n+1-m+1]
+        for m in 1:(n+1)  # forming the polynomial x^v*g / x^S
+            mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
         gVec = MS2()
         for j in 1:length(ev2)
@@ -1342,27 +1430,31 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                 gVec[j] = R(0)
             end
         end
-        gJS = pseudoInverseMat*gVec
+        gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if
         #println("After LingAlg problem: $gJS")
         distance = 0
         for j in 1:(n+1)
             if Stilda[j] == 1
                 for k in 1:length(ev3)
                     for m in 1:(n+1)
-                        if m == n+1-j+1
-                            temp[m] = ev3[k][m] + Stilda[n+1-m+1] - 1
+                        if m == j
+                            temp[m] = ev3[k][m] + Stilda[m] - 1
                         else
-                            temp[m] = ev3[k][m] + Stilda[n+1-m+1]
+                            temp[m] = ev3[k][m] + Stilda[m]
                         end
                     end
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    l = get(explookup,temp,-1)
+                    if vars_reversed
+                        l = get(explookup, reverse(temp), -1)
+                    else 
+                        l = get(explookup,temp,-1)
+                    end 
                     #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev3[k][j])*gJS[distance+k,1]
                     #if V == [0,2,1] && ev1[i] == [0,0,4]
                     #    println("distance: $distance")
                     #    println("u_$(j) : $(gJS[distance+k,1]) for term $(ev3[k])")
@@ -1373,16 +1465,20 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
             else
                 for k in 1:length(ev4)
                     for m in 1:(n+1)
-                        temp[m] = ev4[k][m] + Stilda[n+1-m+1]
+                        temp[m] = ev4[k][m] + Stilda[m]
                     end
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    l = get(explookup,temp,-1)
+                    if vars_reversed
+                        l = get(explookup, reverse(temp), -1)
+                    else 
+                        l = get(explookup,temp,-1)
+                    end
                     #result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     #result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1):Int(j*(length(gJS)/(n+1))),:][k]
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
-                    result[1][l,i] = result[1][l,i] + (ev4[k][n+1-j+1])*gJS[distance+k,1] + gJS[distance+k,1]
+                    result[1][l,i] = result[1][l,i] + (ev4[k][j])*gJS[distance+k,1] + gJS[distance+k,1]
                     #println("$(result[j+1][l,i]) in $(j+1) && $(result[1][l,i]) in $(1)")
                 end
             end
