@@ -1353,6 +1353,10 @@ function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     return result
 end
 
+"""
+    computeRuvS
+Returns a list of n+2 matrices for the Ruv map as in Proposition 1.15
+"""
 function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
@@ -1366,17 +1370,29 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     else
         (4 < params.verbose) && println("New key: $V")
     end
-    ev1 = cache[n*d - n]#gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    ev4 = cache[n*d-n-length(S)]#gen_exp_vec(n+1,n*d-n-length(S),termorder)
-    if vars_reversed
-        ev1 = [reverse(tmp) for tmp in ev1]
-        ev2 = [reverse(tmp) for tmp in ev2]
-        ev3 = [reverse(tmp) for tmp in ev3]
-        ev4 = [reverse(tmp) for tmp in ev4]
-    end 
+    ev1 = deepcopy(cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = deepcopy(cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = deepcopy(cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev4 = deepcopy(cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
     explookup = cache[n*d - n,:reverse]
+    if vars_reversed
+        for vec in ev1
+            reverse!(vec)
+        end 
+
+        for vec in ev2
+            reverse!(vec)
+        end 
+
+        for vec in ev3
+            reverse!(vec)
+        end 
+
+        for vec in ev4
+            reverse!(vec)
+        end     
+    end 
+    
     temp = Vector{Int64}(undef, n+1)
     MS2 = matrix_space(R, length(ev2),1)
     matrixtype = eltype(valtype(Ruvs))
@@ -1401,9 +1417,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
         end
     end
     distance = 0
-    for i in 1:length(ev1)
+    for i in 1:length(ev1)  # indexing over the columns of the Ruv matrices 
         mon = Vector{Int64}(undef, n+1)
-        for m in 1:(n+1)
+        for m in 1:(n+1)  # forming the polynomial x^v*g / x^S
             mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
         gVec = MS2()
@@ -1414,7 +1430,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                 gVec[j] = R(0)
             end
         end
-        gJS = pseudoInverseMat*gVec
+        gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if
         #println("After LingAlg problem: $gJS")
         distance = 0
         for j in 1:(n+1)
