@@ -25,7 +25,11 @@ include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
 
+include("LinearAlgebraWrappers.jl")
+include("EvaluatePEP.jl")
+include("ComputeRuv.jl")
 include("ControlledReduction.jl")
+
 include("Frobenius.jl")
 include("FinalReduction.jl")
 include("CharPolyFrob.jl")
