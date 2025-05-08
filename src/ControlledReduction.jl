@@ -40,21 +40,9 @@ struct ControlledReductionContext{KeyType,MatrixType,VectorType}
     g_temp::VectorType
 end
 
-#
-#function oscar_default_context(R,g_length,n)
-#    MS1 = matrix_space(R, g_length, g_length)
-#    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-#    A = MS1()
-#    B = MS1()
-#    temp = MS1()
-#    g = zeros(UInt,g_length) 
-#    g_temp = similar(g)
-#
-#    OscarReductionContext(Ruvs,A,B,temp,g,g_temp)
-#end
-
 ### The following is derived from Nemo.jl, and needs to be licensed with the GPL 
 
+#TODO: this isn't used right now, but it might be faster to use it
 function my_addmul!(A::zzModMatrix, B::zzModMatrix, C::UInt, D::zzModMatrix)
   @ccall Oscar.Nemo.libflint.nmod_mat_scalar_addmul_ui(A::Ref{zzModMatrix}, 
                                                        B::Ref{zzModMatrix}, 
@@ -116,6 +104,16 @@ end
 
 ### END stuff derived from Nemo.jl
 
+# (scalar) mul
+
+my_mul!(A::CuModMatrix,B::CuModMatrix,c::Number) = GPUFiniteFieldMatrices.mul!(A,B,c) 
+
+# matvecmul
+
+my_matvecmul!(z::CuModVector,A::CuModMatrix,b::CuModVector) = GPUFiniteFieldMatrices.mul!(z,A,b)
+
+# copy
+
 function my_copy!(a,b)
     copy!(a,b)
 end
@@ -126,22 +124,33 @@ function my_copy!(a::Vector{ZZRingElem},b::Vector{ZZRingElem})
     end
 end
 
+# zero
+
 function my_zero!(a)
     fill!(a,zero(eltype(a)))
     # apparently, the following is not implemented in Julia, it's an Oscar method
     #zero!(a)
 end
 
+my_zero!(a::zzModMatrix) = zero!(a)
+my_zero!(a::ZZModMatrix) = zero!(a)
+my_zero!(a::CuModArray) = GPUFiniteFieldMatrices.zero!(a)
 
 function my_zero!(a::Vector{ZZRingElem})
+    # this is here because of BigInts/ZZRingElem behaving weird in Julia
+
     for i in 1:length(a)
         Oscar.Nemo.set!(a[i],0)
     end
 end
 
+# sub
+
 function my_sub!(A,B,C)
     Oscar.Nemo.sub!(A,B,C)
 end
+
+my_sub!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix) = GPUFiniteFieldMatrices.sub!(A,B,C)
 
 function my_sub!(A::ZZModMatrix,B::ZZModMatrix,C::ZZModMatrix)
     @ccall Oscar.Nemo.libflint.fmpz_mod_mat_sub(A::Ref{ZZModMatrix},
@@ -150,6 +159,11 @@ function my_sub!(A::ZZModMatrix,B::ZZModMatrix,C::ZZModMatrix)
                                                 base_ring(B).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
     return A
 end
+
+# add
+
+my_add!(A,B,C) = add!(A,B,C)
+my_add!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix) = GPUFiniteFieldMatrices.add!(A,B,C)
 
 
 """
@@ -505,7 +519,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     else
       while i <= (nend-(d*n-n))
         my_mul!(temp,B,nend-(d*n-n)-i)
-        add!(temp,temp,A)
+        my_add!(temp,temp,A)
         gMat = temp*gMat
 
         #gMat = (A+B*(nend-(d*n-n)-i))*gMat
@@ -547,7 +561,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
             B,A = computeRPoly_LAOneVar2!(B,A,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y,R,temp)
         end
         
-        add!(temp,A,B)
+        my_add!(temp,A,B)
         gMat = temp*gMat
 
         #gMat = (A+B)*gMat
@@ -635,7 +649,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
     (4 < params.verbose) && println("Starting: J = $J")
     (5 < params.verbose) && begin
         g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
-        if params.always_use_bigints
+        if params.always_use_bigints || params.use_gpu
             println("Starting: g = $((gMat)) = $g_poly")
         else    
             println("Starting: g = $(Int.(gMat)) = $g_poly")
@@ -721,8 +735,8 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
         if (5 < params.verbose) 
-            g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            if params.always_use_bigints
+            CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
+            if params.always_use_bigints || params.use_gpu
                 println("g = $((gMat)) = $g")
             elseif params.fastevaluation
                 println("g = $(Int.(gMat)) = $g")
@@ -736,7 +750,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
 end
 
 """
-finitediff_prodeval_linear!(a,b,start,stop,g,temp)
+    finitediff_prodeval_linear!(a,b,start,stop,g,temp)
 
 Generic function that evaluates 
 the function F(x) = a*x + b at 
@@ -769,7 +783,7 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
 
   #Fk = stop*a + b # Fk = F(k), here k = stop
   my_mul!(temp,a,stop)
-  add!(temp,temp,b)
+  my_add!(temp,temp,b)
   # @. Fk = stop*a + b
   #
   if start == stop
@@ -881,12 +895,12 @@ function costadata_of_initial_term!(term,g,n,d,p,S,params)
     for j in axes(g,1)
         if vars_reversed
             if g_exps == reverse(ev[j])
-                g[j] = lift(gCoeff)
+                CUDA.@allowscalar g[j] = lift(gCoeff)
                 break
             end 
         else
             if g_exps == ev[j]
-                g[j] = lift(gCoeff)
+                CUDA.@allowscalar g[j] = lift(gCoeff)
                 break
             end
         end 
@@ -941,15 +955,17 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
     vars = gens(PR)
 
-    g = vector_to_polynomial(g_vec,n,d*n-n,PR,params.termorder)
+    cpu_g = Array(g_vec)
+    g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
     (5 < params.verbose) && begin
-        if params.fastevaluation
+        if params.fastevaluation && !params.use_gpu
             println("$(Int.(g_vec)) --> $g")
         else
             println("$(g_vec) --> $g")
         end
     end
+
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
     if params.vars_reversed
@@ -1148,28 +1164,68 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
-function oscar_default_context(matspace,Ruvs,params)
+function cuMod(A::zzModMatrix)
+    m = modulus(base_ring(parent(A)))
+    # if this conversion is illegal, 
+    #then we're not allowed to make a CuModMatrix
+    M = Int(m) 
+
+    lifted_A = map(x -> lift(ZZ,x),A)
+    jl_A = convert.(Int64,Array(lifted_A))
+    float_A = convert.(Float64,jl_A)
+    CuModMatrix(float_A,M,elem_type=Float64)
+end
+
+#TODO: incorporate this idiomatically using adapt.jl
+function adapt_to_gpu(Ruvs)
+    gpu_Ruvs = Dict{Vector{Int64},Vector{CuModMatrix{Float64}}}()
+
+    for (v,linpoly) in Ruvs
+
+        gpu_Ruvs[v] = Vector(undef,length(linpoly)) 
+        for i in 1:length(linpoly)
+            gpu_Ruvs[v][i] = cuMod(linpoly[i])
+        end
+    end
+
+    gpu_Ruvs
+end
+
+function default_context(matspace,Ruvs,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
 
-    A = matspace()
-    B = matspace()
-    temp = matspace()
+    if params.use_gpu == true
 
-    if params.always_use_bigints || ZZ(2)^64 < ZZ(m)
-       # Big modulus
-       g = [ZZ(0) for i in 1:g_length]
-       g_temp = [ZZ(0) for i in 1:g_length]
-    else
-        # Small modulus
-        g = zeros(UInt,g_length) 
-        g_temp = similar(g)
+        M = Int(m)
+        A = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+        B = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+        temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+
+        g = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
+        g_temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
+
+        ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
+    else # use the CPU
+        A = matspace()
+        B = matspace()
+        temp = matspace()
+
+        if params.always_use_bigints || ZZ(2)^64 < ZZ(m)
+            # Big modulus
+            g = [ZZ(0) for i in 1:g_length]
+            g_temp = [ZZ(0) for i in 1:g_length]
+        else
+            # Small modulus
+            g = zeros(UInt,g_length) 
+            g_temp = similar(g)
+        end
+
+        # NOTE: can't use `similar` for a pointer type
+#        g_temp = zeros(eltype(g),length(g))
+        ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
     end
-
-    # NOTE: can't use `similar` for a pointer type
-#    g_temp = zeros(eltype(g),length(g))
-    ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
 end
 
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
@@ -1194,10 +1250,17 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     end
     
+    if params.use_gpu == true
+        (0 < params.verbose) && println("Moving Ruvs to the gpu...")
+        CUDA.@time Ruvs = adapt_to_gpu(Ruvs)
+    end
+
+    # Make one context for each vector, so we can parallelize
     contexts = ControlledReductionContext[]
 
+    (1 < params.verbose) && println("Allocating memory for controlled reduction")
     for i in 1:length(FT)#Threads.nthreads()
-        push!(contexts, oscar_default_context(MS1,Ruvs,params))
+        push!(contexts, default_context(MS1,Ruvs,params))
     end
 
     result = similar(FT)
@@ -1216,6 +1279,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
             reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
         end
         result[i] = reduction
+        
         #push!(result, reduction)
     end
 
@@ -1613,18 +1677,28 @@ end
 #end
 
 """
-    computeRPoly_LAOneVar2!(matrices, U)
+    computeRPoly_LAOneVar2!(A,B,matrices, U,V,R,temp)
 
 Takes a list of n+2 matrices and ouputs a list two matrices [A,B] corresponding to R_{(x0,...,xn)+yv, v} = Ay + B
 
+Takes a polynomial F in length(U) variables with matrix coefficients,
+and evaluates it at U + y*V, getting a linear polynomial with 
+matrix coefficients A*y + B.
+
 INPUTS: 
-* "matrices" -- list, output of computeRPoly_LAOneVar1
+* "A" -- output matrix A to be modified in place
+* "B" -- output matrix B to be modified in place
+* "matrices" -- list of size length(u) + 1, the coefficients of F.
+    The constant term is matrices[1] and the term corresponding to 
+    u[i] and v[i] is matrices[i+1].
 * "U" -- vector, U =(x0, ..., xn)
+* "V" -- vector, V
 * "R" -- ring, base ring of f
+* temp -- temporary matrix to be modified in place
 """
 function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
-    zero!(B)
-    add!(B,B,matrices[1])
+    my_zero!(B)
+    my_add!(B,B,matrices[1])
     #B = matrices[1]
 
     #@assert size(B) == size(matrices[1])
@@ -1636,7 +1710,7 @@ function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
 
 #    println(typeof(matrices[1][1,1]))
 
-    zero!(A)
+    my_zero!(A)
 
 
     #A = parent(A)()
@@ -1653,10 +1727,10 @@ function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
     #    end
     #end
 
-    br = base_ring(A)
+    #br = base_ring(A)
 
     #ui(i) = UInt(lift(ZZ,br(i)))
-    ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(br))
+    #ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(br))
 
     for k in 2:(length(matrices))
 
@@ -1665,9 +1739,9 @@ function computeRPoly_LAOneVar2!(A,B,matrices, U, V, R,temp)
         #println(test)
 
         my_mul!(temp,matrices[k],U[k-1])
-        add!(B,B,temp)
+        my_add!(B,B,temp)
         my_mul!(temp,matrices[k],V[k-1])
-        add!(A,A,temp)
+        my_add!(A,A,temp)
 
         #add!(B,B,matrices[k] * ui(U[k-1]))
         #add!(A,A,matrices[k] * ui(V[k-1]))
