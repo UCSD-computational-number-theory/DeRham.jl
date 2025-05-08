@@ -220,7 +220,7 @@ function precision_information(f,basis,verbose=0)
 
     hodge_polygon = hodgepolygon(basis, n)
     hodge_numbers = hodge_polygon.slopelengths
-    (0 < verbose) && print_precision_info(n,d,p)
+    #(0 < verbose) && print_precision_info(n,d,p)
 
     #if verbose == -1 
     #if (n == 3) && (p == 3) && (d == 4)

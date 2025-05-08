@@ -5,6 +5,7 @@ using Oscar
 # source files, in the future replace this with `using DeRham`
 using DeRham
 using Primes
+using CUDA
 #inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
@@ -156,6 +157,26 @@ end
 
     runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
 end 
+
+if CUDA.functional()
+    @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
+    
+        zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:naive,fastevaluation=true,use_gpu=true)
+    
+        fermatfiles = [(2,3)]#,(2,4),(3,3)]
+        randomfiles = [(2,3)]#,(2,4)]
+    
+        for (dim,deg) in fermatfiles
+            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+            runcsvtest(filename,zeta_function=zf)
+        end
+    
+        #for (dim,deg) in randomfiles
+        #    filename = "dim_$(dim)_deg_$(deg)_random.csv"
+        #    runcsvtest(filename,zeta_function=zf)
+        #end
+    end
+end
 
 #@testset "Threefolds" begin
 #    runcsvtest("threefolds.csv")

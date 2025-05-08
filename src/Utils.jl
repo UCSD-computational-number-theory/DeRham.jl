@@ -366,10 +366,15 @@ function vector_to_polynomial(vect, n, d, PR, order=:lex, vars_reversed=false)
     @assert length(vect) == length(exp_vecs) "vector has incorrect length for the specified degree"
     for i in eachindex(vect)
         #res += PR(vect[i]) * mon[i]
+        v = vect[i]
+        if v isa AbstractFloat
+            v = Integer(vect[i])
+        end
+
         if vars_reversed
-            push_term!(C, R(vect[i]), reverse(exp_vecs[i]))
+            push_term!(C, R(v), reverse(exp_vecs[i]))
         else 
-            push_term!(C, R(vect[i]), exp_vecs[i])
+            push_term!(C, R(v), exp_vecs[i])
         end
     end
     res = finish(C)
