@@ -97,9 +97,12 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     termorder = params.termorder
     n = nvars(parent(f)) - 1
     d = total_degree(f)
-    R = coefficient_ring(parent(f))
-    #MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+    #R = coefficient_ring(parent(f))
+    # if the following isn't matched in Ruvs, this method will error.
+    R = parent(pseudoInverseMat[1,1])
+
     g_length = binomial(n*d,n*d-n)
+
     if haskey(Ruvs, V)
         return get(Ruvs, V, 0)
     else
@@ -129,7 +132,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     end 
     
     temp = Vector{Int64}(undef, n+1)
-    MS2 = matrix_space(R, length(ev2),1)
+    #MS2 = matrix_space(R, length(ev2),1)
     matrixtype = eltype(valtype(Ruvs))
     result = Vector{matrixtype}(undef, n+2)
     for i in 1:n+2
@@ -157,12 +160,12 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
         for m in 1:(n+1)  # forming the polynomial x^v*g / x^S
             mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
-        gVec = MS2()
+        gVec = zero_matrix(R,length(ev2),1)#MS2()
         for j in 1:length(ev2)
             if ev2[j] == mon
-                gVec[j] = R(1)
+                gVec[j] = one(R)#R(1)
             else
-                gVec[j] = R(0)
+                gVec[j] = zero(R)#R(0)
             end
         end
         gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if

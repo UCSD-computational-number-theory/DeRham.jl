@@ -25,6 +25,7 @@ include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
 
+include("PEP.jl")
 include("LinearAlgebraWrappers.jl")
 include("EvaluatePEP.jl")
 include("ComputeRuv.jl")
