@@ -50,6 +50,12 @@ function larger_tests(zf)
     end
 end
 
+function quick_test(zf)
+    runcsvtest("dim_1_deg_3_fermat.csv",zeta_function=zf)
+    runcsvtest("dim_1_deg_3_random.csv",zeta_function=zf)
+    runcsvtest("dim_1_deg_3_many.csv",zeta_function=zf)
+end
+
 @testset "CPU Fast Evaluation + Naive Strategy" begin 
 
     zf = f -> DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true)

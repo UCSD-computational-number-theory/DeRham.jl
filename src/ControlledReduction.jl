@@ -333,7 +333,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     #reverse!(U)
 
     #reverse!(V)
-    B,A = eval_to_linear!(B,A,matrices,U,V,R,temp)
+    B,A = eval_to_linear!(B,A,temp,matrices,U,V)
     #reverse!(V) # put V back to normal
 
     i = 1
@@ -381,11 +381,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
         #error()
 
         if params.vars_reversed == true
-            #B,A = eval_to_linear!(B,A,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
-            B,A = eval_to_linear!(B,A,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y,R,temp)
+            #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
+            B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
         else
-            #B,A = eval_to_linear!(B,A,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y),R,temp)
-            B,A = eval_to_linear!(B,A,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y,R,temp)
+            #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
+            B,A = eval_to_linear!(B,A,temp,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y)
         end
         
         my_add!(temp,A,B)
@@ -479,8 +479,8 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         #end
         (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
 
-        #eval_to_linear!(context.B,context.A,matrices,reverse(mins),reverse(V),R,context.temp)
-        eval_to_linear!(context.B,context.A,matrices,mins,V,R,context.temp)
+        #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
+        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
         #(5 < params.verbose && firsttime) && begin 
         #    println("---")
         #    println(context.A[:,end])

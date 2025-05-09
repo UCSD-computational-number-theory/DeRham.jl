@@ -19,7 +19,7 @@ INPUTS:
 * "R" -- ring, base ring of f
 * temp -- temporary matrix to be modified in place
 """
-function eval_to_linear!(A,B,matrices, U, V, R,temp)
+function eval_to_linear!(A,B,temp,matrices,U,V)
     my_zero!(B)
     my_add!(B,B,matrices[1])
 
@@ -37,6 +37,11 @@ function eval_to_linear!(A,B,matrices, U, V, R,temp)
     end 
 
     return (A, B)
+end
+
+function eval_to_linear!(A,B,temp,pep::AbstractPEP,U,V)
+    matrices = pep[V]
+    eval_to_linear!(A,B,temp,matrices,U,V)
 end
 
 """
