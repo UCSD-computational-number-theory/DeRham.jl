@@ -789,15 +789,26 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
+function float_entries(A::zzModMatrix)
+    res = zeros(Float64,size(A)...)
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+        end
+    end
+
+    res
+end
+
 function cuMod(A::zzModMatrix)
     m = modulus(base_ring(parent(A)))
     # if this conversion is illegal, 
     #then we're not allowed to make a CuModMatrix
     M = Int(m) 
 
-    lifted_A = map(x -> lift(ZZ,x),A)
-    jl_A = convert.(Int64,Array(lifted_A))
-    float_A = convert.(Float64,jl_A)
+    float_A = float_entries(A)
     CuModMatrix(float_A,M,elem_type=Float64)
 end
 
