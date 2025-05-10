@@ -904,6 +904,49 @@ function default_context(matspace,Ruv,params)
     end
 end
 
+"""
+This function exists so that we can have the option to time it
+in verbose mode.
+"""
+function select_Ruv_PEP(n,d,params,compute,lazy,oscar_matspace,cache)
+
+    compute_gpu = V -> cuMod.(compute(V))
+    compute_float = V -> float_entries.(compute(V))
+
+    if 4 < n && params.use_gpu #4 < n
+        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float)
+        m = M = Int(modulus(base_ring(oscar_matspace)))
+        convert_to_gpu(matrices) = CuModMatrix.(matrices,M,elem_type=Float64)
+        s = size(oscar_matspace(),1)
+
+        memory_cap = 6_000_000_000 # about 6 gigabytes of gpu memory
+
+        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        memory = s^2 * 8 * (n+2)
+
+        maxsize = div(memory_cap,memory)
+
+        #testing
+        #maxsize = 8
+
+        Ruv = CachePEP{Matrix{Float64},CuModMatrix}(cpu_Ruv,convert_to_gpu,maxsize)
+    elseif params.use_gpu && lazy
+        Ruv = LazyPEP{CuModMatrix}(compute_gpu)
+
+    elseif params.use_gpu
+        Ruv = EagerPEP{CuModMatrix}(cache[d],compute_gpu,usethreads=false)
+
+    elseif lazy
+        Ruv = LazyPEP{typeof(oscar_matspace())}(compute)
+
+    else
+        Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=false)
+    end
+
+    Ruv
+end
+
+
 function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
@@ -921,24 +964,19 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     computeRuv(V) = computeRuvS(V,S,f,pseudoInverseMat,cache,params)
 
-    if (0 < params.verbose) && params.use_gpu
-        println("Calculating R_uv and moving to the gpu...")
-        computeRuv_gpu = V -> cuMod.(computeRuv(V))
-        CUDA.@time Ruv = EagerPEP{CuModMatrix}(cache[d],computeRuv_gpu,usethreads=false)
-        
-    elseif params.use_gpu
-        computeRuv_gpu = V -> cuMod.(computeRuv(V))
-        Ruv = EagerPEP{CuModMatrix}(cache[d],computeRuv_gpu,usethreads=false)
 
-    elseif (0 < params.verbose)
-        println("Calculating the R_uv...")
-        @time Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
+    #TODO: right now, it usually seems better to do lazy computations,
+    #  since not all of the Ruv are used. However, I know that for some
+    #  classes of examples, they are all pretty much always used. For 
+    #  such examples, it's better to use an EagerPEP and do threads.
+    lazy_Ruv = length(S) < d || d < n
 
+    if (0 < params.verbose)
+        println("Creating the Ruv PEP object...")
+        #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
+        CUDA.@time Ruv = select_Ruv_PEP(n,d,params,computeRuv,lazy_Ruv,MS1,cache)
     else
-        Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
-    end
-    
-    if params.use_gpu == true
+        Ruv = select_Ruv_PEP(n,d,params,computeRuv,lazy_Ruv,MS1,cache)
     end
 
     # Make one context for each vector, so we can parallelize
@@ -951,22 +989,32 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     result = similar(FT)
 
-    #TODO: can reduce allocations by changing this for loop
-    #  to a nested while inside for. Then only allocate one context
-    #  thread, instead of one per reduction vector.
-    Threads.@threads for i in 1:length(FT) #pol in FT
-    #for i in 1:length(FT) #pol in FT
+    #TODO: make the reduction context thread local
+    #Threads.@threads for i in 1:length(FT) #pol in FT
+    for i in 1:length(FT) #pol in FT
         context = contexts[i]
         pol = FT[i]
-        (0 < params.verbose) && println("Reducing vector $i")
         if (0 < params.verbose)
+            println("Reducing vector $i")
             @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
         else
             reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
         end
         result[i] = reduction
+
+        i == 1 && error("stopping after vector $i for testing purposes")
         
         #push!(result, reduction)
+    end
+
+    (0 < params.verbose && Ruv isa CachePEP) && begin
+        println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
+    end
+    (0 < params.verbose) && begin
+        println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
+    end
+    (1 < params.verbose) && begin
+        println("V that were created: \n$(allpoints(Ruv))")
     end
 
     return result

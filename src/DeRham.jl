@@ -5,6 +5,7 @@ using BitIntegers
 using LinearAlgebra
 using Combinatorics
 using Memoize
+using LRUCache
 
 using CUDA
 using GPUFiniteFieldMatrices
