@@ -1,29 +1,4 @@
 
-"""
-KeyType - the type of u and v, for example Vector{Int64}
-MatrixType - the type of A and B, for example zzModMatrix
-VectorType - the type of g, for exampel Vector{UInt64}
-
-
-#const OscarSmallReductionContext = ControlledReductionContext{Vector{Int64},
-#                                                         zzModMatrix,
-#                                                         Vector{UInt64}}
-#const OscarBigReductionContext = ControlledReductionContext{Vector{Int64},
-#                                                         ZZModMatrix,
-#                                                         Vector{ZZRingElem}}
-
-In the future: make a GPUReductionContext
-
-"""
-struct ControlledReductionContext{KeyType,MatrixType,VectorType}
-    Ruvs::Dict{KeyType, Vector{MatrixType}} #TODO: this type might be too rigid
-    A::MatrixType
-    B::MatrixType
-    temp::MatrixType
-    g::VectorType
-    g_temp::VectorType
-end
-
 ### The following is derived from Nemo.jl, and needs to be licensed with the GPL 
 
 #TODO: this isn't used right now, but it might be faster to use it

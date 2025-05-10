@@ -52,7 +52,7 @@ struct EagerPEP{T} <: AbstractPEP{T}
             end
         end
 
-        new{T}(Vs,UComponent)
+        new{T}(Vs,Ucomponent)
     end
 end
 
