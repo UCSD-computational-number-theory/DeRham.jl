@@ -7,7 +7,7 @@ Inputs:
 * "M" -- integer, algorithm precision 
 * "S_target" -- list, target S-smoothness 
 """
-function find_Ssmooth_model(f, M, S_target, params, changef)
+function find_Ssmooth_model(f, M, S_target, params, changef, cache)
     p = Int64(characteristic(parent(f)))
     q = p
     PR = parent(f)
@@ -21,11 +21,18 @@ function find_Ssmooth_model(f, M, S_target, params, changef)
     #bool = true 
     f_transformed = f
     #println(f_transformed)
-    num_iter = 100
+    num_iter = min(2*p,100)
     f_changed = false 
+    if !changef
+        pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params,cache)
+            #bool = false
+            
+        return f_changed, f_transformed, pseudo_inverse_mat_new
+    end
+
     for i in 1:num_iter 
         try 
-            pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params)
+            pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params,cache)
             #bool = false
             
             return f_changed, f_transformed, pseudo_inverse_mat_new
@@ -47,6 +54,6 @@ function find_Ssmooth_model(f, M, S_target, params, changef)
             end
         end 
     end
-    return false 
+    return (false,false,false)
     
 end 

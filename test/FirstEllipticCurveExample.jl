@@ -3,6 +3,12 @@
 
 # vars_reversed =true, do not use fast evaluation, bigints, or the gpu
 first_ellcurve_params() = DeRham.ZetaFunctionParams(0,true,:costachunks,:invlex,true,false,false,false)
+function first_ellcurve_cache()
+    n=2
+    d = 3 #total_degree(f)
+    S = collect(0:n)
+    controlled_reduction_cache(n,d,S,params)
+end
 
 function testEllCurve1_7()
     n = 2
@@ -28,7 +34,8 @@ function testMonomialBasis()
     x,y,z = Vars
     f = y^2*z - x^3 - x*z^2 - z^3
     params = first_ellcurve_params()
-    @test DeRham.compute_monomial_bases(f,R,PR,params.termorder) == [[1],[z^3]]
+    cache = first_ellcurve_cache()
+    @test DeRham.compute_monomial_bases(f,params,cache) == [[1],[z^3]]
 end
 
 function testLinAlgProb()
@@ -44,7 +51,8 @@ function testLinAlgProb()
     l = d * n - n + d - length(S)
     M = 3
     params = first_ellcurve_params()
-    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,params)) == 
+    cache = first_ellcurve_cache()
+    @test Array(DeRham.pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)) == 
       [155 0 0 0 0 11 0 0 0 221 0 0 310 0 22; 
        0 0 0 1 0 0 0 0 0 0 0 0 0 0 0; 
        0 0 0 0 1 0 0 0 0 0 0 0 0 0 0; 
@@ -79,7 +87,10 @@ function testFrobTrans()
     f = x1^2*x2 - x0^3 - x0*x2^2 - x2^3
     PrecisionRing, = residue_ring(ZZ, p^M)
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
-    BasisT = DeRham.compute_monomial_bases(f, R, PR,:invlex)
+
+    params = first_ellcurve_params()
+
+    BasisT = DeRham.compute_monomial_bases(f, params, cache)
     fLift = DeRham.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
     BasisTLift = []
     for i in BasisT
@@ -231,10 +242,11 @@ function testT()
     f = y^2*z - x^3 - x*z^2 - z^3
     M = 3
     params = first_ellcurve_params()
+    cache = first_ellcurve_cache()
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     basis = DeRham.compute_monomial_bases(f,R,PR,:invlex)
-    @test Array(DeRham.computeT(f,basis,M,params)) == 
+    @test Array(DeRham.computeT(f,basis,M,params,cache)) == 
     [257 0 85 0 0 0 172 257 0 0;
      172 0 52 0 114 0 0 170 0 1]
 end

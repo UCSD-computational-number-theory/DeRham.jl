@@ -13,7 +13,7 @@
 
 Computes the "T matrix" as in the notation in Costa's thesis.
 """
-function computeT(f, Basis, M, params)
+function computeT(f, Basis, M, params, cache)
     p = characteristic(parent(f))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -31,7 +31,7 @@ function computeT(f, Basis, M, params)
     f_lift = liftCoefficients(precisionring,precisionringpoly,f)
 
     exp_vec = gen_exp_vec(n+1, d*n-n-1, params.termorder)
-    monomials = gen_mon(exp_vec, precisionring, precisionringpoly)
+    monomials = gen_mon(exp_vec, precisionringpoly)
     #len = binomial(n+(d*n-n-1), n)
     len = length(monomials)
 
@@ -52,7 +52,7 @@ function computeT(f, Basis, M, params)
             if (l-(d-1)) > 0
                 monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly, params.termorder)
                 len_domain = length(monomials_domain)
-                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params)
+                change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params,cache)
                 #change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 
