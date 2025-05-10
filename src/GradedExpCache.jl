@@ -4,13 +4,21 @@ abstract type GradedExpCache end
 #TODO: convert to SVector, that might help with allocation pressure
 #using StaticArrays
 
+"""
+A PolyExpCache is a GradedExpCache for the stadard 
+\\Z-grading on the polynomial ring.
+"""
 struct PolyExpCache <: GradedExpCache
     n::Int
     termorder::Symbol
+    vars_reversed::Bool #TODO: remove this and use the termorder instead
     exp_vec_pieces::Vector{Union{Vector{Vector{Int64}},Nothing}}
     rev_look_pieces::Vector{Union{Dict{Vector{Int64},Int},Nothing}}
+    constant_term::Vector{Vector{Int}}
 
-    PolyExpCache(n,termorder) = new(n,termorder,[],[])
+    function PolyExpCache(n,termorder;vars_reversed=false) 
+        new(n,termorder,vars_reversed,[],[],[zeros(Int,n)])
+    end
 end
 
 
@@ -21,6 +29,9 @@ returning it as a vector.
 This throws an error if the cached degree doesn't exist.
 """
 function Base.getindex(c::PolyExpCache,d::Int)
+    d < 0 && return []
+    d == 0 && return c.constant_term
+
     if c.exp_vec_pieces[d] == nothing
         errormsg = "This PolyExpCache does not have degree=$d stored. "* 
                    "This probably means that the PolyExpCache hasn't been "* 
@@ -33,6 +44,9 @@ function Base.getindex(c::PolyExpCache,d::Int)
 end
 
 function Base.getindex(c::PolyExpCache,d::Int,kind::Symbol)
+    d < 0 && return []
+    d == 0 && return c.constant_term
+
     if kind == :forward
         c[d]
     elseif kind == :reverse
@@ -43,7 +57,7 @@ function Base.getindex(c::PolyExpCache,d::Int,kind::Symbol)
                        "This probably means that the PolyExpCache hasn't been "* 
                        "fully initialized, or there is a bug. If you want to "* 
                        "initialize this cache to work for degree $d, use the "*
-                       "`get_forward` function."
+                       "`get_forward` and `generate_degree_reverse` functions."
             throw(ArgumentError(errormsg))
         end
         c.rev_look_pieces[d]
@@ -73,14 +87,22 @@ function get_forward(c::PolyExpCache,d)
 end
 
 function generate_degree_forward(c::PolyExpCache,d)
+    d ≤ 0 && return 
+    d in cached_degrees(c) && return 
+
     l = length(c.exp_vec_pieces) 
     if l < d
         append!(c.exp_vec_pieces,fill(nothing,d - l))
     end
-    c.exp_vec_pieces[d] = gen_exp_vec(c.n,d,c.termorder)
+    c.exp_vec_pieces[d] = gen_exp_vec(c.n,d,c.termorder,vars_reversed=c.vars_reversed)
+
+    return
 end
 
 function generate_degree_reverse(c::PolyExpCache,d)
+    d ≤ 0 && return 
+    d in cached_reverse_lookups(c) && return 
+
     evs = get_forward(c,d)
 
     l = length(c.rev_look_pieces) 
@@ -88,9 +110,11 @@ function generate_degree_reverse(c::PolyExpCache,d)
         append!(c.rev_look_pieces,fill(nothing,d - l))
     end
     c.rev_look_pieces[d] = Dict(evs[i] => i for i in 1:length(evs))
+
+    return
 end
 
-function PolyExpCache(n,termorder,degrees_to_prefill,reverse_to_prefill)
+function PolyExpCache(n,termorder,degrees_to_prefill,reverse_to_prefill;vars_reversed=false)
     c = PolyExpCache(n,termorder)
     for d in degrees_to_prefill
         generate_degree_forward(c,d)
@@ -102,7 +126,7 @@ function PolyExpCache(n,termorder,degrees_to_prefill,reverse_to_prefill)
     c
 end
 
-function PolyExpCache(n,termorder,max_degree_prefill)
+function PolyExpCache(n,termorder,max_degree_prefill;vars_reversed=false)
     PolyExpCache(n,termorder,1:max_degree_prefill,1:max_degree_prefill)
 end
 

@@ -1002,7 +1002,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         end
         result[i] = reduction
 
-        i == 1 && error("stopping after vector $i for testing purposes")
+        #i == 1 && error("stopping after vector $i for testing purposes")
         
         #push!(result, reduction)
     end

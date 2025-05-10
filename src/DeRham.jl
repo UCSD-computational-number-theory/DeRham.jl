@@ -18,6 +18,7 @@ using GPUFiniteFieldMatrices
 
 include("Utils.jl")
 include("GradedExpCache.jl")
+include("LinearAlgebraWrappers.jl")
 include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
@@ -27,7 +28,6 @@ include("SmoothNondegenerate.jl")
 include("StandardReduction.jl")
 
 include("PEP.jl")
-include("LinearAlgebraWrappers.jl")
 include("EvaluatePEP.jl")
 include("ComputeRuv.jl")
 include("ControlledReduction.jl")
