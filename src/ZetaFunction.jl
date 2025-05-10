@@ -303,8 +303,11 @@ verbose -- prints various diagnostic statements based on the level
     0: print nothing
     1: print basic diagnostic info only
     2-9: TBD (To be determined/documented)
-    2: print the output of controlled reduction
+    2: more basic diagnostic info
+    3: print the output of controlled reduction
     5: print out the u and v information in controlled reduction
+    6: print the value of g at each step of reduction
+    7: print out one of the R_uv matrices (you might need to modify the print statement to fit your example right now)
     10: print anything that we might consider useful
 givefrobmat -- should the funciton also output the appoximated frobenius matrix
 algorithm -- the algorithm used for controlled reduction
@@ -472,7 +475,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #TODO: check which algorithm we're using
     #(2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache) 
-    (1 < verbose) && println(Reductions)
+    (2 < verbose) && println(Reductions)
     #return Reductions
     #if (1 < verbose)
     #    for i in 1:length(Basis)
