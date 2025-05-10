@@ -84,8 +84,8 @@ allpoints(P::LazyPEP) = P.Vs
 allcomponents(P::LazyPEP) = P.Ucomponent
 
 function Base.getindex(P::LazyPEP, V::Vector{Int})
-    if haskey(Ucomponent,V)
-        return Ucomponent[V]
+    if haskey(P.Ucomponent,V)
+        return P.Ucomponent[V]
     end
 
     coeffs = P.compute(V)
@@ -96,46 +96,66 @@ function Base.getindex(P::LazyPEP, V::Vector{Int})
     return coeffs
 end
 
-#"""
-#An CachePEP is a PEP with coefficients of type S.
-#
-#We assume that due to resource constraints we 
-#cannot have very many terms of type S.
-#However, we can readily have things available in type T,
-#and we can convert between the two by taking S(t) for t
-#some term of type T.
-#
-#The main example (for which this was designed) is when
-#S is a type that lives on the GPU and T is a corresponding
-#type that lives on the CPU.
-#Due to memory constraints we might not be able to have everything
-#allocated on the GPU at once, so we need to manage swapping over.
-#"""
-#struct CachePEP{T,S} <: AbstractPEP{S}
-#    backing::AbstractPEP{T}
-#    # Ucomponent = LRUCache{Vector{Int},Vector{S}}
-#
-#    function CachePEP{T,S}(backing)
-#
-#    end
-#end
-#
-#allpoints(P::CachePEP) = allpoints(P.backing)
-##cachedpoints(P::LRUCachePEP) = # keys
-#allcomponents(P::CachePEP) = allcomponents(P.backing)
-#
-#function Base.getindex(P::CachePEP, V::Vector{Int})
-#    if haskey(P.Ucomponent,V)
-#        # cache hit!
-#        return P.Ucomponent[V]
-#    end
-#
-#    # cache miss!
-#
-#    coeffs = backing[V]
-#
-#    P.Ucomponent[V] = map(x -> S(x), coeffs)
-#
-#    return P.Ucomponent[V]
-#end
+"""
+An CachePEP is a PEP with coefficients of type S.
+
+We assume that due to resource constraints we 
+cannot have very many terms of type S.
+However, we can readily have things available in type T,
+and we can convert between the two by taking S(t) for t
+some term of type T.
+
+The main example (for which this was designed) is when
+S is a type that lives on the GPU and T is a corresponding
+type that lives on the CPU.
+Due to memory constraints we might not be able to have everything
+allocated on the GPU at once, so we need to manage swapping over.
+
+This cache takes a lazy loading approach, putting elements into
+the cache when they are first accessed.
+
+Ucomponent - the cache
+backing - the AbstractPEP{T} which is the backing
+convert - function that converts a T to an S
+"""
+struct CachePEP{T,S} <: AbstractPEP{S}
+    Ucomponent::LRU{Vector{Int},Vector{S}}
+    backing::AbstractPEP{T}
+    convert::Function
+
+    function CachePEP{T,S}(backing,convert,maxsize) where {T,S}
+        Ucomponent = LRU{Vector{Int},Vector{S}}(maxsize=maxsize)
+
+        new{T,S}(Ucomponent,backing,convert)
+    end
+end
+
+allpoints(P::CachePEP) = allpoints(P.backing)
+cachedpoints(P::CachePEP) = keys(P.Ucomponent)
+
+allcomponents(P::CachePEP) = allcomponents(P.backing)
+cachedcomponents(P::CachePEP) = P.Ucomponent
+
+function Base.getindex(P::CachePEP, V::Vector{Int})
+
+    default = () -> P.convert(P.backing[V])
+
+    get!(default,P.Ucomponent,V)
+
+    #if haskey(P.Ucomponent,V)
+    #    # cache hit!
+    #    return P.Ucomponent[V]
+    #end
+
+    ## cache miss!
+
+    #coeffs = backing[V]
+
+    ##TODO: is there a version of this which won't need to allocate?
+    ##Does that even matter?
+    #P.Ucomponent[V] = map(x -> S(x), coeffs)
+
+    #return P.Ucomponent[V]
+end
+
 
