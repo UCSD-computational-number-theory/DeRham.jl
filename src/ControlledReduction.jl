@@ -921,18 +921,24 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     computeRuv(V) = computeRuvS(V,S,f,pseudoInverseMat,cache,params)
 
-    if (0 < params.verbose)
+    if (0 < params.verbose) && params.use_gpu
+        println("Calculating R_uv and moving to the gpu...")
+        computeRuv_gpu = V -> cuMod.(computeRuv(V))
+        CUDA.@time Ruv = EagerPEP{CuModMatrix}(cache[d],computeRuv_gpu,usethreads=false)
+        
+    elseif params.use_gpu
+        computeRuv_gpu = V -> cuMod.(computeRuv(V))
+        Ruv = EagerPEP{CuModMatrix}(cache[d],computeRuv_gpu,usethreads=false)
+
+    elseif (0 < params.verbose)
         println("Calculating the R_uv...")
         @time Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
-        #@time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
+
     else
         Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
-        #precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     end
     
     if params.use_gpu == true
-        (0 < params.verbose) && println("Moving Ruvs to the gpu...")
-        #CUDA.@time Ruvs = adapt_to_gpu(Ruvs)
     end
 
     # Make one context for each vector, so we can parallelize
