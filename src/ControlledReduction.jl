@@ -451,7 +451,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     end
 end
 
-function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
+function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -772,7 +772,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
     return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
 
-function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
+function reducepoly_naive(pol,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -784,7 +784,7 @@ function reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
         #println(terms)
         for t in terms
             (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params)
-            reduced = reducechain_naive(u,context.g,t[2],S,f,pseudoInverseMat,p,context,cache,params)
+            reduced = reducechain_naive(u,context.g,t[2],S,f,p,context,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -954,9 +954,9 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         pol = FT[i]
         (0 < params.verbose) && println("Reducing vector $i")
         if (0 < params.verbose)
-            @time reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
+            @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
         else
-            reduction = reducepoly_naive(pol,S,f,pseudoInverseMat,p,context,cache,params)
+            reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
         end
         result[i] = reduction
         
