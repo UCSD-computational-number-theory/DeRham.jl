@@ -1,98 +1,98 @@
 
-function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
-    d = total_degree(f)
-    n = nvars(parent(f)) - 1
+#function precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
+#    d = total_degree(f)
+#    n = nvars(parent(f)) - 1
+#
+#    evs = gen_exp_vec(n+1,d,params.termorder)
+#    Threads.@threads for V in evs
+#    #for V in evs
+#        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
+#    end
+#
+#    
+#    #(6 < params.verbose) && begin 
+#    #    println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
+#    #    println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
+#    #end
+#end
 
-    evs = gen_exp_vec(n+1,d,params.termorder)
-    Threads.@threads for V in evs
-    #for V in evs
-        computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
-    end
-
-    
-    #(6 < params.verbose) && begin 
-    #    println("V = [1,2,0] : $(Ruvs[[1,2,0]])")
-    #    println("V = [0,2,1] : $(Ruvs[[0,2,1]])")
-    #end
-end
-
-function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
-    vars_reversed = params.vars_reversed
-    termorder = params.termorder
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    R = coefficient_ring(parent(f))
-    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
-    if S != collect(0:n-1)
-        throw(ArgumentError("computeRuvOld only works for S={0...n-1}"))
-    end
-    if haskey(Ruvs, V)
-        return get(Ruvs, V, 0)
-    else
-        (4 < params.verbose) && println("New key: $V")
-    end
-    ev1 = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    explookup = cache[n*d - n,:reverse]
-    temp = Vector{Int64}(undef, n+1)
-    MS2 = matrix_space(R, length(ev2),1)
-    result = Vector{typeof(MS1())}(undef, n+2)
-    for i in 1:n+2
-        result[i] = MS1(0)
-    end
-    Stilda = zeros(Int, length(S))
-    for i in S
-        Stilda[n+1-i] = 1
-    end
-    for i in 1:length(ev1)
-        mon = Vector{Int64}(undef, n+1)
-        for m in 1:(n+1)
-            mon[m] = ev1[i][m] + V[m] - Stilda[m]
-        end
-        gVec = MS2()
-        for j in 1:length(ev2)
-            if ev2[j] == mon
-                gVec[j] = R(1)
-            else
-                gVec[j] = R(0)
-            end
-        end
-        gJS = pseudoInverseMat*gVec
-        #println("After LingAlg problem: $gJS")
-        for j in 1:(n+1)
-            for k in 1:length(ev3)
-                for m in 1:(n+1)
-                    if m == n+1-j+1
-                        temp[m] = ev3[k][m] + Stilda[m] - 1
-                    else
-                        temp[m] = ev3[k][m] + Stilda[m]
-                    end
-                end
-                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
-                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
-                #println(" $(ev1[l] == ev3[k])")
-                l = get(explookup,temp,-1)
-
-                if params.vars_reversed == true
-                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
-                else
-                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
-                end
-            end
-        end
-    end
-    get!(Ruvs, V, result)
-    return result
-end
+#function computeRuvOld(V,S,f,pseudoInverseMat,Ruvs,cache,params)
+#    vars_reversed = params.vars_reversed
+#    termorder = params.termorder
+#    n = nvars(parent(f)) - 1
+#    d = total_degree(f)
+#    R = coefficient_ring(parent(f))
+#    MS1 = matrix_space(R, binomial(n*d,n*d-n), binomial(n*d,n*d-n))
+#    if S != collect(0:n-1)
+#        throw(ArgumentError("computeRuvOld only works for S={0...n-1}"))
+#    end
+#    if haskey(Ruvs, V)
+#        return get(Ruvs, V, 0)
+#    else
+#        (4 < params.verbose) && println("New key: $V")
+#    end
+#    ev1 = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
+#    ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+#    ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+#    explookup = cache[n*d - n,:reverse]
+#    temp = Vector{Int64}(undef, n+1)
+#    MS2 = matrix_space(R, length(ev2),1)
+#    result = Vector{typeof(MS1())}(undef, n+2)
+#    for i in 1:n+2
+#        result[i] = MS1(0)
+#    end
+#    Stilda = zeros(Int, length(S))
+#    for i in S
+#        Stilda[n+1-i] = 1
+#    end
+#    for i in 1:length(ev1)
+#        mon = Vector{Int64}(undef, n+1)
+#        for m in 1:(n+1)
+#            mon[m] = ev1[i][m] + V[m] - Stilda[m]
+#        end
+#        gVec = MS2()
+#        for j in 1:length(ev2)
+#            if ev2[j] == mon
+#                gVec[j] = R(1)
+#            else
+#                gVec[j] = R(0)
+#            end
+#        end
+#        gJS = pseudoInverseMat*gVec
+#        #println("After LingAlg problem: $gJS")
+#        for j in 1:(n+1)
+#            for k in 1:length(ev3)
+#                for m in 1:(n+1)
+#                    if m == n+1-j+1
+#                        temp[m] = ev3[k][m] + Stilda[m] - 1
+#                    else
+#                        temp[m] = ev3[k][m] + Stilda[m]
+#                    end
+#                end
+#                #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
+#                #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
+#                #println(" $(ev1[l] == ev3[k])")
+#                l = get(explookup,temp,-1)
+#
+#                if params.vars_reversed == true
+#                    result[j+1][l,i] = gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+#                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((j-1)*(length(gJS)/(n+1))+1)+k-1,1]
+#                else
+#                    result[j+1][l,i] = gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+#                    result[1][l,i] = result[1][l,i] + (ev3[k][n+1-j+1])*gJS[Int((n+1-j)*(length(gJS)/(n+1))+1)+k-1,1]
+#                end
+#            end
+#        end
+#    end
+#    get!(Ruvs, V, result)
+#    return result
+#end
 
 """
     computeRuvS
 Returns a list of n+2 matrices for the Ruv map as in Proposition 1.15
 """
-function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
+function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     vars_reversed = params.vars_reversed
     termorder = params.termorder
     n = nvars(parent(f)) - 1
@@ -103,11 +103,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
 
     g_length = binomial(n*d,n*d-n)
 
-    if haskey(Ruvs, V)
-        return get(Ruvs, V, 0)
-    else
-        (4 < params.verbose) && println("New key: $V")
-    end
+    #if haskey(Ruvs, V)
+    #    return get(Ruvs, V, 0)
+    #else
+    #    (4 < params.verbose) && println("New key: $V")
+    #end
     ev1 = deepcopy(cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = deepcopy(cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = deepcopy(cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
@@ -133,7 +133,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
     
     temp = Vector{Int64}(undef, n+1)
     #MS2 = matrix_space(R, length(ev2),1)
-    matrixtype = eltype(valtype(Ruvs))
+    matrixtype = typeof(pseudoInverseMat) #eltype(valtype(Ruvs))
     result = Vector{matrixtype}(undef, n+2)
     for i in 1:n+2
         result[i] = zero_matrix(R,g_length,g_length)
@@ -185,7 +185,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
                     if vars_reversed
-                        l = get(explookup, reverse(temp), -1)
+                        reverse!(temp)
+                        l = get(explookup, temp, -1)
+                        reverse!(temp)
                     else 
                         l = get(explookup,temp,-1)
                     end 
@@ -201,7 +203,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
                     if vars_reversed
-                        l = get(explookup, reverse(temp), -1)
+                        reverse!(temp)
+                        l = get(explookup, temp, -1)
+                        reverse!(temp)
                     else 
                         l = get(explookup,temp,-1)
                     end
@@ -225,7 +229,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
             println("    Matrix $i: $(nnzs[i]) of $total_entries entreis, $(percentages[i]) %")
         end
     end
-    get!(Ruvs, V, result)
+    #get!(Ruvs, V, result)
     return result
 end
 

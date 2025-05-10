@@ -1,5 +1,45 @@
 
 """
+    ControlledReductionContext{MatrixType,VectorType}
+
+A controlled reduction context is used for in-place evaluation
+chunks of controlled reduction.
+It contains all of the major allocations necessary, so you can
+create one context at the beginning (or one per thread)
+and then not have to worry about allocating anything else.
+
+MatrixType - the type of A and B, for example zzModMatrix
+VectorType - the type of g, for exampel Vector{UInt64}
+
+fields
+------
+Ruvs - an AbstractPEP which containes the R_uv necessary for the reduction.
+  This is intended to be shared across all contexts (i.e. all threads)
+  for a single example.
+A - the matrix which will store A in Ay + B
+B - the matrix which will store B in Ay + B
+temp - temporary matrix used for intermediate calculations
+g - the vector g which contains the vector which is being reduced
+g_temp - temporary vector used for intermediate calculations
+
+Current examples that are in use:
+
+ControlledReductionContext{zzModMatrix,Vector{UInt64}}
+ControlledReductionContext{ZZModMatrix,Vector{ZZRingElem}}
+ControlledReductionContext{CuModMatrix,CuModVector}
+
+"""
+struct ControlledReductionContext{MatrixType,VectorType}
+    Ruvs::AbstractPEP{MatrixType}
+    A::MatrixType
+    B::MatrixType
+    temp::MatrixType
+    g::VectorType
+    g_temp::VectorType
+end
+
+
+"""
     reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
 
 applies reduction formula from Prop 1.15 in Costa's thesis to 
@@ -470,7 +510,8 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
             @. mins = tempv
             K = K+1
         end
-        matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,cache,params)
+        matrices = context.Ruvs[V]
+        #matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,cache,params)
 
         #(5 < params.verbose && firsttime) && begin 
         #    for i in 1:length(matrices)
@@ -827,7 +868,7 @@ function adapt_to_gpu(Ruvs)
     gpu_Ruvs
 end
 
-function default_context(matspace,Ruvs,params)
+function default_context(matspace,Ruv,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
@@ -842,7 +883,7 @@ function default_context(matspace,Ruvs,params)
         g = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
         g_temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
 
-        ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
+        ControlledReductionContext(Ruv,A,B,temp,g,g_temp)
     else # use the CPU
         A = matspace()
         B = matspace()
@@ -859,7 +900,7 @@ function default_context(matspace,Ruvs,params)
             g_temp = similar(g)
         end
 
-        ControlledReductionContext(Ruvs,A,B,temp,g,g_temp)
+        ControlledReductionContext(Ruv,A,B,temp,g,g_temp)
     end
 end
 
@@ -870,7 +911,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
 
-    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
 
     #explookup = Dict{Vector{Int64}, Int64}()
     #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
@@ -878,16 +919,20 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #    get!(explookup,ev1[i],i)
     #end
 
+    computeRuv(V) = computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+
     if (0 < params.verbose)
         println("Calculating the R_uv...")
-        @time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
+        @time Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
+        #@time precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     else
-        precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
+        Ruv = EagerPEP{typeof(MS1())}(cache[d],computeRuv,usethreads=false)
+        #precomputeRuvs(S,f,pseudoInverseMat,Ruvs,cache,params)
     end
     
     if params.use_gpu == true
         (0 < params.verbose) && println("Moving Ruvs to the gpu...")
-        CUDA.@time Ruvs = adapt_to_gpu(Ruvs)
+        #CUDA.@time Ruvs = adapt_to_gpu(Ruvs)
     end
 
     # Make one context for each vector, so we can parallelize
@@ -895,7 +940,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     (1 < params.verbose) && println("Allocating memory for controlled reduction")
     for i in 1:length(FT)#Threads.nthreads()
-        push!(contexts, default_context(MS1,Ruvs,params))
+        push!(contexts, default_context(MS1,Ruv,params))
     end
 
     result = similar(FT)
