@@ -6,6 +6,7 @@ using LinearAlgebra
 using Combinatorics
 using Memoize
 using LRUCache
+using LFUDACache
 
 using CUDA
 using GPUFiniteFieldMatrices

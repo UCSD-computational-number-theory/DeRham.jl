@@ -1,4 +1,5 @@
 
+
 """
 PEP stands for *p*artially *e*valuated (linear) *p*olynomial
 
@@ -66,17 +67,31 @@ allcomponents(P::EagerPEP) = P.Ucomponent
 A LazyPEP{T} is a PEP with coefficients of type T.
 
 It computes each entry the first time it gets accessed.
+
+Optionally, you may specify some Vs to be computed at creation time.
 """
 struct LazyPEP{T} <: AbstractPEP{T}
     Vs::Vector{Vector{Int}}
     Ucomponent::Dict{Vector{Int},Vector{T}}
     compute::Function
 
-    function LazyPEP{T}(compute) where T
-        Vs = Vector{Vector{Int}}()
+    function LazyPEP{T}(compute;eagerVs=Vector{Vector{Int}}(),usethreads=false) where T
         Ucomponent = Dict{Vector{Int},Vector{T}}()
 
-        new{T}(Vs,Ucomponent,compute)
+        if usethreads && 0 < length(eagerVs)
+            #OhMyThreads.tforeach(eagerVs) do V 
+            Threads.@threads for V in eagerVs
+                coeffs = compute(V)
+                Ucomponent[V] = coeffs #TODO: make thread safe?
+            end
+        else
+            for V in eagerVs
+                coeffs = compute(V)
+                Ucomponent[V] = coeffs 
+            end
+        end
+
+        new{T}(eagerVs,Ucomponent,compute)
     end
 end
 
@@ -114,19 +129,28 @@ allocated on the GPU at once, so we need to manage swapping over.
 This cache takes a lazy loading approach, putting elements into
 the cache when they are first accessed.
 
+The cache also keeps data in place
+
 Ucomponent - the cache
 backing - the AbstractPEP{T} which is the backing
+create - create an S for the very first time
 convert - function that converts a T to an S
 """
 struct CachePEP{T,S} <: AbstractPEP{S}
-    Ucomponent::LRU{Vector{Int},Vector{S}}
+    Ucomponent::LFUDA{Vector{Int},Vector{S}}
     backing::AbstractPEP{T}
+    create::Function
     convert::Function
+    temp::Base.RefValue{Union{Vector{S},Nothing}}
+    tempV::Base.RefValue{Union{Vector{Int},Nothing}}
 
-    function CachePEP{T,S}(backing,convert,maxsize) where {T,S}
-        Ucomponent = LRU{Vector{Int},Vector{S}}(maxsize=maxsize)
+    function CachePEP{T,S}(backing,create,convert_entry,maxsize) where {T,S}
+        temp = Ref{Union{Vector{S},Nothing}}(nothing)
+        tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
+        recover = (key, value) -> recover!(tempV,temp,key,value)
+        Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
 
-        new{T,S}(Ucomponent,backing,convert)
+        new{T,S}(Ucomponent,backing,create,convert_entry,temp,tempV)
     end
 end
 
@@ -136,14 +160,38 @@ cachedpoints(P::CachePEP) = keys(P.Ucomponent)
 allcomponents(P::CachePEP) = allcomponents(P.backing)
 cachedcomponents(P::CachePEP) = P.Ucomponent
 
+function recover!(keyref::Ref,valueref::Ref,key::Vector,value::Vector)
+    println("Recovering $key")
+    keyref[] = key
+    valueref[] = value
+end
+
 function Base.getindex(P::CachePEP, V::Vector{Int})
 
-    default = () -> P.convert(P.backing[V])
+    default = () -> begin 
+        if V == P.tempV[]
+            t = P.temp[]
+            P.temp[] = nothing
+            P.tempV[] = nothing
+            t
+        elseif P.tempV[] == nothing
+            P.create(P.backing[V])
+        else
+            # in this case, tempV is already initialized
+            P.convert(P.temp[],P.backing[V])
+            t = P.temp[]
+            P.temp[] = nothing
+            P.tempV[] = nothing
+            t
+        end
+    end
 
+    #println("Getting cache entry at $V")
     get!(default,P.Ucomponent,V)
 
     #if haskey(P.Ucomponent,V)
     #    # cache hit!
+    #
     #    return P.Ucomponent[V]
     #end
 

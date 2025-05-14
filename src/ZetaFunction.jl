@@ -75,11 +75,15 @@ function controlled_reduction_cache(n,d,S,params)
 
     degsreverse = [d,n*d - n]
 
+    #println(params.vars_reversed)
+
     PolyExpCache(n+1,
                  params.termorder,
                  degsforward,
                  degsreverse,
+                 #vars_reversed=false)
                  vars_reversed=params.vars_reversed)
+                 #marker
 end
 
 """
@@ -122,7 +126,7 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
 
 
         temp = VS()
-        temp2 = convert_p_to_m([Reductions[i][1][1]],ev)
+        temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
@@ -386,6 +390,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
     end
 
+
     if (f == false)
         println("f is not smooth (or not S-smooth) and we're done. ")
         return false
@@ -443,6 +448,8 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     else
         FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
     end
+
+
     #println(FBasis)
     #for e in FBasis
     #    println(length(e))
@@ -457,7 +464,12 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
 
-    T = computeT(f, basis, M, params, cache)
+    if (0 < verbose)
+        println("Computing T matrix...")
+        @time T = computeT(f, basis, M, params, cache)
+    else
+        T = computeT(f, basis, M, params, cache)
+    end
     (9 < verbose) && println("T matrix is $T")
 
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -465,6 +477,10 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
             pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
         end
     end
+
+    #marker
+    #return T
+
     #=
     pseudo_inverse_mat = zeros(Int, nrows(pseudo_inverse_mat_new),ncols(pseudo_inverse_mat_new))
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -508,11 +524,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     # display(FM)
     (9 < verbose) && println("The Frobenius matrix is $FM")
 
-    #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
-
-    #(9 < verbose) && println("convert_p_to_m is $reductions_verbose")
-
-    #FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+    #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
 
    # (9 < verbose) && println("The Frobenius matrix is $FM")
 

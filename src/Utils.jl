@@ -204,7 +204,15 @@ function compute_monomials(n,d,PR,order=:lex,cache=nothing; vars_reversed=false)
     else
         exp_vecs = gen_exp_vec(n,d,order)
     end
-    gen_mon(exp_vecs,PR)
+
+    if vars_reversed
+        reverse!.(exp_vecs)
+        res = gen_mon(exp_vecs,PR)
+        reverse!.(exp_vecs)
+        res
+    else
+        gen_mon(exp_vecs,PR)
+    end
 end
 
 """
@@ -220,6 +228,8 @@ vars_reversed - should we reverse the variables?
 """
 function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=false)
 
+    #TODO: remove vars_reversed and set it based on the cache's property
+
     #TODO: if f turns out to be zero, we don't know what the degree should be.
     #
     #How best to fix this?
@@ -228,6 +238,7 @@ function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=fals
 
     if cache != nothing
         mon_vec = cache[d]
+        #println(cache[d])
     else
         mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
     end
@@ -240,9 +251,20 @@ function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=fals
     #mon = compute_monomials(n, d,PR,order)
     res = fill(R(0), length(mon_vec))
     for i in eachindex(mon_vec)
-        res[i] = coeff(f, mon_vec[i])
+    #    println("interpreting vector $(mon_vec[i])")
+        if vars_reversed
+            reverse!(mon_vec[i])
+    #        println("changed to $(mon_vec[i])")
+            res[i] = coeff(f, mon_vec[i])
+    #        println("coeff: $(res[i])")
+            reverse!(mon_vec[i])
+        else
+            res[i] = coeff(f, mon_vec[i])
+        end
     end
 
+    #error()
+    #println(res)
     res
 end
 
@@ -294,13 +316,23 @@ function compute_relations(monomials, partials)
 end
 
 # Converts vector of homogeneous polynomials to a matrix of their coefficents
-function convert_p_to_m(polys, expvec)
+function convert_p_to_m(polys, expvecs; vars_reversed=false)
     R = coefficient_ring(parent(polys[1]))
-    MS = matrix_space(R, length(polys), length(expvec))
+    MS = matrix_space(R, length(polys), length(expvecs))
     result = MS()
     for i in axes(polys,1)
-        for j in axes(expvec,1)
-            result[i,j] = coeff(polys[i], expvec[j])
+        for j in axes(expvecs,1)
+            exp_vec = expvecs[j]
+
+            if vars_reversed
+                reverse!(exp_vec)
+            end
+                
+            result[i,j] = coeff(polys[i], exp_vec)
+
+            if vars_reversed
+                reverse!(exp_vec)
+            end
         end
     end
     return result
