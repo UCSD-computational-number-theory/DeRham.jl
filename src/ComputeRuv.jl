@@ -99,7 +99,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     d = total_degree(f)
     #R = coefficient_ring(parent(f))
     # if the following isn't matched in Ruvs, this method will error.
-    R = parent(pseudoInverseMat[1,1])
+    R = base_ring(pseudoInverseMat)
 
     g_length = binomial(n*d,n*d-n)
 
@@ -108,12 +108,16 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     #else
     #    (4 < params.verbose) && println("New key: $V")
     #end
-    ev1 = deepcopy(cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
-    ev2 = deepcopy(cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
-    ev3 = deepcopy(cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
-    ev4 = deepcopy(cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
+
+    # instead of doing this, lets reverse and reverse back:
+
+     
+    ev1 = (cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
+    ev2 = (cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    ev3 = (cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    ev4 = (cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
     explookup = cache[n*d - n,:reverse]
-    if vars_reversed
+    if vars_reversed && !cache.vars_reversed
         for vec in ev1
             reverse!(vec)
         end 
@@ -131,13 +135,30 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         end     
     end 
     
+    #ev1 = cache[n*d - n]#gen_exp_vec(n+1,n*d-n,termorder)
+    #ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
+    #ev3 = cache[n*d-n-length(S)+1]#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
+    #ev4 = cache[n*d-n-length(S)]#gen_exp_vec(n+1,n*d-n-length(S),termorder)
+    #explookup = cache[n*d - n,:reverse]
+
+    #if vars_reversed
+    #    reverse!.(ev1)
+    #    reverse!.(ev2)
+    #    reverse!.(ev3)
+    #    reverse!.(ev4)
+    #end
+    
     temp = Vector{Int64}(undef, n+1)
     #MS2 = matrix_space(R, length(ev2),1)
     matrixtype = typeof(pseudoInverseMat) #eltype(valtype(Ruvs))
+
     result = Vector{matrixtype}(undef, n+2)
     for i in 1:n+2
         result[i] = zero_matrix(R,g_length,g_length)
     end
+
+    gJS = zeros(R,size(pseudoInverseMat,1))
+
     Stilda = zeros(Int, n+1)
     for i in S
         if vars_reversed
@@ -160,16 +181,33 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         for m in 1:(n+1)  # forming the polynomial x^v*g / x^S
             mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
-        gVec = zero_matrix(R,length(ev2),1)#MS2()
-        for j in 1:length(ev2)
-            if ev2[j] == mon
-                gVec[j] = one(R)#R(1)
-            else
-                gVec[j] = zero(R)#R(0)
+
+        #gVec = zero_matrix(R,length(ev2),1)#MS2()
+        #for j in 1:length(ev2)
+        #    if ev2[j] == mon
+        #        gVec[j] = one(R)#R(1)
+        #    else
+        #        gVec[j] = zero(R)#R(0)
+        #    end
+        #end
+        #gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if
+        #println("After LingAlg problem: $gJS")
+
+        # gVec above has a one at coordinate j, so we may do the matmul
+        # by taking the column.
+        ind = findfirst(==(mon),ev2)
+        if ind == nothing
+            #gJS = zeros(base_ring(pseudoInverseMat),size(pseudoInverseMat,1))
+            zero!(gJS)
+        else
+            #println(typeof(pseudoInverseMat[:,1]))
+            #gJS = pseudoInverseMat[:,ind]
+            for h in 1:size(pseudoInverseMat,1)
+                gJS[h] = pseudoInverseMat[h,ind]
             end
         end
-        gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if
-        #println("After LingAlg problem: $gJS")
+        #println(gJS)
+
         distance = 0
         for j in 1:(n+1)
             if Stilda[j] == 1
@@ -184,15 +222,20 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    if vars_reversed
+                    if vars_reversed && !cache.vars_reversed
                         reverse!(temp)
                         l = get(explookup, temp, -1)
                         reverse!(temp)
                     else 
                         l = get(explookup,temp,-1)
                     end 
-                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
-                    result[1][l,i] = result[1][l,i] + (ev3[k][j])*gJS[distance+k,1]
+                    #println(j, " ", l, " ", i, " ", k, " ", distance)
+                    
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k]
+                    #if V == [0,3,0] && j == 3 && l == 9 && i == 5 && k == 9
+                    #    error()
+                    #end
+                    result[1][l,i] = result[1][l,i] + (ev3[k][j])*gJS[distance+k]
                 end
             else
                 for k in 1:length(ev4)
@@ -202,15 +245,15 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    if vars_reversed
+                    if vars_reversed && !cache.vars_reversed
                         reverse!(temp)
                         l = get(explookup, temp, -1)
                         reverse!(temp)
                     else 
                         l = get(explookup,temp,-1)
                     end
-                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k,1]
-                    result[1][l,i] = result[1][l,i] + (ev4[k][j])*gJS[distance+k,1] + gJS[distance+k,1]
+                    result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k]
+                    result[1][l,i] = result[1][l,i] + (ev4[k][j])*gJS[distance+k] + gJS[distance+k]
                 end
             end
             distance = distance + distances[j]
@@ -229,7 +272,25 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
             println("    Matrix $i: $(nnzs[i]) of $total_entries entreis, $(percentages[i]) %")
         end
     end
-    #get!(Ruvs, V, result)
+    
+    if vars_reversed && !cache.vars_reversed
+        for vec in ev1
+            reverse!(vec)
+        end 
+
+        for vec in ev2
+            reverse!(vec)
+        end 
+
+        for vec in ev3
+            reverse!(vec)
+        end 
+
+        for vec in ev4
+            reverse!(vec)
+        end     
+    end 
+
     return result
 end
 

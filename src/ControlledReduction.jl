@@ -39,47 +39,47 @@ struct ControlledReductionContext{MatrixType,VectorType}
 end
 
 
-"""
-    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-
-applies reduction formula from Prop 1.15 in Costa's thesis to 
-basis elements of Homog(dn-d), returns them as polynomials
-will only work with vars_reversed=true
-"""
-function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-    R = coefficient_ring(PR)
-    Vars = gens(PR)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    SC = []
-    B = MPolyBuildCtx(PR)
-    push_term!(B, R(1), V)
-    XV = finish(B)
-    for i in 0:n
-        if i in S
-        else
-            push!(SC,i)
-        end
-    end
-    # get gi's using pseudoinverse
-    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
-    MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
-    gJS = MS()
-    gJS = pseudoInverseMat*transpose(gVec)
-    gc = []
-    for i in 1:(n+1)
-        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
-    end
-    gc = reverse(gc)
-    gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
-    
-    reverse!(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
-
-    #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
-c
-end
+#"""
+#    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
+#
+#applies reduction formula from Prop 1.15 in Costa's thesis to 
+#basis elements of Homog(dn-d), returns them as polynomials
+#will only work with vars_reversed=true
+#"""
+#function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
+#    R = coefficient_ring(PR)
+#    Vars = gens(PR)
+#    n = nvars(parent(f)) - 1
+#    d = total_degree(f)
+#    SC = []
+#    B = MPolyBuildCtx(PR)
+#    push_term!(B, R(1), V)
+#    XV = finish(B)
+#    for i in 0:n
+#        if i in S
+#        else
+#            push!(SC,i)
+#        end
+#    end
+#    # get gi's using pseudoinverse
+#    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
+#    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
+#    MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
+#    gJS = MS()
+#    gJS = pseudoInverseMat*transpose(gVec)
+#    gc = []
+#    for i in 1:(n+1)
+#        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
+#    end
+#    gc = reverse(gc)
+#    gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
+#    
+#    reverse!(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
+#
+#    #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
+#    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
+#c
+#end
 
 """
     chooseV(I, d, S)
@@ -418,7 +418,6 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
         
         matrices1 = computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
         #println(matrices1)
-        #error()
 
         if params.vars_reversed == true
             #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
@@ -460,7 +459,16 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     (9 < params.verbose) && println("u = $u") 
     
 
+    #if cache.vars_reversed
+    #    reverse!(u)
+    #end
+    
     J = rev_tweak(u,n*d-n)
+
+    #if cache.vars_reversed
+    #    reverse!(u)
+    #end
+
     gMat = context.g
     mins = similar(J)
     tempv = similar(J)
@@ -542,7 +550,6 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
                     #println("context.B is $B")
                     g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
                     println("gMat after $i is $gMat = $g")
-                    #error()
                 end
             end
              
@@ -577,7 +584,7 @@ h = x^{rev_tweak(U)}g
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
 """
-function costadata_of_initial_term!(term,g,n,d,p,S,params)
+function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
     termorder = params.termorder
     vars_reversed = params.vars_reversed
 
@@ -585,8 +592,8 @@ function costadata_of_initial_term!(term,g,n,d,p,S,params)
     i = term
 
     Stilda = zeros(Int, n+1)
-    for i in S
-        Stilda[i+1] = 1
+    for j in S
+        Stilda[j+1] = 1
     end
 
     #ss = zeros(Int,n+1)
@@ -595,28 +602,32 @@ function costadata_of_initial_term!(term,g,n,d,p,S,params)
     if vars_reversed
         U = reverse(exponent_vector(i[1],1) + Stilda)
     else
-        U = exponent_vector(i[1],1) + Stilda  # renamed II to U 
+        U = exponent_vector(i[1],1) + Stilda
     end
     
     gCoeff = coeff(i[1],1)
 
-    #V = chooseV(Array{Int}(divexact.(II,p)),d)
     if vars_reversed 
-        g_exps = U - rev_tweak(U,n*d-n)  # renamed u to g_exps
+        g_exps = U - rev_tweak(U, n*d-n)  
     else
         g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
     end 
-    ev = gen_exp_vec(n+1,n*d-n,termorder)
+    ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
     my_zero!(g)
 
     for j in axes(g,1)
-        if vars_reversed
+        if vars_reversed && !cache.vars_reversed
             if g_exps == reverse(ev[j])
                 CUDA.@allowscalar g[j] = lift(gCoeff)
                 break
             end 
+        elseif vars_reversed && cache.vars_reversed
+            if g_exps == ev[j]
+                CUDA.@allowscalar g[j] = lift(gCoeff)
+                break
+            end
         else
             if g_exps == ev[j]
                 CUDA.@allowscalar g[j] = lift(gCoeff)
@@ -624,6 +635,8 @@ function costadata_of_initial_term!(term,g,n,d,p,S,params)
             end
         end 
     end
+
+    #println(U,Int.(g))
 
     return (U,g)
 end
@@ -744,7 +757,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
         for term in ωₑ
             #(9 < verbose) && println("term: $term")
             g = zeros(UInt,g_length) 
-            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,params)
+            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
             #(9 < verbose) && println("term, in Costa's format: $term_costadata")
             #ω = ω + ωₑ
             incorporate_initial_term!(ω,term_costadata)
@@ -767,7 +780,6 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
 
     #println(gen_exp_vec(n,n*d-n-1,termorder))
            
-    #error()
 
     return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
@@ -783,7 +795,7 @@ function reducepoly_naive(pol,S,f,p,context,cache,params)
         terms = termsoforder(pol,term[2])
         #println(terms)
         for t in terms
-            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,params)
+            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,cache,params)
             reduced = reducechain_naive(u,context.g,t[2],S,f,p,context,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
@@ -905,31 +917,94 @@ function default_context(matspace,Ruv,params)
 end
 
 """
+Gives a special PEP for when S = [0] and d=3
+
+This should be all the Ruv ever needed in this situation.
+"""
+function cubic_S_zero_Vs(n)
+    Vs = Vector{Vector{Int}}()
+
+    for i in 1:n+1
+        V = zeros(Int,n+1)
+        V[i] = 3
+        push!(Vs,V)
+    end
+
+    for i in 1:n
+        V1 = zeros(Int,n+1)
+        V1[i] = 1
+        V1[i+1] = 2
+        push!(Vs,V1)
+
+        V2 = zeros(Int,n+1)
+        V2[i] = 2
+        V2[i+1] = 1
+        push!(Vs,V2)
+    end
+
+    Vs
+end
+
+"""
 This function exists so that we can have the option to time it
 in verbose mode.
 """
-function select_Ruv_PEP(n,d,params,compute,lazy,oscar_matspace,cache)
+function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
-    compute_gpu = V -> cuMod.(compute(V))
+    if (3 < params.verbose)
+        compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
+    else
+        compute_gpu = V -> cuMod.(compute(V))
+    end
+
     compute_float = V -> float_entries.(compute(V))
 
-    if 4 < n && params.use_gpu #4 < n
-        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float)
+    if 3 < n && d == 3 && S == [0] && params.use_gpu #4 < n
+
+        eager_Vs = cubic_S_zero_Vs(n)
+
+        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float,eagerVs=eager_Vs,usethreads=false)
         m = M = Int(modulus(base_ring(oscar_matspace)))
-        convert_to_gpu(matrices) = CuModMatrix.(matrices,M,elem_type=Float64)
+
+        if (3 < params.verbose)
+            create_gpu = matrices -> begin
+                println("Moving an Ruv to the GPU (first time creation!)")
+                CUDA.@time CuModMatrix.(matrices,M,elem_type=Float64)
+            end
+
+            convert_gpu = (dest,matrices) -> begin
+                println("Moving an Ruv to the GPU (already allocated)")
+
+                CUDA.@time begin
+                    for i in 1:length(dest)
+                        copyto!(dest[i],matrices[i])
+                    end
+                end
+            end
+        else
+            create_gpu = matrices -> CuModMatrix.(matrices,M,elem_type=Float64)
+            convert_gpu = (dest,matrices) -> begin
+                for i in 1:length(dest)
+                    copyto!(dest[i],matrices[i])
+                end
+            end
+        end
         s = size(oscar_matspace(),1)
 
-        memory_cap = 6_000_000_000 # about 6 gigabytes of gpu memory
+        memory_cap = 4_500_000_000 # about 6 gigabytes of gpu memory
 
         # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
         memory = s^2 * 8 * (n+2)
 
         maxsize = div(memory_cap,memory)
 
+        #println(maxsize)
         #testing
-        #maxsize = 8
+        maxsize = 13 
 
-        Ruv = CachePEP{Matrix{Float64},CuModMatrix}(cpu_Ruv,convert_to_gpu,maxsize)
+        Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+
+        #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     elseif params.use_gpu && lazy
         Ruv = LazyPEP{CuModMatrix}(compute_gpu)
 
@@ -962,37 +1037,48 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #    get!(explookup,ev1[i],i)
     #end
 
-    computeRuv(V) = computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+    if (3 < params.verbose)
+        computeRuv = V -> begin
+            println("Computing Ruv for V = $V for the firs time.")
+            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+        end
+    else
+        computeRuv = V -> begin
+            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+        end
+    end
 
 
     #TODO: right now, it usually seems better to do lazy computations,
     #  since not all of the Ruv are used. However, I know that for some
     #  classes of examples, they are all pretty much always used. For 
     #  such examples, it's better to use an EagerPEP and do threads.
-    lazy_Ruv = length(S) < d || d < n
+    lazy_Ruv = true#length(S) < d || d < n
 
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        CUDA.@time Ruv = select_Ruv_PEP(n,d,params,computeRuv,lazy_Ruv,MS1,cache)
+        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
-        Ruv = select_Ruv_PEP(n,d,params,computeRuv,lazy_Ruv,MS1,cache)
+        Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
 
     # Make one context for each vector, so we can parallelize
-    contexts = ControlledReductionContext[]
+    #contexts = ControlledReductionContext[]
 
-    (1 < params.verbose) && println("Allocating memory for controlled reduction")
-    for i in 1:length(FT)#Threads.nthreads()
-        push!(contexts, default_context(MS1,Ruv,params))
-    end
+    #(1 < params.verbose) && println("Allocating memory for controlled reduction")
+    #for i in 1:length(FT)#Threads.nthreads()
+    #    push!(contexts, default_context(MS1,Ruv,params))
+    #end
+
+    context = default_context(MS1,Ruv,params)
 
     result = similar(FT)
 
     #TODO: make the reduction context thread local
     #Threads.@threads for i in 1:length(FT) #pol in FT
     for i in 1:length(FT) #pol in FT
-        context = contexts[i]
+        #context = contexts[i]
         pol = FT[i]
         if (0 < params.verbose)
             println("Reducing vector $i")
@@ -1002,14 +1088,15 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         end
         result[i] = reduction
 
-        #i == 1 && error("stopping after vector $i for testing purposes")
+        #println("cache info: $(cache_info(Ruv.Ucomponent))")
+        #i == 5 && error("stopping after vector $i for testing purposes")
         
         #push!(result, reduction)
     end
 
-    (0 < params.verbose && Ruv isa CachePEP) && begin
-        println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
-    end
+    #(0 < params.verbose && Ruv isa CachePEP) && begin
+    #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
+    #end
     (0 < params.verbose) && begin
         println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
     end

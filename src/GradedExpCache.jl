@@ -115,7 +115,7 @@ function generate_degree_reverse(c::PolyExpCache,d)
 end
 
 function PolyExpCache(n,termorder,degrees_to_prefill,reverse_to_prefill;vars_reversed=false)
-    c = PolyExpCache(n,termorder)
+    c = PolyExpCache(n,termorder,vars_reversed=vars_reversed)
     for d in degrees_to_prefill
         generate_degree_forward(c,d)
     end
@@ -127,7 +127,7 @@ function PolyExpCache(n,termorder,degrees_to_prefill,reverse_to_prefill;vars_rev
 end
 
 function PolyExpCache(n,termorder,max_degree_prefill;vars_reversed=false)
-    PolyExpCache(n,termorder,1:max_degree_prefill,1:max_degree_prefill)
+    PolyExpCache(n,termorder,1:max_degree_prefill,1:max_degree_prefill,vars_reversed=vars_reversed)
 end
 
 
