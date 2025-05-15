@@ -262,7 +262,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     #TODO: there is some sort of race condition on 
     # our dictionary, and putting this print statement here 
     # fixes it. Later, we'll need to fix this for reals
-    (1 < Threads.nthreads()) && println("New key: $V")
+    (2 < params.verbose && 1 < Threads.nthreads()) && println("New key: $V")
     (2 < params.verbose) && begin
         nnzs = count.(!=(0),result)
         total_entries = g_length^2

@@ -568,7 +568,10 @@ function hodgepolygon(f::RingElem; basis=nothing, params=default_params())
     R = coefficient_ring(parent(f))
 
     if basis == nothing
-        basis = compute_monomial_bases(f, R, PR, params) # basis of cohomology 
+        d = total_degree(f)
+        S = collect(0:n) #collect(0:d-1)
+        cache = controlled_reduction_cache(n,d,S,params)
+        basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
     end
     
     Basis = []

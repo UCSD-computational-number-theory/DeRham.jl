@@ -7,7 +7,7 @@ function first_ellcurve_cache()
     n=2
     d = 3 #total_degree(f)
     S = collect(0:n)
-    controlled_reduction_cache(n,d,S,params)
+    DeRham.controlled_reduction_cache(n,d,S,first_ellcurve_params())
 end
 
 function testEllCurve1_7()
@@ -89,6 +89,7 @@ function testFrobTrans()
     PrecisionRingPoly, PVars = polynomial_ring(PrecisionRing, ["x$i" for i in 0:n])
 
     params = first_ellcurve_params()
+    cache = first_ellcurve_cache()
 
     BasisT = DeRham.compute_monomial_bases(f, params, cache)
     fLift = DeRham.liftCoefficients(PrecisionRing, PrecisionRingPoly, f)
@@ -107,8 +108,6 @@ function testFrobTrans()
         end
     end
     #M = 15
-
-    params = first_ellcurve_params()
 
     frobterms = DeRham.applyFrobeniusToBasis(Basis,fLift,N,p,params)
 
@@ -245,7 +244,7 @@ function testT()
     cache = first_ellcurve_cache()
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
-    basis = DeRham.compute_monomial_bases(f,R,PR,:invlex)
+    basis = DeRham.compute_monomial_bases(f,params,cache)
     @test Array(DeRham.computeT(f,basis,M,params,cache)) == 
     [257 0 85 0 0 0 172 257 0 0;
      172 0 52 0 114 0 0 170 0 1]
