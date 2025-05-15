@@ -319,7 +319,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,g_temp,params)
+function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
     verbose = params.verbose
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -362,7 +362,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
         nend = p
     end
 
-    matrices = computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
+    matrices = Ruv[V]#computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
 
     #TODO: the following was changed to use reverse! so 
     #    it doesn't allocate as much, but I realized that
@@ -416,7 +416,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
         # there's some sort of parity issue between our code and Costa's
         #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
         
-        matrices1 = computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
+        matrices1 = Ruv[y]#computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
         #println(matrices1)
 
         if params.vars_reversed == true
@@ -450,6 +450,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,tem
     end
 end
 
+# what in here could possibly be causing a lock conflict?
 function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -729,7 +730,7 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
+function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -751,8 +752,6 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
         ωₑ = termsoforder(pol,poleorder)
 
         #(9 < verbose) && println("ωₑ: $ωₑ")
-        
-        
 
         for term in ωₑ
             #(9 < verbose) && println("term: $term")
@@ -769,7 +768,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,p
             #ω[i] = reducechain...
             #(9 < verbose) && println("u is type $(typeof(ω[i][1]))")
             g_temp = similar(ω[i][2])
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,g_temp,params)
+            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
         end
 
         poleorder = poleorder - p
@@ -824,16 +823,27 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     A = MS1()
     B = MS1()
     temp = MS1()
-    Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
+    if (3 < params.verbose)
+        computeRuv = V -> begin
+            println("Computing Ruv for V = $V for the first time.")
+            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+        end
+    else
+        computeRuv = V -> begin
+            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+        end
+    end
+    Ruv = LazyPEP{typeof(MS1())}(computeRuv)
+
     result = []
     i = 1
     for pol in FT
         (0 < params.verbose) && println("Reducing vector $i")
         i += 1
         if (0 < params.verbose)
-            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
+            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
         else
-            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,cache,A,B,temp,params)
+            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
         end
 
         push!(result, reduction)
@@ -916,6 +926,19 @@ function default_context(matspace,Ruv,params)
     end
 end
 
+function default_context_type(matspace,params)
+    B = base_ring(matspace)
+    m = modulus(B)
+
+    if params.use_gpu == true
+        ControlledReductionContext{CuModMatrix{Float64},CuModVector{Float64}}
+    elseif params.always_use_bigints || ZZ(2)^64 < ZZ(m)
+        ControlledReductionContext{ZZModMatrix,Vector{ZZRingElem}}
+    else
+        ControlledReductionContext{zzModMatrix,Vector{UInt}}
+    end
+end
+
 """
 Gives a special PEP for when S = [0] and d=3
 
@@ -991,8 +1014,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         end
         s = size(oscar_matspace(),1)
 
-        memory_cap = 4_500_000_000 # about 6 gigabytes of gpu memory
-
+        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
         # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
         memory = s^2 * 8 * (n+2)
 
@@ -1000,7 +1022,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         #println(maxsize)
         #testing
-        maxsize = 13 
+        #maxsize = 13 
 
         Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
@@ -1039,7 +1061,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     if (3 < params.verbose)
         computeRuv = V -> begin
-            println("Computing Ruv for V = $V for the firs time.")
+            println("Computing Ruv for V = $V for the first time.")
             @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         end
     else
@@ -1053,7 +1075,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #  since not all of the Ruv are used. However, I know that for some
     #  classes of examples, they are all pretty much always used. For 
     #  such examples, it's better to use an EagerPEP and do threads.
-    lazy_Ruv = true#length(S) < d || d < n
+    lazy_Ruv = length(S) < d || d < n
 
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
@@ -1063,22 +1085,18 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
 
-    # Make one context for each vector, so we can parallelize
-    #contexts = ControlledReductionContext[]
-
-    #(1 < params.verbose) && println("Allocating memory for controlled reduction")
-    #for i in 1:length(FT)#Threads.nthreads()
-    #    push!(contexts, default_context(MS1,Ruv,params))
-    #end
-
-    context = default_context(MS1,Ruv,params)
-
     result = similar(FT)
 
-    #TODO: make the reduction context thread local
-    #Threads.@threads for i in 1:length(FT) #pol in FT
+    #context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+    #    () -> default_context(MS1,Ruv,params)
+    #)
+    #Threads.@threads for i in 1:length(FT) 
+    #    context = context_tlv[]
+
+    context = default_context(MS1,Ruv,params)
     for i in 1:length(FT) #pol in FT
-        #context = contexts[i]
+    
+
         pol = FT[i]
         if (0 < params.verbose)
             println("Reducing vector $i")
