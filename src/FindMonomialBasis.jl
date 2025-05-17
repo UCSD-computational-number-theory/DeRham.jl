@@ -132,6 +132,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     U = matrix_space(R, binomial(n + l, n), cols)
     M = U()
 
+    partials = zeros(parent(f),n+1)
     for i in 1:n+1
         partials[i] = derivative(f, i)
     end

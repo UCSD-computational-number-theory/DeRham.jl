@@ -1,12 +1,3 @@
-#module FinalReduction
-
-#using Oscar
-#using BitIntegers
-#using LinearAlgebra
-#using Combinatorics
-
-#include("Utils.jl")
-#include("StandardReduction.jl")
 
 """
     computeT(f,Basis,M,params)
@@ -30,8 +21,18 @@ function computeT(f, Basis, M, params, cache)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
     f_lift = liftCoefficients(precisionring,precisionringpoly,f)
 
-    exp_vec = gen_exp_vec(n+1, d*n-n-1, params.termorder)
+    exp_vec = cache[d*n-n-1]#gen_exp_vec(n+1, d*n-n-1, params.termorder)
+
+    if cache.vars_reversed
+        reverse!.(exp_vec)
+    end
+
     monomials = gen_mon(exp_vec, precisionringpoly)
+
+    if cache.vars_reversed
+        reverse!.(exp_vec)
+    end
+
     #len = binomial(n+(d*n-n-1), n)
     len = length(monomials)
 
@@ -48,16 +49,16 @@ function computeT(f, Basis, M, params, cache)
         basis = Basis[n-i]
         len_basis = length(basis)
         if l >=0 
-            exp_vec = gen_exp_vec(n+1,l,params.termorder)
+            exp_vec = cache[l]#gen_exp_vec(n+1,l,params.termorder)
             if (l-(d-1)) > 0
-                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly, params.termorder)
+                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,params.termorder,cache, vars_reversed=cache.vars_reversed)
                 len_domain = length(monomials_domain)
                 change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params,cache)
                 #change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 
                 for j in 1:len # indexing over monomials 
-                    row_vec = convert_p_to_m([monomials[j]],exp_vec)
+                    row_vec = convert_p_to_m([monomials[j]],exp_vec,vars_reversed=cache.vars_reversed)
                     vec = change_basis_inverse * transpose(row_vec)
                     
                     for k in 1:len_basis 

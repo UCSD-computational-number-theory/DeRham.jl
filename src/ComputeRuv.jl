@@ -110,13 +110,13 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     #end
 
     # instead of doing this, lets reverse and reverse back:
-
      
     ev1 = (cache[n*d - n])#gen_exp_vec(n+1,n*d-n,termorder)
     ev2 = (cache[n*d-n+d-length(S)])#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
     ev3 = (cache[n*d-n-length(S)+1])#gen_exp_vec(n+1,n*d-n-length(S)+1,termorder)
     ev4 = (cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
     explookup = cache[n*d - n,:reverse]
+    explookup2 = cache[n*d-n+d-length(S),:reverse]
     if vars_reversed && !cache.vars_reversed
         for vec in ev1
             reverse!(vec)
@@ -195,12 +195,12 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
 
         # gVec above has a one at coordinate j, so we may do the matmul
         # by taking the column.
-        ind = findfirst(==(mon),ev2)
-        if ind == nothing
+        #ind = findfirst(==(mon),ev2)
+        ind = get(explookup2,mon,-1)
+        if ind == -1
             #gJS = zeros(base_ring(pseudoInverseMat),size(pseudoInverseMat,1))
             zero!(gJS)
         else
-            #println(typeof(pseudoInverseMat[:,1]))
             #gJS = pseudoInverseMat[:,ind]
             for h in 1:size(pseudoInverseMat,1)
                 gJS[h] = pseudoInverseMat[h,ind]
