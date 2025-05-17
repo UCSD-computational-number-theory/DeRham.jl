@@ -73,7 +73,9 @@ function controlled_reduction_cache(n,d,S,params)
     end
     #append!(degsforward,[h*d - n - 1 for h in 1:n])
 
-    degsreverse = [d,n*d - n]
+    degsreverse = [d,
+                   n*d - n,
+                   d*n - n + d - length(S)]
 
     #println(params.vars_reversed)
 
