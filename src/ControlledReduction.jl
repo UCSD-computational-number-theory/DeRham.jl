@@ -451,12 +451,15 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
 end
 
 # what in here could possibly be causing a lock conflict?
+"""
+Iteratively execute reduction chunks in the navie strategy until
+the vector g is reduced to pole order n
+"""
 function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
-    #ui(i) = 0 ≤ i ? UInt(i) : UInt(i + characteristic(R))
     (9 < params.verbose) && println("u = $u") 
     
 
@@ -520,7 +523,6 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
             K = K+1
         end
         matrices = context.Ruvs[V]
-        #matrices = computeRuvS(V,S,f,pseudoInverseMat,context.Ruvs,cache,params)
 
         #(5 < params.verbose && firsttime) && begin 
         #    for i in 1:length(matrices)
@@ -539,7 +541,6 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
 
         i = 1
         if params.fastevaluation == false
-
             params.verbose == 11 && println("gMat before is $gMat")
             while i <= K
                 gMat = (context.A+context.B*(K-i))*gMat
@@ -905,7 +906,7 @@ function default_context(matspace,Ruv,params)
         g = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
         g_temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
 
-        ControlledReductionContext(Ruv,A,B,temp,g,g_temp)
+        ControlledReductionContext{CuModMatrix{Float64},CuModVector{Float64}}(Ruv,A,B,temp,g,g_temp)
     else # use the CPU
         A = matspace()
         B = matspace()
@@ -1028,10 +1029,10 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     elseif params.use_gpu && lazy
-        Ruv = LazyPEP{CuModMatrix}(compute_gpu)
+        Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
 
     elseif params.use_gpu
-        Ruv = EagerPEP{CuModMatrix}(cache[d],compute_gpu,usethreads=false)
+        Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
 
     elseif lazy
         Ruv = LazyPEP{typeof(oscar_matspace())}(compute)

@@ -216,7 +216,49 @@ function compute_monomials(n,d,PR,order=:lex,cache=nothing; vars_reversed=false)
 end
 
 """
-    polynomial_to_vector(f, n, R, PR; order=:lex)
+    polynomial_to_vector!(v, f, n, order=:lex, cache=nothing; vars_reversed=false)
+
+Convert (homogeneous) polynomial to vector form with specified order. Default is lexicographic.
+Update v with this vector. Assumes v has the correct length.
+
+f - an oscar polynomial
+n - the number of variables (minus 1???)
+order - a symbol which denotes the term order
+cache - a GradedExpCache which gives us the variables
+vars_reversed - should we reverse the variables?
+"""
+function polynomial_to_vector!(v, f, n, order=:lex,cache=nothing; vars_reversed=false)
+
+    #TODO: remove vars_reversed and set it based on the cache's property
+
+    #TODO: if f turns out to be zero, we don't know what the degree should be.
+    #
+    #How best to fix this?
+    R = base_ring(parent(f))
+    d = total_degree(f)
+
+    if cache != nothing
+        mon_vec = cache[d]
+        #println(cache[d])
+    else
+        mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
+    end
+    res = v
+    for i in eachindex(mon_vec)
+        if vars_reversed
+            reverse!(mon_vec[i])
+            res[i] = coeff(f, mon_vec[i])
+            reverse!(mon_vec[i])
+        else
+            res[i] = coeff(f, mon_vec[i])
+        end
+    end
+
+    res
+end
+
+"""
+    polynomial_to_vector(f, n, order=:lex, cache=nothing; vars_reversed=false)
 
 Convert (homogeneous) polynomial to vector form with specified order. Default is lexicographic.
 
@@ -242,29 +284,17 @@ function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=fals
     else
         mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
     end
-    #if vars_reversed 
-    #    mon = gen_mon([reverse(tmp) for tmp in mon_vec], R, PR)
-    #else 
-    #    mon = compute_monomials(n, d, PR, order)
-    #end 
-
-    #mon = compute_monomials(n, d,PR,order)
     res = fill(R(0), length(mon_vec))
     for i in eachindex(mon_vec)
-    #    println("interpreting vector $(mon_vec[i])")
         if vars_reversed
             reverse!(mon_vec[i])
-    #        println("changed to $(mon_vec[i])")
             res[i] = coeff(f, mon_vec[i])
-    #        println("coeff: $(res[i])")
             reverse!(mon_vec[i])
         else
             res[i] = coeff(f, mon_vec[i])
         end
     end
 
-    #error()
-    #println(res)
     res
 end
 
