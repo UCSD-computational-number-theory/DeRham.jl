@@ -1,3 +1,47 @@
+
+function is_Ssmooth(f,S)
+    p = characteristic(parent(f))
+    n = length(gens(parent(f))) - 1
+    d = total_degree(f)
+    l = d * n - n + d - length(S)
+
+    PR = parent(f)
+    R = base_ring(PR)
+
+    PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
+    fLift = liftCoefficients(ZZ,PRZZ,f)
+
+    params = default_params()
+    cache = controlled_reduction_cache(n,d,S,params)
+
+    M_ZZ = compute_controlled_matrix(fLift,l,S,ZZ,PRZZ,params,cache)
+
+    M = matrix(R,M_ZZ)
+
+    flag, B = is_invertible_with_inverse(M, side=:right)
+    #is_invertible(M; side=:right)
+    flag
+end
+
+function issmooth_linalg(f)
+    n = length(gens(parent(f))) - 1
+    is_Ssmooth(f,collect(0:n))
+end
+
+function random_change_of_variables(f)
+
+    vars = gens(parent(f))
+    n = length(vars)-1 # we don't need it here, but use the standard convention
+    p = characteristic(parent(f))
+
+    SLn = special_linear_group(n + 1, GF(p))
+    mat = rand(SLn)
+    new_vars = matrix(mat) * vars
+    f_transformed = evaluate(f, new_vars)
+
+    f_transformed
+end
+
 """
     find_Ssmooth_model(f, M, S_target, params)
 Find a change of variable that makes f S_target-smooth 

@@ -132,16 +132,19 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     U = matrix_space(R, binomial(n + l, n), cols)
     M = U()
 
-    partials = zeros(parent(f),n+1)
     for i in 1:n+1
         partials[i] = derivative(f, i)
     end
     #partials = [ derivative(f, i) for i in 1:n+1 ] # ∂_0, ∂_1, ∂_2
     
     if params.vars_reversed == true
-        partials = reverse(partials)  # one needs to be quite careful with the ordering of partials 
-        Stilda = reverse(Stilda)
-        vars = reverse(vars)        
+        # one needs to be quite careful with the ordering of partials 
+        reverse!(partials)
+        #partials = reverse(partials)  
+        reverse!(Stilda)
+        #Stilda = reverse(Stilda)
+        reverse!(vars)
+        #vars = reverse(vars)        
     end
     #println("partials = $partials")
     #println("Stilda = $Stilda")
@@ -149,19 +152,23 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     #println("in_S_mons = $in_S_mons")
     #println("in_S_mons_vec = $in_S_mons_vec")
 
+    v = fill(R(0), length(cache[l]))
+
     col_idx = 1
     for i in 1:(n+1)
         if Stilda[i] == 1
             for monomial in eachindex(in_S_mons)
-                #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder)
-                #println(in_S_mons[monomial] * partials[i])
-                M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+
+                #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
         else
             for monomial in eachindex(not_in_S_mons)
-                #M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder)
-                M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                #M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                polynomial_to_vector!(v,not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
         end 
