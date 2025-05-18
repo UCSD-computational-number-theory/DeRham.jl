@@ -16,8 +16,12 @@ function is_Ssmooth(f,S)
 
     M_ZZ = compute_controlled_matrix(fLift,l,S,ZZ,PRZZ,params,cache)
 
+    #M = zeros(Float64,size(M_ZZ)...)
+    #float_entries!(M,M_ZZ)
+    #M_gpu = CuModMatrix{Float64}(M,Int(p))
+    #flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(M_gpu)
+    
     M = matrix(R,M_ZZ)
-
     flag, B = is_invertible_with_inverse(M, side=:right)
     #is_invertible(M; side=:right)
     flag
