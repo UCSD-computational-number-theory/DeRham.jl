@@ -3,7 +3,7 @@
 
 function find_0smooth(n,d,p,nExamples)
 
-    nTries = 5 # just some heuristic
+    nTries = 7 # just some heuristic
 
 
     result = []
@@ -21,11 +21,13 @@ function find_0smooth(n,d,p,nExamples)
             continue
         end
 
+        GC.gc()
         println("f is smooth!\n")
 
         for i in 1:nTries # give 
             println("Testing if f is {0}-smooth...")
             @time smooth0 = DeRham.is_Ssmooth(f,[0])
+            GC.gc()
 
             if smooth0
                 println("f is {0}-smooth!\n")

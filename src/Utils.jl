@@ -522,6 +522,57 @@ function julia_signed_mod(x,n)
     ((x % n) + n) % n
 end
 
+
+"""
+Return a Matrix{Float64} which has entries that are the same
+as A
+"""
+function float_entries(A::zzModMatrix)
+    res = zeros(Float64,size(A)...)
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+        end
+    end
+
+    res
+end
+
+"""
+Updates dest with the entries of src as Float64 values
+"""
+function float_entries!(dest::Matrix{Float64}, src::zzModMatrix)
+    res = dest
+    A = src
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+        end
+    end
+
+    res
+end
+
+"""
+Updates dest with the entries of src as Float64 values
+"""
+function float_entries!(dest::Matrix{Float64}, src::ZZMatrix)
+    res = dest
+    A = src
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            res[i,j] = convert(Float64,convert(Int64,A[i,j]))
+        end
+    end
+
+    res
+end
+
 """
     henselLift(p, precision, A, T)
 Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision

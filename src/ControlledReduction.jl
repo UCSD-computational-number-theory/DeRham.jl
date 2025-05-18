@@ -853,18 +853,6 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
-function float_entries(A::zzModMatrix)
-    res = zeros(Float64,size(A)...)
-
-    for i in 1:size(A,1)
-        for j in 1:size(A,2)
-            lifted = lift(ZZ,A[i,j])
-            res[i,j] = convert.(Float64,convert.(Int64,lifted))
-        end
-    end
-
-    res
-end
 
 function cuMod(A::zzModMatrix)
     m = modulus(base_ring(parent(A)))
