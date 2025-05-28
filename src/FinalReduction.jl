@@ -20,7 +20,11 @@ function computeT(f, Basis, M, params)
     PR = parent(f)
     R = coefficient_ring(parent(f))
     PRZZ, VarsZZ = polynomial_ring(ZZ, ["x$i" for i in 0:n])
-    partials_index = [(n+1)-i for i in 0:n]
+    if params.vars_reversed 
+        partials_index = [(n+1)-i for i in 0:n]
+    else
+        partials_index = [i for i in 1:n+1]
+    end 
 
     precisionring, pi = residue_ring(ZZ,p^M)
     precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
@@ -46,10 +50,10 @@ function computeT(f, Basis, M, params)
         if l >=0 
             exp_vec = gen_exp_vec(n+1,l,params.termorder)
             if (l-(d-1)) > 0
-                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,params.termorder)
+                monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly, params.termorder)
                 len_domain = length(monomials_domain)
                 change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params)
-                change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
+                #change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 
                 for j in 1:len # indexing over monomials 
@@ -68,7 +72,7 @@ function computeT(f, Basis, M, params)
                         if t_domain == 0
                             t_domain = len_domain
                         end 
-                        term = term + vec[t+len_basis,1]*derivative(monomials_domain[t_domain],partials_index[t_partial])
+                        term = term + vec[t+len_basis,1] * derivative(monomials_domain[t_domain], partials_index[t_partial])
                     end 
                     monomials[j] = term
                 end 

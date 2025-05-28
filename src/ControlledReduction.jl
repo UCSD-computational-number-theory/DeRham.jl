@@ -442,7 +442,7 @@ function reducechain_naive(u,g,m,S,f,pseudoInverseMat,p,context,cache,params)
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
-            # the following if statement will never hit.
+            # the following if statement should never hit.
             for i in 1:length(V)
                 if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
                     print("Illegal choice of V!")
