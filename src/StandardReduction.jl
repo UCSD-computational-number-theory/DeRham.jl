@@ -98,6 +98,6 @@ function monomial_change_basis_inverse_lifted(f, l, basis, M, params, cache)
     Sol_mod_p_int = lift_to_int(Sol_fp)
 
     p = characteristic(parent(f))
-    return A,henselLift(p,M,A,Sol_mod_p_int)
+    return A, henselLift(p, M, A, Sol_mod_p_int, params)
 end
 

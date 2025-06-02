@@ -1,4 +1,3 @@
-
 """
    gen_exp_vec(n, d, order; vars_reversed=false)
 
@@ -574,16 +573,24 @@ function float_entries!(dest::Matrix{Float64}, src::ZZMatrix)
 end
 
 """
-    henselLift(p, precision, A, T)
+    henselLift(p, precision, A, T, params=nothing)
 Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision
+Uses GPU acceleration if params.use_gpu is true.
 
 INPUTS:
 * "p" -- integer, a prime number 
 * "precision" -- integer 
 * "A" -- matrix, integer coefficients
 * "T" -- matrix, integer coefficients, satisfies AT-I=0 mod p
+* "params" -- optional ZetaFunctionParams, if provided and params.use_gpu is true, will use GPU
 """
-function henselLift(p, precision, A, T)
+function henselLift(p, precision, A, T, params=nothing)
+    # Use GPU implementation if requested and available
+    if params !== nothing && params.use_gpu
+        return henselLiftGPU(p, precision, A, T)
+    end
+    
+    # Otherwise use the CPU implementation
     i = 1
 
     temp_T = zero_matrix(base_ring(T),size(T)...)
@@ -626,6 +633,39 @@ function henselLift(p, precision, A, T)
     R, pi = residue_ring(ZZ, p^precision)
     #stuff = [R(x) for x in Array(T)]
     return matrix(R,temp_T)
+end
+
+function henselLiftGPU(p, precision, A, T)
+    # modulus
+    modulus = p^precision
+
+    # dimensions
+    A_rows, A_cols = size(A)
+    T_rows, T_cols = size(T)
+
+    # convert to GPU matrices
+    # A = Array(A)
+    # T = Array(T)
+    A_gpu = CuModMatrix(A, modulus)
+    T_gpu = CuModMatrix(T, modulus)
+
+    # create temporary matrices
+    temp_2T = GPUFiniteFieldMatrices.zeros(Float32, T_rows, T_cols, modulus)
+    temp_AT = GPUFiniteFieldMatrices.zeros(Float32, A_rows, T_cols, modulus)
+    temp_TAT = GPUFiniteFieldMatrices.zeros(Float32, T_rows, T_cols, modulus)
+
+    i = 1
+    while i < precision
+        GPUFiniteFieldMatrices.mul!(temp_2T, T_gpu, 2)
+        GPUFiniteFieldMatrices.mul!(temp_AT, A_gpu, T_gpu)
+        GPUFiniteFieldMatrices.mul!(temp_TAT, T_gpu, temp_AT)
+        GPUFiniteFieldMatrices.sub!(T_gpu, temp_2T, temp_TAT)
+        i *= 2
+    end
+
+    result = Array(T_gpu)
+    R, pi = residue_ring(ZZ, modulus)
+    return matrix(R, result)
 end
 
 function findpivotcolumnsU(U)

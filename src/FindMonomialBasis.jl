@@ -313,18 +313,14 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     else
         Sol_mod_p_int = lift_to_int(Sol_fp)
     end
-    #U_int = lift_to_int64(U)
-
-    #println("Solution mod p: $Sol_fp")
-    #println("U lifted: $U_int")
 
     p = characteristic(PR)
 
     if (0 < params.verbose)
         println("Hensel lifting matrix of size $(size(Sol_fp))")
-        @time henselLift(p,M,U,Sol_mod_p_int)
+        @time henselLift(p, M, U, Sol_mod_p_int, params)
     else
-        henselLift(p,M,U,Sol_mod_p_int)
+        henselLift(p, M, U, Sol_mod_p_int, params)
     end
 end
 
