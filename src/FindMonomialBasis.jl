@@ -268,10 +268,29 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
   
     #temp = size(U)
     if (0 < params.verbose)
-        println("Computing pseudoinverse of matrix of size $(size(U))")
-        @time flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        if params.use_gpu
+            println("Computing pseudoinverse of matrix of size $(size(U)) with GPU.")
+            @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+                CuModMatrix(matrix(R,[R(x) for x in Array(U)])),
+                N=characteristic(PR),
+                rows=rows(U),
+                cols=cols(U)
+            )
+        else
+            println("Computing pseudoinverse of matrix of size $(size(U))")
+            @time flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        end
     else
-        flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        if params.use_gpu
+            @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+                CuModMatrix(matrix(R,[R(x) for x in Array(U)])),
+                N=characteristic(PR),
+                rows=rows(U),
+                cols=cols(U)
+            )
+        else
+            flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        end
     end
     
     (6 < params.verbose) && println("pinv mod p: \n$B")

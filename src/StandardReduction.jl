@@ -69,7 +69,16 @@ function monomial_change_basis_inverse(f,l,basis,params,cache)
        R = coefficient_ring(PR)  
        A = monomial_change_basis(f,l,basis,params,cache)
        
-       flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
+       if params.use_gpu
+           flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+               CuModMatrix(matrix(R,[R(x) for x in Array(A)])),
+               N=characteristic(PR),
+               rows=rows(A),
+               cols=cols(A)
+           )
+       else
+           flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
+       end
        
        if flag
            return (A,B)

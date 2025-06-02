@@ -1,5 +1,4 @@
-
-function is_Ssmooth(f,S)
+function is_Ssmooth(f,S,params)
     p = characteristic(parent(f))
     n = length(gens(parent(f))) - 1
     d = total_degree(f)
@@ -22,7 +21,13 @@ function is_Ssmooth(f,S)
     #flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(M_gpu)
     
     M = matrix(R,M_ZZ)
-    flag, B = is_invertible_with_inverse(M, side=:right)
+    if params.use_gpu
+        flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+            CuModMatrix(M, N=p, rows=rows(M), cols=cols(M))
+        )
+    else
+        flag, B = Nemo.is_invertible_with_inverse(M, side=:right)
+    end
     #is_invertible(M; side=:right)
     flag
 end

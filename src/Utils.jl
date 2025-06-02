@@ -644,8 +644,8 @@ function henselLiftGPU(p, precision, A, T)
     T_rows, T_cols = size(T)
 
     # convert to GPU matrices
-    # A = Array(A)
-    # T = Array(T)
+    A = Array(A)
+    T = Array(T)
     A_gpu = CuModMatrix(A, modulus)
     T_gpu = CuModMatrix(T, modulus)
 
