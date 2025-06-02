@@ -15,15 +15,15 @@ include("Precision.jl")
 include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
 
-# @testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
-#     testEllCurve1_7() #TODO: why is this failing?
-#     testMonomialBasis()
-#     testLinAlgProb()
-#     testFrobTrans()
-#     #testRedOfTerms()
-#     testT()
-#     #testFrobMat()
-# end
+@testset "The curve y^2 - x^3 - x - 1 = 0, reproducing Costa's results" begin
+    testEllCurve1_7() #TODO: why is this failing?
+    testMonomialBasis()
+    testLinAlgProb()
+    testFrobTrans()
+    #testRedOfTerms()
+    testT()
+    #testFrobMat()
+end
 
 # # currently, this runs on all the examples that can be done with a full S
 # function larger_tests(zf)
@@ -164,25 +164,25 @@ include("ManageCSVTests.jl")
 #     runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
 # end 
 
-if CUDA.functional()
-    @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
+# if CUDA.functional()
+#     @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
     
-        zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:naive,fastevaluation=true,use_gpu=true)
+#         zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:naive,fastevaluation=true,use_gpu=true)
     
-        fermatfiles = [(2,3)]#,(2,4),(3,3)]
-        randomfiles = [(2,3)]#,(2,4)]
+#         fermatfiles = [(2,3)]#,(2,4),(3,3)]
+#         randomfiles = [(2,3)]#,(2,4)]
     
-        for (dim,deg) in fermatfiles
-            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-            runcsvtest(filename,zeta_function=zf)
-        end
+#         for (dim,deg) in fermatfiles
+#             filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+#             runcsvtest(filename,zeta_function=zf)
+#         end
     
-        #for (dim,deg) in randomfiles
-        #    filename = "dim_$(dim)_deg_$(deg)_random.csv"
-        #    runcsvtest(filename,zeta_function=zf)
-        #end
-    end
-end
+#         #for (dim,deg) in randomfiles
+#         #    filename = "dim_$(dim)_deg_$(deg)_random.csv"
+#         #    runcsvtest(filename,zeta_function=zf)
+#         #end
+#     end
+# end
 
 #@testset "Threefolds" begin
 #    runcsvtest("threefolds.csv")

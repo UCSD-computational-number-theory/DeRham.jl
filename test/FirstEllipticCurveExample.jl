@@ -2,7 +2,7 @@
 
 
 # vars_reversed =true, do not use fast evaluation, bigints, or the gpu
-first_ellcurve_params() = DeRham.ZetaFunctionParams(0,true,:costachunks,:invlex,true,false,false,false)
+first_ellcurve_params() = DeRham.ZetaFunctionParams(0,true,:costachunks,:invlex,true,false,false,true) #TODO @ryb: GPU is set to false here for testing
 function first_ellcurve_cache()
     n=2
     d = 3 #total_degree(f)

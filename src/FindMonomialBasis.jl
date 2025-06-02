@@ -270,11 +270,10 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     if (0 < params.verbose)
         if params.use_gpu
             println("Computing pseudoinverse of matrix of size $(size(U)) with GPU.")
+            #TODO @ryb: Figure out how to convert the matrix to an Array.
             @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
-                CuModMatrix(matrix(R,[R(x) for x in Array(U)])),
-                N=characteristic(PR),
-                rows=rows(U),
-                cols=cols(U)
+                CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
+                           N=Int(characteristic(PR)))
             )
         else
             println("Computing pseudoinverse of matrix of size $(size(U))")
@@ -283,10 +282,8 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     else
         if params.use_gpu
             @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
-                CuModMatrix(matrix(R,[R(x) for x in Array(U)])),
-                N=characteristic(PR),
-                rows=rows(U),
-                cols=cols(U)
+                CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
+                           N=Int(characteristic(PR)))
             )
         else
             flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
