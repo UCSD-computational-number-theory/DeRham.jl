@@ -22,7 +22,7 @@ function is_Ssmooth(f,S)
     #flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(M_gpu)
     
     M = matrix(R,M_ZZ)
-    flag, B = is_invertible_with_inverse(M, side=:right)
+    flag, B = Nemo.is_invertible_with_inverse(M, side=:right)
     #is_invertible(M; side=:right)
     flag
 end

@@ -637,17 +637,15 @@ end
 
 function henselLiftGPU(p, precision, A, T)
     # modulus
-    modulus = p^precision
+    modulus = Int(p^precision)
 
     # dimensions
     A_rows, A_cols = size(A)
     T_rows, T_cols = size(T)
 
     # convert to GPU matrices
-    # A = Array(A)
-    # T = Array(T)
-    A_gpu = CuModMatrix(A, modulus)
-    T_gpu = CuModMatrix(T, modulus)
+    A_gpu = CuModMatrix(Array{Int}(Array(A)), modulus)
+    T_gpu = CuModMatrix(Array{Int}(Array(T)), modulus)
 
     # create temporary matrices
     temp_2T = GPUFiniteFieldMatrices.zeros(Float32, T_rows, T_cols, modulus)
@@ -663,9 +661,10 @@ function henselLiftGPU(p, precision, A, T)
         i *= 2
     end
 
-    result = Array(T_gpu)
-    R, pi = residue_ring(ZZ, modulus)
-    return matrix(R, result)
+    R, pi = residue_ring(ZZ, p^precision)
+    
+    result_array = Array(T_gpu)
+    return matrix(R, [R(Int(x)) for x in result_array])
 end
 
 function findpivotcolumnsU(U)
