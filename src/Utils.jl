@@ -1,34 +1,6 @@
-#module Utils
-
-#using Oscar
-
-##################################################################
-# Given a homogenous, irreducible polynomial in Q_p[x1, ... xn],
-# this script will generate the basis vectors for the n-th de
-# Rham cohomology of (X, Z)/Q_p by following the Griffiths-Dwork
-# construction algorithm.
-##################################################################
-
-# TODO: Modify all the below to work in Fp.
-
-#= Example
-n = 2
-d = 5
-p = 41
-Fp = GF(p)
-
-R = Fp
-PR, Vars = polynomial_ring(R, ["x$i" for i in 0:n])
-polynomial = Vars[1]^5 + Vars[2]^5 + Vars[3]^5 + Vars[1]*(Vars[2]^3)*Vars[3]
-partials = [ derivative(polynomial, i) for i in 1:(n+1) ]
-=#
-
-# TODO: Check that it is homogenous. Let d = degree.
-
-# TODO: Ensure partials are not all zero.
 
 """
-   gen_exp_vec(n, d, order)
+   gen_exp_vec(n, d, order; vars_reversed=false)
 
 Returns all nonnegative integer lists of length n who entires sum to d
 
@@ -45,68 +17,7 @@ INPUTS:
 * "d" -- integer
 * "order" -- string, monomial ordering, defaulted to lexicographic ordering. Also supports neglex 
 """
-#=
-function gen_exp_vec(n, d, order=:lex)
-    @assert (n >= 0) && (d >= 0) "n and d need to be non-negative"
-    result = Vector{Int64}[]
-    #=
-    if d == 0
-        return [1]
-    end 
-    =#
-
-    if n == 1
-        return [[d]]
-    end
-
-    if order == :lex
-        if d == 1
-            for i in 1:n
-                s = zeros(Int64,n)
-                s[end-i+1] = 1
-                push!(result,s)
-            end
-            return result
-        end
-
-        for i in 0:d
-            y = gen_exp_vec(n-1,d-i,order)
-            for j in axes(y,1)
-                prepend!(y[j],i)
-            end
-            append!(result,y)
-        end
-
-    elseif order == :neglex
-        if d == 1
-            for i in 1:n
-                s = zeros(Int64,n)
-                s[i] = 1
-                push!(result,s)
-            end
-            return result
-        end
-
-        for i in 0:d
-            y = gen_exp_vec(n-1,d-i,order)
-            for j in axes(y,1)
-                prepend!(y[j],i)
-            end
-            prepend!(result,y)
-        end
-
-    elseif order == :invlex
-        vecs = gen_exp_vec(n,d,:lex)
-        result = reverse.(vecs)
-    else
-        throw(ArgumentError("Unsupported order '$order'"))
-    end 
-
-    result
-end
-=#
-
-function gen_exp_vec(n, d, order=:lex)
+function gen_exp_vec(n, d, order::Symbol=:lex; vars_reversed=false)
     result = Vector{Vector{Int64}}(undef, binomial(n+d-1,d))
     for i in 1:binomial(n+d-1,d)
         result[i] = zeros(Int64,n)
@@ -255,19 +166,27 @@ function gen_exp_vec(n, d, order=:lex)
     else
         throw(ArgumentError("Unsupported order '$order'"))
     end
+    
+    if vars_reversed
+        for i in 1:binomial(n+d-1,d)
+            reverse!(result[i])
+        end
+    end
     return result
 end
 
 """
 FIXME/DOCUMENTME: exp_vec seems to be a 2d array here?
+
+It will also work if exp_vec is an array of arrays.
 """
-function gen_mon(exp_vec, R, PR)
-    result = []
-    for i in axes(exp_vec,1)
-        B = MPolyBuildCtx(PR)
-        push_term!(B, R(1), exp_vec[i])
-        monomial = finish(B)
-        push!(result,monomial)
+function gen_mon(exp_vecs, PR)
+    result = zeros(PR,length(exp_vecs))
+    R = base_ring(PR)
+    B = MPolyBuildCtx(PR)
+    for i in axes(exp_vecs,1)
+        push_term!(B, one(R), exp_vecs[i])
+        result[i] = finish(B)
     end
     result
 end
@@ -276,71 +195,104 @@ end
 Computes the monomials in n variables, of degree d, in the
 variable order order, as Oscar polynonmials.
 """
-# This version seems to be unused, and it breaks precompilation
-#function compute_monomials(n,d,order=:lex)
-#    S, vars = polynomial_ring(ZZ, ["x$i" for i in 1:n])
-#
-#	compute_monomials(n,d,PR,order=:lex)
-#end
-
-function compute_monomials(n,d,PR,order=:lex)
+function compute_monomials(n,d,PR,order=:lex,cache=nothing; vars_reversed=false)
     if n < 0 || d < 0
         return []
     end
-    gen_mon(gen_exp_vec(n,d,order),base_ring(PR),PR)
+    if cache != nothing
+        exp_vecs = cache[d]
+    else
+        exp_vecs = gen_exp_vec(n,d,order)
+    end
+
+    if vars_reversed
+        reverse!.(exp_vecs)
+        res = gen_mon(exp_vecs,PR)
+        reverse!.(exp_vecs)
+        res
+    else
+        gen_mon(exp_vecs,PR)
+    end
 end
 
-# Computes all monomials of degree `d` in `n` variables.
-#function compute_monomials(n, d)
-#    S, vars = polynomial_ring(ZZ, ["x$i" for i in 1:n])
-#
-#    result = []
-#    
-#    function backtrack(start, current)
-#        if length(current) == d
-#            push!(result, prod(S(var) for var in current))
-#            return
-#        end
-#
-#        for i in start:n
-#            backtrack(i, [current..., vars[i]])
-#        end
-#    end
-#
-#    backtrack(1, [])
-#
-#    result
-#end
+"""
+    polynomial_to_vector!(v, f, n, order=:lex, cache=nothing; vars_reversed=false)
+
+Convert (homogeneous) polynomial to vector form with specified order. Default is lexicographic.
+Update v with this vector. Assumes v has the correct length.
+
+f - an oscar polynomial
+n - the number of variables (minus 1???)
+order - a symbol which denotes the term order
+cache - a GradedExpCache which gives us the variables
+vars_reversed - should we reverse the variables?
+"""
+function polynomial_to_vector!(v, f, n, order=:lex,cache=nothing; vars_reversed=false)
+
+    #TODO: remove vars_reversed and set it based on the cache's property
+
+    #TODO: if f turns out to be zero, we don't know what the degree should be.
+    #
+    #How best to fix this?
+    R = base_ring(parent(f))
+    d = total_degree(f)
+
+    if cache != nothing
+        mon_vec = cache[d]
+        #println(cache[d])
+    else
+        mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
+    end
+    res = v
+    for i in eachindex(mon_vec)
+        if vars_reversed
+            reverse!(mon_vec[i])
+            res[i] = coeff(f, mon_vec[i])
+            reverse!(mon_vec[i])
+        else
+            res[i] = coeff(f, mon_vec[i])
+        end
+    end
+
+    res
+end
 
 """
-polynomial_to_vector(f, n, R, PR; order=:lex)
+    polynomial_to_vector(f, n, order=:lex, cache=nothing; vars_reversed=false)
 
 Convert (homogeneous) polynomial to vector form with specified order. Default is lexicographic.
 
 f - an oscar polynomial
 n - the number of variables (minus 1???)
-R - the base ring
-PR - the polynomial ring, i.e. it is parent(f)
 order - a symbol which denotes the term order
+cache - a GradedExpCache which gives us the variables
+vars_reversed - should we reverse the variables?
 """
-function polynomial_to_vector(f, n, R, PR, order=:lex, vars_reversed=false)
-    #vars = gens(PR)
+function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=false)
+
+    #TODO: remove vars_reversed and set it based on the cache's property
 
     #TODO: if f turns out to be zero, we don't know what the degree should be.
     #
     #How best to fix this?
+    R = base_ring(parent(f))
     d = total_degree(f)
-    mon_vec = gen_exp_vec(n,d,order)
-    if vars_reversed 
-        mon = gen_mon([reverse(tmp) for tmp in mon_vec], R, PR)
-    else 
-        mon = compute_monomials(n, d, PR, order)
-    end 
 
-    #mon = compute_monomials(n, d,PR,order)
-    res = fill(R(0), length(mon))
-    for i in eachindex(mon)
-        res[i] = coeff(f, mon[i])
+    if cache != nothing
+        mon_vec = cache[d]
+        #println(cache[d])
+    else
+        mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
+    end
+    res = fill(R(0), length(mon_vec))
+    for i in eachindex(mon_vec)
+        if vars_reversed
+            reverse!(mon_vec[i])
+            res[i] = coeff(f, mon_vec[i])
+            reverse!(mon_vec[i])
+        else
+            res[i] = coeff(f, mon_vec[i])
+        end
     end
 
     res
@@ -394,13 +346,23 @@ function compute_relations(monomials, partials)
 end
 
 # Converts vector of homogeneous polynomials to a matrix of their coefficents
-function convert_p_to_m(polys, expvec)
+function convert_p_to_m(polys, expvecs; vars_reversed=false)
     R = coefficient_ring(parent(polys[1]))
-    MS = matrix_space(R, length(polys), length(expvec))
+    MS = matrix_space(R, length(polys), length(expvecs))
     result = MS()
     for i in axes(polys,1)
-        for j in axes(expvec,1)
-            result[i,j] = coeff(polys[i], expvec[j])
+        for j in axes(expvecs,1)
+            exp_vec = expvecs[j]
+
+            if vars_reversed
+                reverse!(exp_vec)
+            end
+                
+            result[i,j] = coeff(polys[i], exp_vec)
+
+            if vars_reversed
+                reverse!(exp_vec)
+            end
         end
     end
     return result
@@ -420,8 +382,8 @@ end
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial
 function convert_m_to_p(mat, expvec, R, PR)
     result = []
+    B = MPolyBuildCtx(PR)
     for i in axes(mat,1)
-        B = MPolyBuildCtx(PR)
         for j in axes(expvec,1)
             push_term!(B, mat[i,j], expvec[j])
         end
@@ -560,6 +522,57 @@ function julia_signed_mod(x,n)
     ((x % n) + n) % n
 end
 
+
+"""
+Return a Matrix{Float64} which has entries that are the same
+as A
+"""
+function float_entries(A::zzModMatrix)
+    res = zeros(Float64,size(A)...)
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+        end
+    end
+
+    res
+end
+
+"""
+Updates dest with the entries of src as Float64 values
+"""
+function float_entries!(dest::Matrix{Float64}, src::zzModMatrix)
+    res = dest
+    A = src
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+        end
+    end
+
+    res
+end
+
+"""
+Updates dest with the entries of src as Float64 values
+"""
+function float_entries!(dest::Matrix{Float64}, src::ZZMatrix)
+    res = dest
+    A = src
+
+    for i in 1:size(A,1)
+        for j in 1:size(A,2)
+            res[i,j] = convert(Float64,convert(Int64,A[i,j]))
+        end
+    end
+
+    res
+end
+
 """
     henselLift(p, precision, A, T)
 Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision
@@ -572,14 +585,47 @@ INPUTS:
 """
 function henselLift(p, precision, A, T)
     i = 1
+
+    temp_T = zero_matrix(base_ring(T),size(T)...)
+    copy!(temp_T,T)
+    #add!(temp_T,temp_T,T)
+    temp_2T = zero_matrix(base_ring(T),size(T)...)
+    temp_AT = zero_matrix(base_ring(T),size(A,1),size(T,2))
+    temp_TAT = zero_matrix(base_ring(T),size(T)...)
     while i < precision
-        T = 2*T - T * (A*T)
+        Oscar.Nemo.mul!(temp_2T,2,temp_T)
+        #println("Computed: $temp_2T")
+        #actual = 2*T
+        #println("Actual: $(2*T)")
+        #println("Correct? $(temp_2T == actual)")
+        
+        Oscar.Nemo.mul!(temp_AT,A,temp_T)
+        #println("Computed: $temp_AT")
+        #actual = A*T
+        #println("Actual: $(A*T)")
+        #println("Correct? $(temp_AT == actual)")
+        
+        Oscar.Nemo.mul!(temp_TAT,temp_T,temp_AT)
+        #println("Computed: $temp_TAT")
+        #actual = T*(A*T)
+        #println("Actual: $(T*(A*T))")
+        #println("Correct? $(temp_TAT == actual)")
+        
+        Oscar.Nemo.sub!(temp_T,temp_2T,temp_TAT)
+        #println("Computed: $temp_T")
+        #actual = 2*T - T * (A*T)
+        #println("Actual: $(2*T - T * (A*T))")
+        #println("Correct? $(temp_T == actual)")
+
+        #T = 2*T - T * (A*T)
         #println("After step $i: $(julia_signed_mod.(T,p^(i+1)))")
+        #println("After step $i: $(julia_signed_mod.(temp_T,p^(i+1)))")
+
         i *= 2
     end
     R, pi = residue_ring(ZZ, p^precision)
-    stuff = [R(x) for x in Array(T)]
-    return matrix(R,stuff)
+    #stuff = [R(x) for x in Array(T)]
+    return matrix(R,temp_T)
 end
 
 function findpivotcolumnsU(U)

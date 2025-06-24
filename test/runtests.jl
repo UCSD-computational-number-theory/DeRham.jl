@@ -50,9 +50,15 @@ function larger_tests(zf)
     end
 end
 
+function quick_test(zf)
+    runcsvtest("dim_1_deg_3_fermat.csv",zeta_function=zf)
+    runcsvtest("dim_1_deg_3_random.csv",zeta_function=zf)
+    runcsvtest("dim_1_deg_3_many.csv",zeta_function=zf)
+end
+
 @testset "CPU Fast Evaluation + Naive Strategy" begin 
 
-    zf = f -> DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true)
+    zf = f -> DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true,changef=false)
 
     # Keep track of which files to run with (dim,degree) tuples
     fermatfiles = [(1,3), (1,4), (1,5), (1,6), (1,7), (1,8),
@@ -112,7 +118,7 @@ end
     end
 end
 
-@testset "CPU Bigints + Fast Evaluatoin + Naive Strategy" begin
+@testset "CPU Bigints + Fast Evaluation + Naive Strategy" begin
     # do dimension 1, degree 3 and 4
     zf = f -> DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true,always_use_bigints=true)
 
