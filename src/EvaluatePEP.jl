@@ -100,3 +100,32 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
 
   return g
 end
+
+function finitediff_prodeval_linear_Karatsuba!(a,b,plan1,start,stop,g,temp,g_temp,plan2,ui=nothing)
+
+  my_mul!(plan1,a,stop)
+  my_add!(temp,plan1,b)
+  
+  if start == stop
+    my_matvecmul!(g_temp,temp,g)
+    my_copy!(g,g_temp)
+
+    return g
+  end
+
+  my_matvecmul!(g_temp,temp,g,plan2)
+  my_copy!(g,g_temp)
+
+
+  for k = stop-1:-1:start
+    # right now, Fk = F(k+1)
+    
+    # Fk = Fk - a
+    my_sub!(temp,temp,a,plan1)
+
+    my_matvecmul!(g_temp,temp,g,plan2)
+    my_copy!(g,g_temp)
+  end
+
+  return g
+end

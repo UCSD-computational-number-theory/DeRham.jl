@@ -65,11 +65,13 @@ end
 
 # (scalar) mul
 
-my_mul!(A::CuModMatrix,B::CuModMatrix,c::Number) = GPUFiniteFieldMatrices.mul!(A,B,c) 
+my_mul!(A::CuModMatrix,B::CuModMatrix,c::Number) = GPUFiniteFieldMatrices.mul!(A,B,c)
+my_mul!(A::KaratsubaMatrix,B::KaratsubaMatrix,c::Number) = mul!(A,B,c) 
 
 # matvecmul
 
 my_matvecmul!(z::CuModVector,A::CuModMatrix,b::CuModVector) = GPUFiniteFieldMatrices.mul!(z,A,b)
+my_matvecmul!(z::KaratsubaVector,A::KaratsubaMatrix,b::KaratsubaVector,plan::KaratsubaVector) = mul!(z,A,b,plan)
 
 # copy
 

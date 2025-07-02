@@ -38,6 +38,17 @@ struct ControlledReductionContext{MatrixType,VectorType}
     g_temp::VectorType
 end
 
+struct ControlledReductionContextKaratsuba{MatrixType,VectorType}
+    Ruvs::AbstractPEP{MatrixType}
+    A::MatrixType
+    B::MatrixType
+    temp::MatrixType
+    plan1::MatrixType
+    g::VectorType
+    g_temp::VectorType
+    plan2::VectorType
+end
+
 
 #"""
 #    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
@@ -554,7 +565,8 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
                     println("gMat after $i is $gMat = $g")
                 end
             end
-             
+        elseif occursin("Karatsuba", string(typeof(context)))
+            gMat = finitediff_prodeval_linear_Karatsuba!(context.B,context.A,context.plan1,0,K-1,gMat,context.temp,context.g_temp,context.plan2)
         else
             gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         end
@@ -884,7 +896,23 @@ function default_context(matspace,Ruv,params)
     B = base_ring(matspace)
     m = modulus(B)
 
-    if params.use_gpu == true
+    if params.use_gpu == true && (ZZ(2)^22 < m < ZZ(2)^106)
+
+        N1 = round(degree(B)/2)
+        N2 = degree(B) - N1
+
+        A = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
+        B = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
+        temp = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
+        plan1 = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
+
+        g = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
+        g_temp = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
+        plan2 = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
+
+        ControlledReductionContextKaratsuba{KaratsubaMatrix{Float64},KaratsubaVector{Float64}}(Ruv,A,B,temp,plan1,g,g_temp,plan2)
+
+    elseif params.use_gpu == true
 
         M = Int(m)
         A = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
