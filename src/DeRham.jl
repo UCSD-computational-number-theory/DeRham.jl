@@ -18,7 +18,7 @@ using GPUFiniteFieldMatrices
 
 #include("NemoAdditions.jl")
 
-include("../../GPUFiniteFieldMatrices.jl/src/KaratsubaMatrices.jl")
+
 
 include("Utils.jl")
 include("GradedExpCache.jl")

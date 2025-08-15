@@ -19,9 +19,12 @@ INPUTS:
 * "R" -- ring, base ring of f
 * temp -- temporary matrix to be modified in place
 """
-function eval_to_linear!(A,B,temp,matrices,U,V)
+function eval_to_linear!(A,B,temp,matrices,U,V,plan1)
     my_zero!(B)
-    my_add!(B,B,matrices[1])
+    if plan1 != nothing
+      my_copy!(plan1,B)
+    end
+    my_add!(B,B,matrices[1],plan1)
 
     my_zero!(A)
 
@@ -31,9 +34,15 @@ function eval_to_linear!(A,B,temp,matrices,U,V)
         #A = A + matrices[k] * V[k-1]
 
         my_mul!(temp,matrices[k],U[k-1])
-        my_add!(B,B,temp)
+        if plan1 != nothing
+          my_copy!(plan1,B)
+        end
+        my_add!(B,B,temp,plan1)
         my_mul!(temp,matrices[k],V[k-1])
-        my_add!(A,A,temp)
+        if plan1 != nothing
+          my_copy!(plan1,A)
+        end
+        my_add!(A,A,temp,plan1)
     end 
 
     return (A, B)
@@ -72,19 +81,21 @@ ui - a function that converts the output of Julia's mod into an unsigned integer
     (i.e. if it's negative, add the characteristic)
 
 """
-function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
+function finitediff_prodeval_linear!(a,b,plan1,start,stop,g,temp,g_temp,plan2,ui=nothing)
 
   my_mul!(temp,a,stop)
-  my_add!(temp,temp,b)
-  
+  if plan1 != nothing
+    my_copy!(plan1,temp)
+  end
+  my_add!(temp,temp,b,plan1)
+
   if start == stop
-    my_matvecmul!(g_temp,temp,g)
+    my_matvecmul!(g_temp,temp,g,plan2,plan1)
     my_copy!(g,g_temp)
 
     return g
   end
-
-  my_matvecmul!(g_temp,temp,g)
+  my_matvecmul!(g_temp,temp,g,plan2,plan1)
   my_copy!(g,g_temp)
 
 
@@ -92,40 +103,12 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     # right now, Fk = F(k+1)
     
     # Fk = Fk - a
-    my_sub!(temp,temp,a)
-
-    my_matvecmul!(g_temp,temp,g)
+    if plan1 != nothing
+      my_copy!(plan1,temp)
+    end
+    my_sub!(temp,temp,a,b,plan1)
+    my_matvecmul!(g_temp,temp,g,plan2,plan1)
     my_copy!(g,g_temp)
   end
-
-  return g
-end
-
-function finitediff_prodeval_linear_Karatsuba!(a,b,plan1,start,stop,g,temp,g_temp,plan2,ui=nothing)
-
-  my_mul!(plan1,a,stop)
-  my_add!(temp,plan1,b)
-  
-  if start == stop
-    my_matvecmul!(g_temp,temp,g)
-    my_copy!(g,g_temp)
-
-    return g
-  end
-
-  my_matvecmul!(g_temp,temp,g,plan2)
-  my_copy!(g,g_temp)
-
-
-  for k = stop-1:-1:start
-    # right now, Fk = F(k+1)
-    
-    # Fk = Fk - a
-    my_sub!(temp,temp,a,plan1)
-
-    my_matvecmul!(g_temp,temp,g,plan2)
-    my_copy!(g,g_temp)
-  end
-
   return g
 end

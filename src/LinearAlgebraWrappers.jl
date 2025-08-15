@@ -36,7 +36,7 @@ function my_mul!(A::ZZModMatrix, B::ZZModMatrix, c::ZZRingElem)
     return A
 end
 
-function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt})
+function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt},c::Nothing,d::Nothing)
     @ccall Oscar.Nemo.libflint.nmod_mat_mul_nmod_vec(z::Ptr{UInt},
                                                      A::Ref{zzModMatrix},
                                                      b::Ptr{UInt},
@@ -44,7 +44,7 @@ function my_matvecmul!(z::Vector{UInt},A::zzModMatrix,b::Vector{UInt})
     return z
 end
 
-function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
+function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem},c::Nothing,d::Nothing)
     @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec_ptr(z::Ptr{Ref{ZZRingElem}}, 
                                                   A::Ref{ZZModMatrix}, 
                                                   b::Ptr{Ref{ZZRingElem}}, 
@@ -66,12 +66,12 @@ end
 # (scalar) mul
 
 my_mul!(A::CuModMatrix,B::CuModMatrix,c::Number) = GPUFiniteFieldMatrices.mul!(A,B,c)
-my_mul!(A::KaratsubaMatrix,B::KaratsubaMatrix,c::Number) = mul!(A,B,c) 
+my_mul!(A::KaratsubaMatrix,B::KaratsubaMatrix,c::Number) = GPUFiniteFieldMatrices.scalar_multiply!(A,B,c) 
 
 # matvecmul
 
-my_matvecmul!(z::CuModVector,A::CuModMatrix,b::CuModVector) = GPUFiniteFieldMatrices.mul!(z,A,b)
-my_matvecmul!(z::KaratsubaVector,A::KaratsubaMatrix,b::KaratsubaVector,plan::KaratsubaVector) = mul!(z,A,b,plan)
+my_matvecmul!(z::CuModVector,A::CuModMatrix,b::CuModVector,plan1::Nothing,plan2::Nothing) = GPUFiniteFieldMatrices.mul!(z,A,b)
+my_matvecmul!(z::KaratsubaVector,A::KaratsubaMatrix,b::KaratsubaVector,plan1::KaratsubaVector,plan2::KaratsubaMatrix) = GPUFiniteFieldMatrices.KMatMul!(z,A,b,plan1,plan2)
 
 # copy
 
@@ -107,11 +107,12 @@ end
 
 # sub
 
-function my_sub!(A,B,C)
+function my_sub!(A,B,C,D,E)
     Oscar.Nemo.sub!(A,B,C)
 end
 
-my_sub!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix) = GPUFiniteFieldMatrices.sub!(A,B,C)
+my_sub!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix,D::CuModMatrix,E::Nothing) = GPUFiniteFieldMatrices.sub!(A,B,C)
+my_sub!(A::KaratsubaArray,B::KaratsubaArray,C::KaratsubaArray,D::KaratsubaArray,E::KaratsubaArray) = GPUFiniteFieldMatrices.sub!(A,E,C,D)
 
 function my_sub!(A::ZZModMatrix,B::ZZModMatrix,C::ZZModMatrix)
     @ccall Oscar.Nemo.libflint.fmpz_mod_mat_sub(A::Ref{ZZModMatrix},
@@ -123,5 +124,6 @@ end
 
 # add
 
-my_add!(A,B,C) = add!(A,B,C)
-my_add!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix) = GPUFiniteFieldMatrices.add!(A,B,C)
+my_add!(A,B,C,D) = Oscar.add!(A,B,C)
+my_add!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix,D::Nothing) = GPUFiniteFieldMatrices.add!(A,B,C)
+my_add!(A::KaratsubaArray,B::KaratsubaArray,C::KaratsubaArray,D::KaratsubaArray) = GPUFiniteFieldMatrices.add!(A,D,C)

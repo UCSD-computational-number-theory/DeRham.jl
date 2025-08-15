@@ -39,14 +39,8 @@ struct ControlledReductionContext{MatrixType,VectorType}
 end
 
 struct ControlledReductionContextKaratsuba{MatrixType,VectorType}
-    Ruvs::AbstractPEP{MatrixType}
-    A::MatrixType
-    B::MatrixType
-    temp::MatrixType
-    plan1::MatrixType
-    g::VectorType
-    g_temp::VectorType
-    plan2::VectorType
+    plan1::Any
+    plan2::Any
 end
 
 
@@ -466,7 +460,7 @@ end
 Iteratively execute reduction chunks in the navie strategy until
 the vector g is reduced to pole order n
 """
-function reducechain_naive(u,g,m,S,f,p,context,cache,params)
+function reducechain_naive(u,g,m,S,f,p,context,plan,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -543,7 +537,7 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
         (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
 
         #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
-        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V,plan.plan1)
         #(5 < params.verbose && firsttime) && begin 
         #    println("---")
         #    println(context.A[:,end])
@@ -565,10 +559,8 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
                     println("gMat after $i is $gMat = $g")
                 end
             end
-        elseif occursin("Karatsuba", string(typeof(context)))
-            gMat = finitediff_prodeval_linear_Karatsuba!(context.B,context.A,context.plan1,0,K-1,gMat,context.temp,context.g_temp,context.plan2)
         else
-            gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
+            gMat = finitediff_prodeval_linear!(context.B,context.A,plan.plan1,0,K-1,gMat,context.temp,context.g_temp,plan.plan2)
         end
         @. J = J - K*V
         m = m - K
@@ -796,7 +788,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,pa
     return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
 
-function reducepoly_naive(pol,S,f,p,context,cache,params)
+function reducepoly_naive(pol,S,f,p,context,plan,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -808,7 +800,7 @@ function reducepoly_naive(pol,S,f,p,context,cache,params)
         #println(terms)
         for t in terms
             (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,cache,params)
-            reduced = reducechain_naive(u,context.g,t[2],S,f,p,context,cache,params)
+            reduced = reducechain_naive(u,context.g,t[2],S,f,p,context,plan,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -876,6 +868,18 @@ function cuMod(A::zzModMatrix)
     CuModMatrix(float_A,M,elem_type=Float64)
 end
 
+function KaratsubaMat(A::zzModMatrix)
+    m = modulus(base_ring(parent(A)))
+    temp = collect(factor(m))[1]
+    d = temp[2]
+    p = temp[1]
+
+    N1 = Int(p)^Int(round(d/2))
+    N2 = Int(p)^Int(d - round(d/2))
+
+    GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1^2)
+end
+
 #TODO: incorporate this idiomatically using adapt.jl
 function adapt_to_gpu(Ruvs)
     gpu_Ruvs = Dict{Vector{Int64},Vector{CuModMatrix{Float64}}}()
@@ -895,23 +899,25 @@ function default_context(matspace,Ruv,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
-
     if params.use_gpu == true && (ZZ(2)^22 < m < ZZ(2)^106)
+    #if params.use_gpu == true && (m < ZZ(2)^106)
+        temp = collect(factor(m))[1]
+        d = temp[2]
+        p = temp[1]
 
-        N1 = round(degree(B)/2)
-        N2 = degree(B) - N1
+        N1 = Int(p)^Int(round(d/2))
+        N2 = Int(p)^Int((d - round(d/2)))
 
-        A = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
-        B = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
-        temp = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
-        plan1 = KaratsubaZeros(Float64,g_length,g_length,N1,N2,M,true)
+        A = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
+        B = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
+        temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
+        plan1 = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
 
-        g = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
-        g_temp = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
-        plan2 = KaratsubaZeros(Float64,g_length,N1,N2,M,true)
+        g = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1^2,true)
+        g_temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1^2,true)
+        plan2 = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1^2,true)
 
-        ControlledReductionContextKaratsuba{KaratsubaMatrix{Float64},KaratsubaVector{Float64}}(Ruv,A,B,temp,plan1,g,g_temp,plan2)
-
+        return ControlledReductionContext{KaratsubaMatrix{Float64},KaratsubaVector{Float64}}(Ruv,A,B,temp,g,g_temp), ControlledReductionContextKaratsuba{KaratsubaMatrix{Float64},KaratsubaVector{Float64}}(plan1,plan2)
     elseif params.use_gpu == true
 
         M = Int(m)
@@ -922,7 +928,7 @@ function default_context(matspace,Ruv,params)
         g = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
         g_temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
 
-        ControlledReductionContext{CuModMatrix{Float64},CuModVector{Float64}}(Ruv,A,B,temp,g,g_temp)
+        return ControlledReductionContext{CuModMatrix{Float64},CuModVector{Float64}}(Ruv,A,B,temp,g,g_temp), ControlledReductionContextKaratsuba{Nothing,Nothing}(nothing,nothing)
     else # use the CPU
         A = matspace()
         B = matspace()
@@ -939,7 +945,7 @@ function default_context(matspace,Ruv,params)
             g_temp = similar(g)
         end
 
-        ControlledReductionContext(Ruv,A,B,temp,g,g_temp)
+        return ControlledReductionContext(Ruv,A,B,temp,g,g_temp), ControlledReductionContextKaratsuba{Nothing,Nothing}(nothing,nothing)
     end
 end
 
@@ -991,11 +997,13 @@ in verbose mode.
 """
 function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
+    m = Integer(modulus(base_ring(oscar_matspace)))
+
     if (3 < params.verbose)
         compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
     else
         compute_gpu = V -> cuMod.(compute(V))
-    end
+    end 
 
     compute_float = V -> float_entries.(compute(V))
 
@@ -1044,8 +1052,16 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
+    elseif params.use_gpu && lazy && (ZZ(2)^22 < m < ZZ(2)^106)
+        compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
+        Ruv = LazyPEP{KaratsubaMatrix{Float64}}(compute_gpu_karatsuba)
+
     elseif params.use_gpu && lazy
         Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
+
+    elseif params.use_gpu && (ZZ(2)^22 < m < ZZ(2)^106)
+        compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
+        Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
     elseif params.use_gpu
         Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
@@ -1110,16 +1126,16 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     #Threads.@threads for i in 1:length(FT) 
     #    context = context_tlv[]
 
-    context = default_context(MS1,Ruv,params)
+    context, plan = default_context(MS1,Ruv,params)
     for i in 1:length(FT) #pol in FT
     
 
         pol = FT[i]
         if (0 < params.verbose)
             println("Reducing vector $i")
-            @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            @time reduction = reducepoly_naive(pol,S,f,p,context,plan,cache,params)
         else
-            reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            reduction = reducepoly_naive(pol,S,f,p,context,plan,cache,params)
         end
         result[i] = reduction
 
