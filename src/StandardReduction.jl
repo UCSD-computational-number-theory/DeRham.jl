@@ -69,7 +69,7 @@ function monomial_change_basis_inverse(f,l,basis,params,cache)
        R = coefficient_ring(PR)  
        A = monomial_change_basis(f,l,basis,params,cache)
        
-       flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
+       flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(A)]), side=:right)
        
        if flag
            return (A,B)
