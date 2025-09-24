@@ -5,6 +5,9 @@ using BitIntegers
 using LinearAlgebra
 using Combinatorics
 using Memoize
+using LRUCache
+using LFUDACache
+using OhMyThreads
 
 using CUDA
 using GPUFiniteFieldMatrices
@@ -17,6 +20,7 @@ using GPUFiniteFieldMatrices
 
 include("Utils.jl")
 include("GradedExpCache.jl")
+include("LinearAlgebraWrappers.jl")
 include("FindMonomialBasis.jl")
 include("SlopesPolygon.jl")
 include("PolynomialWithPole.jl")
@@ -25,7 +29,7 @@ include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
 
-include("LinearAlgebraWrappers.jl")
+include("PEP.jl")
 include("EvaluatePEP.jl")
 include("ComputeRuv.jl")
 include("ControlledReduction.jl")

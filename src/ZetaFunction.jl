@@ -48,7 +48,7 @@ d*n - n
 d*n - n - 1
 d*n - n - length(S),
 d*n - n - length(S) + 1,
-d*n - n + d - length(S) + 1,
+d*n - n + d - length(S) + 1, #TODO: is this +1 wrong??
 d
 
 REVERSE:
@@ -56,7 +56,7 @@ d
 n*d - n
 
 """
-function controlled_reduction_cache(n,d,S,termorder)
+function controlled_reduction_cache(n,d,S,params)
     degsforward = [d*n - n,
                    d*n - n - 1,
                    d*n - n - length(S),
@@ -64,15 +64,28 @@ function controlled_reduction_cache(n,d,S,termorder)
                    d*n - n + d - length(S),
                    d]
     for h in 1:n
-        if 0 < h*d - n - 1
+        if 0 ≤ h*d - n - 1
             append!(degsforward,h*d - n - 1)
+        end
+        if 0 ≤ h*d - n - d
+            append!(degsforward,h*d - n - d)
         end
     end
     #append!(degsforward,[h*d - n - 1 for h in 1:n])
 
-    degsreverse = [d,n*d - n]
+    degsreverse = [d,
+                   n*d - n,
+                   d*n - n + d - length(S)]
 
-    PolyExpCache(n+1,termorder,degsforward,degsreverse)
+    #println(params.vars_reversed)
+
+    PolyExpCache(n+1,
+                 params.termorder,
+                 degsforward,
+                 degsreverse,
+                 #vars_reversed=false)
+                 vars_reversed=params.vars_reversed)
+                 #marker
 end
 
 """
@@ -115,7 +128,7 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
 
 
         temp = VS()
-        temp2 = convert_p_to_m([Reductions[i][1][1]],ev)
+        temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
         for i in 1:length(ev)
             temp[i,1] = R(temp2[i])
         end
@@ -228,7 +241,7 @@ function precision_information(f,basis,verbose=0)
     #end 
 
     k = sum(hodge_numbers) # dimension of H^n
-    (0 < verbose) && println("There are $k basis elements in H^$n")
+    (0 < verbose) && println("There are $k basis total elements in H^$n to be reduced")
 
     r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
     #r_m = relative_precision(k, p)
@@ -252,9 +265,14 @@ function precision_information(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
+    params = default_params()
+
+    d = total_degree(f)
+    S = collect(0:n) #collect(0:d-1)
+    cache = controlled_reduction_cache(n,d,S,params)
     # the term order doesn't matter, we will discard this
     # basis
-    basis = compute_monomial_bases(f, R, PR, :invlex) # basis of cohomology 
+    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
     Basis = []
     for i in 1:n
         for j in basis[i]
@@ -303,8 +321,11 @@ verbose -- prints various diagnostic statements based on the level
     0: print nothing
     1: print basic diagnostic info only
     2-9: TBD (To be determined/documented)
-    2: print the output of controlled reduction
+    2: more basic diagnostic info
+    3: print the output of controlled reduction
     5: print out the u and v information in controlled reduction
+    6: print the value of g at each step of reduction
+    7: print out one of the R_uv matrices (you might need to modify the print statement to fit your example right now)
     10: print anything that we might consider useful
 givefrobmat -- should the funciton also output the appoximated frobenius matrix
 algorithm -- the algorithm used for controlled reduction
@@ -329,12 +350,12 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
 
-    cache = controlled_reduction_cache(n,d,S,termorder)
+    cache = controlled_reduction_cache(n,d,S,params)
 
     (0 < verbose) && println("p = $p")
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
-    basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
+    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
     Basis = []
     for i in 1:n
         for j in basis[i]
@@ -366,23 +387,27 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #S = SmallestSubsetSmooth.smallest_subset_s_smooth(fLift,n)
 
     if (0 < verbose)
-        println("Starting linear algebra problem")
-        @time f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
+        println("Computing the relations matrix...")
+        @time f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
     else
-        f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef)
+        f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
     end
+
 
     if (f == false)
         println("f is not smooth (or not S-smooth) and we're done. ")
         return false
     end 
 
+    #println("ending early (for testing)")
+    #return 
+
     (9 < verbose) && println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
     # recomputes basis if f is different 
     if f_changed 
         (0 < verbose) && println("New model is $f")
-        basis = compute_monomial_bases(f, R, PR, params.termorder) # basis of cohomology 
+        basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
         Basis = []
         for i in 1:n
             for j in basis[i]
@@ -421,11 +446,13 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     if (0 < verbose)
-        println("Applying Frobenius to basis elements")
+        println("\nApplying Frobenius to basis elements")
         @time FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
     else
         FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
     end
+
+
     #println(FBasis)
     #for e in FBasis
     #    println(length(e))
@@ -440,8 +467,12 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
     pseudo_inverse_mat = MS()
 
-    T = computeT(f, basis, M, params)
-    println("T matrix is $T")
+    if (0 < verbose)
+        println("Computing T matrix...")
+        @time T = computeT(f, basis, M, params, cache)
+    else
+        T = computeT(f, basis, M, params, cache)
+    end
     (9 < verbose) && println("T matrix is $T")
 
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -449,6 +480,10 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
             pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
         end
     end
+
+    #marker
+    #return T
+
     #=
     pseudo_inverse_mat = zeros(Int, nrows(pseudo_inverse_mat_new),ncols(pseudo_inverse_mat_new))
     for i in 1:nrows(pseudo_inverse_mat_new)
@@ -473,8 +508,9 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #end
     #TODO: check which algorithm we're using
     #(2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
+    (0 < verbose) && println("\nStarting controlled reduction...")
     Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache) 
-    (1 < verbose) && println(Reductions)
+    (2 < verbose) && println(Reductions)
     #return Reductions
     #if (1 < verbose)
     #    for i in 1:length(Basis)
@@ -491,11 +527,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     # display(FM)
     (9 < verbose) && println("The Frobenius matrix is $FM")
 
-    #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev)
-
-    #(9 < verbose) && println("convert_p_to_m is $reductions_verbose")
-
-    #FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
+    #reductions_verbose = convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis)
 
    # (9 < verbose) && println("The Frobenius matrix is $FM")
 
@@ -527,19 +559,22 @@ function hodgepolygon(basis::Vector, n)
 end
 
 """
-    hodgepolygon(f; termorder=:invlex)
+    hodgepolygon(f; basis=nothing, params=default_params())
 
 Calculates the hodge polygon of f
 
 f - the polynomial to get the hodge polygon of
 """
-function hodgepolygon(f::RingElem; termorder=:invlex, basis=nothing)
+function hodgepolygon(f::RingElem; basis=nothing, params=default_params())
     n = nvars(parent(f)) - 1
     PR = parent(f)
     R = coefficient_ring(parent(f))
 
     if basis == nothing
-        basis = compute_monomial_bases(f, R, PR, termorder) # basis of cohomology 
+        d = total_degree(f)
+        S = collect(0:n) #collect(0:d-1)
+        cache = controlled_reduction_cache(n,d,S,params)
+        basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
     end
     
     Basis = []
