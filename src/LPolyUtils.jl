@@ -109,7 +109,7 @@ function k3_Lpoly_to_pointcount(coeffs, q, n)
     zeta = 1/((1-T) * (1-q*T) * (1-q^2*T) * L)
     return zeta_to_pointcount(zeta, n)
 end
-end 
+
 
 """
 curve_Lpoly_to_pointcount(coeffs, q, n)
