@@ -269,7 +269,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     #temp = size(U)
     if (0 < params.verbose)
         println("Computing pseudoinverse of matrix of size $(size(U))")
-        @time flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        @time flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     else
         flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     end
