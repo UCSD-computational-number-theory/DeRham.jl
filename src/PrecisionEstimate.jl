@@ -78,6 +78,13 @@ function ibm_constant(p,m,ibm_bound)
 end
 
 """
+This algoritm gives the same
+output as algorithm 3.4.10 of AKR, 
+even though it technically isn't the same.
+
+Unlike that algorithm, we don't actually append to an array,
+we simply update elements.
+
 """
 function ibm_crank_bound(p,n,M)
     nChunks = ceil(Int,M/p)
