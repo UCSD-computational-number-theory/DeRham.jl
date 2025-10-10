@@ -18,8 +18,6 @@ using GPUFiniteFieldMatrices
 
 #include("NemoAdditions.jl")
 
-
-
 include("Utils.jl")
 include("GradedExpCache.jl")
 include("LinearAlgebraWrappers.jl")
