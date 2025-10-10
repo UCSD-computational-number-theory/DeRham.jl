@@ -796,11 +796,10 @@ end
 function remove_duplicates!(costadata_arr)
     i = 1
     while i <= (length(costadata_arr)-1)
-        ((u,g),m) = costadata_arr[i]
         j = i+1
         while j <= length(costadata_arr)
-            if all(u .== costadata_arr[j][1][1])
-                costadata_arr[i] = ((u, g .+ costadata_arr[j][1][2]),m)
+            if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2] .+ costadata_arr[j][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
