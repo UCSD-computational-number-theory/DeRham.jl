@@ -348,6 +348,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         S = collect(0:n)
     end
 
+    # vars_reversed = false
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
 
     cache = controlled_reduction_cache(n,d,S,params)
@@ -365,7 +366,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
-    println("N_m=$N_m")
+    (1 < verbose) && println("N_m=$N_m")
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
 

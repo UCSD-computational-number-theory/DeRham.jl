@@ -142,11 +142,12 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
         # one needs to be quite careful with the ordering of partials 
         reverse!(partials)
         #partials = reverse(partials)  
+    end
         reverse!(Stilda)
         #Stilda = reverse(Stilda)
         reverse!(vars)
         #vars = reverse(vars)        
-    end
+    # end
     #println("partials = $partials")
     #println("Stilda = $Stilda")
     #println("vars = $vars")
@@ -175,6 +176,8 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
         end 
     end 
 
+    display(M)
+    println(cache[4])
     return M
 end
 

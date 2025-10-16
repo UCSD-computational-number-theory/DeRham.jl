@@ -1070,7 +1070,7 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
@@ -1331,7 +1331,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
