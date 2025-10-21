@@ -154,23 +154,14 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     #println("in_S_mons_vec = $in_S_mons_vec")
 
     v = fill(R(0), length(cache[l]))
+
     col_idx = 1
     for i in 1:(n+1)
         if Stilda[i] == 1
             for monomial in eachindex(in_S_mons)
+
                 #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
                 polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
-                #if i == 1
-                #    println(in_S_mons[monomial] * partials[i])
-                #end 
-                if in_S_mons[monomial] * partials[i] == 3*vars[1]^8
-                    println(polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed))
-                end 
-                #polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache)
-                #if monomial == 10 
-                #    println(in_S_mons[monomial] * partials[i])
-                #    println(v)
-                #end
                 M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
@@ -178,7 +169,6 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
             for monomial in eachindex(not_in_S_mons)
                 #M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
                 polynomial_to_vector!(v,not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
-                #polynomial_to_vector!(v,not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache)
                 M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
@@ -275,14 +265,13 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
     
     (6 < params.verbose) && println("controlled matrix: \n$U")
-    #println(U[:,136])
   
     #temp = size(U)
     if (0 < params.verbose)
         println("Computing pseudoinverse of matrix of size $(size(U))")
-        @time flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        @time flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     else
-        flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
+        flag, B = is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     end
     
     (6 < params.verbose) && println("pinv mod p: \n$B")
@@ -328,7 +317,7 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
 
     #println("Solution mod p: $Sol_fp")
     #println("U lifted: $U_int")
-    
+
     p = characteristic(PR)
 
     if (0 < params.verbose)

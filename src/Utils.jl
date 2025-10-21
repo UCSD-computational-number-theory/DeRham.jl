@@ -241,11 +241,7 @@ function polynomial_to_vector!(v, f, n, order=:lex,cache=nothing; vars_reversed=
         mon_vec = cache[d]
         #println(cache[d])
     else
-        if vars_reversed
-            mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
-        else 
-            mon_vec = gen_exp_vec(n,d,order)
-        end
+        mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
     end
     res = v
     for i in eachindex(mon_vec)

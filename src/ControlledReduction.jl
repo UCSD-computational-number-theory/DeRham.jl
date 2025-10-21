@@ -487,13 +487,12 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     end
 
     firsttime = true
-    println("--------------------")
 
 
     while m > n
         V = chooseV(J, d, S)
         (4 < params.verbose) && print("Chose V = $V; ")
-        (-1 < params.verbose) && begin
+        (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement should never hit.
             for i in 1:length(V)
@@ -501,22 +500,6 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
                     print("Illegal choice of V!")
                     println("J = $J, S = $S")
                 end
-            end
-            vars = gens(PR)
-            XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
-
-            if params.vars_reversed 
-                XV = prod(PR(vars[i+1])^(V[n+1-i]) for i in 0:n; init = PR(1))
-            else 
-                XV = prod(PR(vars[i])^(V[i]) for i in 1:n+1; init = PR(1))
-            end
-            g_poly = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            println("V=$V")
-            println("XV=$XV")
-            println("XS=$XS")
-            println("gpoly=$g_poly")
-            if !divides(XV*g_poly, XS)[1]
-                println("divisibility condition in Prop 1.15 failed!")
             end
         end
         @. mins = J
@@ -546,15 +529,7 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
         #        println(matrices[i][:,end])
         #    end
         #end
-        #(6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
-        #(V == [0,1,2,0] && firsttime) && begin
-        #for m in matrices 
-        #    println(m[:,9])
-        #end;
-        #firsttime = false
-        #error()
-        #end 
-        
+        (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
 
         #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
@@ -1094,8 +1069,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        #CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-        Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
