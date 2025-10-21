@@ -506,7 +506,7 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
     (5 < params.verbose) && begin
-        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
+        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder,vars_reversed=params.vars_reversed)
         if params.always_use_bigints || params.use_gpu
             println("Starting: g = $((gMat)) = $g_poly")
         else    
