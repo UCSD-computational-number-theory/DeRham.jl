@@ -71,12 +71,14 @@ function find_Ssmooth_model(f, M, S_target, params, changef, cache)
     #println(f_transformed)
     num_iter = min(2*p,100)
     f_changed = false 
+    
     if !changef
         pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params,cache)
             #bool = false
             
         return f_changed, f_transformed, pseudo_inverse_mat_new
     end
+    
 
     for i in 1:num_iter 
         try 
