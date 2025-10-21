@@ -210,27 +210,30 @@ INPUTS:
 * "I" -- list/tuple, exponents of monomials
 * "d" -- integer, degree of f 
 """
-function rev_chooseV(I, d)
+function rev_chooseV(I, d, S)
     reverse!(I)
 
-    V = zeros(Int,length(I))
-    i = 0
-    s = 1
-    foundNonZero = false
-    while i < d
-        if s > length(I) && foundNonZero == false
-            return V
-        elseif s > length(I)
-            s = 1
-            foundNonZero = false
-        end
-        if (I - V)[s] > 0
-            V[s] = V[s] + 1
-            i = i + 1
-            foundNonZero = true
-        end
-        s = s + 1
-    end
+    V = chooseV(I,d,S)
+
+    reverse!(I)
+    # V = zeros(Int,length(I))
+    # i = 0
+    # s = 1
+    # foundNonZero = false
+    # while i < d
+    #     if s > length(I) && foundNonZero == false
+    #         return V
+    #     elseif s > length(I)
+    #         s = 1
+    #         foundNonZero = false
+    #     end
+    #     if (I - V)[s] > 0
+    #         V[s] = V[s] + 1
+    #         i = i + 1
+    #         foundNonZero = true
+    #     end
+    #     s = s + 1
+    # end
 
     reverse!(V)
 
@@ -488,7 +491,11 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     #    reverse!(u)
     #end
     
-    J = rev_tweak(u,n*d-n)
+    if params.vars_reversed == true 
+        J = rev_tweak(u,n*d-n)
+    else
+        J = tweak(u,n*d-n)
+    end
 
     #if cache.vars_reversed
     #    reverse!(u)
@@ -511,7 +518,12 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
 
 
     while m > n
-        V = chooseV(J, d, S)
+         if params.vars_reversed == true 
+             V = chooseV(J, d, S)
+         else
+             V = rev_chooseV(J,d,S)
+         end
+
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
