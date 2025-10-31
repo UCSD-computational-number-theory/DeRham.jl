@@ -138,6 +138,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     end
     #partials = [ derivative(f, i) for i in 1:n+1 ] # ∂_0, ∂_1, ∂_2
     
+    #println("partials before possibly reversing = $partials")
     if params.vars_reversed == true
         # one needs to be quite careful with the ordering of partials 
         reverse!(partials)
@@ -147,7 +148,7 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
         reverse!(vars)
         #vars = reverse(vars)        
     end
-    #println("partials = $partials")
+    #println("partials after possibly reversing = $partials")
     #println("Stilda = $Stilda")
     #println("vars = $vars")
     #println("in_S_mons = $in_S_mons")
@@ -159,7 +160,6 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     for i in 1:(n+1)
         if Stilda[i] == 1
             for monomial in eachindex(in_S_mons)
-
                 #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
                 polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
                 M[:, col_idx] = v
@@ -175,8 +175,6 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
         end 
     end 
 
-    display(M)
-    println(cache[4])
     return M
 end
 

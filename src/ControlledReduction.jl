@@ -353,10 +353,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
 
     
     I = u
-    #TODO?
-    if params.vars_reversed == false
-        reverse!(I) # parity issue due to Costa's code being reverse from ours
-    end
+   
     (4 < verbose) && println("Expanded I: $I")
 
     gMat = g
@@ -365,7 +362,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
 
     #TODO?
     if params.vars_reversed == false
-        V = rev_chooseV(Array{Int}(divexact.(I,p)),d)
+        V = rev_chooseV(Array{Int}(divexact.(I,p)),d, S)
     else
         V = chooseV(Array{Int}(divexact.(I,p)),d, S)
     end
@@ -506,7 +503,7 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     tempv = similar(J)
     (4 < params.verbose) && println("Starting: J = $J")
     (5 < params.verbose) && begin
-        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder,vars_reversed=params.vars_reversed)
+        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
         if params.always_use_bigints || params.use_gpu
             println("Starting: g = $((gMat)) = $g_poly")
         else    
@@ -562,7 +559,7 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
         #        println(matrices[i][:,end])
         #    end
         #end
-        (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
+        (6 < params.verbose && V == [3,0,0] && firsttime) && begin println(matrices); firsttime=false end
 
         #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
