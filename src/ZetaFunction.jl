@@ -89,6 +89,60 @@ function controlled_reduction_cache(n,d,S,params)
 end
 
 """
+    compute_
+
+Takes a polynomial with pole of order n, and converts
+it to a vector in terms of the basis of cohomology
+
+
+e - the original pole order of the element before the frobenius was applied
+precision - the series precision for the vector
+VS - a matrix space for where the vector will end up
+poly_to_reduce - a polynomial with pole that will 
+
+"""
+function reduce_order_n_to_basis(n,p,e,precision,VS,poly_to_reduce,T,R,cache,ev)
+
+    # e = Basis[i][2] # pole order of basis element 
+    # N = N_m[e]
+    N = precision
+
+    ff = factorial(ZZ(p*(e+N-1)-1)) 
+    val_ff = valuation(ff,p)
+    final_val = (n-1) - val_ff  
+    ff_invertible = ff / p^val_ff
+
+    inverse_ff = inv(R(ff_invertible))
+
+    temp = VS()
+    temp2 = convert_p_to_m([poly_to_reduce[1]],ev,vars_reversed=cache.vars_reversed)
+    for i in 1:length(ev)
+        temp[i,1] = R(temp2[i])
+    end
+    temp = T * temp
+    # (9 < verbose) && println("temp: $temp")
+    for i in 1:length(temp)
+#            println(temp[i])
+        ele = inverse_ff * temp[i]
+        if 0 ≤ final_val
+            ele *= p^final_val
+        else
+            lifted = lift(ZZ,ele)
+            #println(typeof(ele))
+            #println("Char: \n$(characteristic(parent(ele)))")
+            #println(ele)
+            #println(lifted)
+            ele = divexact(ele,p^(-final_val)) 
+            #println(ele)
+        end
+        temp[i] = ele
+    end 
+    
+    temp
+
+end
+
+"""
     compute_frobenius_matrix(n,d,Reductions,T)
 
 Computes Frobenius Matrix
@@ -112,44 +166,47 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
     denomArray = []
     ev = cache[d*n-n-1]#gen_exp_vec(n+1,d*n-n-1,termorder)
     VS = matrix_space(R,length(ev),1)
+    println(Reductions)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
         N = N_m[e]
-        (9 < verbose) && println("e: $e")
+        poly_to_reduce = Reductions[i][1]
+        temp = reduce_order_n_to_basis(n,p,e,N,VS,poly_to_reduce,T,R,cache,ev)
+        #(9 < verbose) && println("e: $e")
 
-        (9 < verbose) && println(p*(e+N-1)-1)
+        #(9 < verbose) && println(p*(e+N-1)-1)
 
-        ff = factorial(ZZ(p*(e+N-1)-1)) 
-        val_ff = valuation(ff,p)
-        final_val = (n-1) - val_ff  
-        ff_invertible = ff / p^val_ff
+        #ff = factorial(ZZ(p*(e+N-1)-1)) 
+        #val_ff = valuation(ff,p)
+        #final_val = (n-1) - val_ff  
+        #ff_invertible = ff / p^val_ff
 
-        inverse_ff = inv(R(ff_invertible))
+        #inverse_ff = inv(R(ff_invertible))
 
 
-        temp = VS()
-        temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
-        for i in 1:length(ev)
-            temp[i,1] = R(temp2[i])
-        end
-        temp = T * temp
-        (9 < verbose) && println("temp: $temp")
-        for i in 1:length(temp)
-#            println(temp[i])
-            ele = inverse_ff * temp[i]
-            if 0 ≤ final_val
-                ele *= p^final_val
-            else
-                lifted = lift(ZZ,ele)
-                #println(typeof(ele))
-                #println("Char: \n$(characteristic(parent(ele)))")
-                #println(ele)
-                #println(lifted)
-                ele = divexact(ele,p^(-final_val)) 
-                #println(ele)
-            end
-            temp[i] = ele
-        end 
+        #temp = VS()
+        #temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
+        #for i in 1:length(ev)
+        #    temp[i,1] = R(temp2[i])
+        #end
+        #temp = T * temp
+        #(9 < verbose) && println("temp: $temp")
+        #for i in 1:length(temp)
+##            println(temp[i])
+        #    ele = inverse_ff * temp[i]
+        #    if 0 ≤ final_val
+        #        ele *= p^final_val
+        #    else
+        #        lifted = lift(ZZ,ele)
+        #        #println(typeof(ele))
+        #        #println("Char: \n$(characteristic(parent(ele)))")
+        #        #println(ele)
+        #        #println(lifted)
+        #        ele = divexact(ele,p^(-final_val)) 
+        #        #println(ele)
+        #    end
+        #    temp[i] = ele
+        #end 
         
         push!(frob_mat_temp, temp)
         #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
