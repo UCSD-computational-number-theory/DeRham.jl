@@ -364,9 +364,11 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         end
     end
     
+    #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
+
     (1 < verbose) && println("N_m=$N_m")
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
@@ -404,6 +406,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #println("ending early (for testing)")
     #return 
 
+    #println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
     (9 < verbose) && println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
     # recomputes basis if f is different 

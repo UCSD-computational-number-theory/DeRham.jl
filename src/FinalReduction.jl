@@ -50,10 +50,12 @@ function computeT(f, Basis, M, params, cache)
         len_basis = length(basis)
         if l >=0 
             exp_vec = cache[l]#gen_exp_vec(n+1,l,params.termorder)
-            if (l-(d-1)) > 0
+            if (l-(d-1)) >= 0
                 monomials_domain = compute_monomials(n+1, l-(d-1), precisionringpoly,params.termorder,cache, vars_reversed=cache.vars_reversed)
                 len_domain = length(monomials_domain)
                 change_basis,change_basis_inverse = monomial_change_basis_inverse_lifted(f,l,basis,M,params,cache)
+                #println("change basis = $change_basis")
+                #println("change_basis_inverse = $change_basis_inverse")
                 #change_basis = matrix(precisionring,[precisionring(x) for x in Array(change_basis)])
                 tmp = zero_matrix(precisionring, len_basis, len)
                 

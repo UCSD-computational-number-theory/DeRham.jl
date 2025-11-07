@@ -1,6 +1,6 @@
 
 """
-    eval_to_linear!(A,B,matrices, U,V,R,temp)
+    eval_to_linear!(A,B,temp,matrices,U,V)
 
 Takes a list of n+2 matrices and ouputs a list two matrices [A,B] corresponding to R_{(x0,...,xn)+yv, v} = Ay + B
 

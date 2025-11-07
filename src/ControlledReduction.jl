@@ -402,7 +402,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     
     (4 < verbose) && println("Before reduction chunk, I is $I")
     if params.fastevaluation && 1 ≤ nend-(d*n-n)
-      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
+      #gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
@@ -559,7 +559,8 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
         #        println(matrices[i][:,end])
         #    end
         #end
-        (6 < params.verbose && V == [3,0,0] && firsttime) && begin println(matrices); firsttime=false end
+        (6 < params.verbose && V == [0,0,0,3] && firsttime) && begin println(matrices[5][:,25]); firsttime=false; error() end
+        
 
         #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)

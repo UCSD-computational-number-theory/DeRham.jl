@@ -257,6 +257,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                 end
             end
             distance = distance + distances[j]
+        
         end
     end
     #TODO: there is some sort of race condition on 

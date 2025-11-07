@@ -264,6 +264,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     end
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
     
+    #println("controlled matrix: \n$U")
     (6 < params.verbose) && println("controlled matrix: \n$U")
   
     #temp = size(U)
