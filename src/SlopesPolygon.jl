@@ -190,14 +190,15 @@ end
 
 function SlopesPolygon(coefficients,valuation)
     n = length(coefficients)-1
-    SlopesPolygon(collect(0:n),valuation.(coefficients))
+    SlopesPolygon(collect(0:n),reverse!(valuation.(coefficients)))
 end
 
 
 function newton_polygon(p,coeffs)
-    valuation = x -> x == 0 ? typemax(typeof(x)) : padic_val(p,x)
+    #valuation = x -> x == 0 ? typemax(typeof(x)) : padic_val(p,x)
+    padic_val = x -> x == 0 ? typemax(typeof(x)) : valuation(x, p)
 
-    SlopesPolygon(coeffs,valuation)
+    SlopesPolygon(coeffs,padic_val)
 end
 
 # MARK - creating polygons from other polygons

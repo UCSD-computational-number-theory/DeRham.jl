@@ -166,7 +166,6 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
     denomArray = []
     ev = cache[d*n-n-1]#gen_exp_vec(n+1,d*n-n-1,termorder)
     VS = matrix_space(R,length(ev),1)
-    println(Reductions)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
         N = N_m[e]
@@ -599,6 +598,17 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         LPolynomial(FM,n,q,hodge_polygon,r_m, verbose)
     end
 end
+
+function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false)
+    PR = parent(f)
+    R = coefficient_ring(PR)
+    p = Int64(characteristic(PR))
+    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+
+    return newton_polygon(p, zf)
+end 
+
+
 
 """
     hodgepolygon(basis::Array)
