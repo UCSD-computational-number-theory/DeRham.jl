@@ -1,5 +1,5 @@
 
-function cpu_example_fast_random(n,d,p,N)
+function cpu_example_fast_random(n,d,p,N,resultsdict)
 
     if d < n
         T = collect(0:d-1)
@@ -9,13 +9,16 @@ function cpu_example_fast_random(n,d,p,N)
 
     l = ReentrantLock()
 
-    results = []
     Threads.@threads for i = 1:N
         f = DeRham.random_hypersurface(n,d,p)
-        zeta = DeRham.zeta_function(f,S=T,fastevaluation=true,algorithm=:naive)
+        np = DeRham.newton_polygon(f,S=T,fastevaluation=true,algorithm=:naive)
 
-        @lock l begin 
-            push!(results,(f,zeta))
+        if np != false # f is smooth
+            @lock l begin 
+                if !haskey(resultsdict,np)
+                    resultsdict[np] = f
+                end
+            end
         end
     end
 
