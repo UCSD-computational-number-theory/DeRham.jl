@@ -31,7 +31,7 @@ struct ZetaFunctionParams
     use_gpu::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,true,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -83,8 +83,8 @@ function controlled_reduction_cache(n,d,S,params)
                  params.termorder,
                  degsforward,
                  degsreverse,
-                 #vars_reversed=false)
-                 vars_reversed=params.vars_reversed)
+                 vars_reversed=false)
+                 #vars_reversed=params.vars_reversed)
                  #marker
 end
 
@@ -166,7 +166,7 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
     denomArray = []
     ev = cache[d*n-n-1]#gen_exp_vec(n+1,d*n-n-1,termorder)
     VS = matrix_space(R,length(ev),1)
-    println(Reductions)
+    # println(Reductions)
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
         N = N_m[e]
@@ -393,7 +393,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -582,6 +582,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #        println()
     #    end 
     #end 
+    
     ev = cache[n*d - n - 1] 
     #ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
