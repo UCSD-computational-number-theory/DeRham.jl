@@ -1,0 +1,41 @@
+
+function cpu_example_fast_random(n,d,p,N)
+
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+    l = ReentrantLock()
+
+    results = []
+    Threads.@threads for i = 1:N
+        f = DeRham.random_hypersurface(n,d,p)
+        zeta = DeRham.zeta_function(f,S=T,fastevaluation=true,algorithm=:naive)
+
+        @lock l begin 
+            push!(results,(f,zeta))
+        end
+    end
+
+    results
+end
+
+function cpu_vector_fast_random(n,d,p,N)
+
+end
+
+function all_monomial_random_order(n,d,p)
+
+
+end
+
+function cpu_example_fast_fermat(n,d,p,N)
+
+end
+
+function cpu_vector_fast_fermat(n,d,p,N)
+
+end
+

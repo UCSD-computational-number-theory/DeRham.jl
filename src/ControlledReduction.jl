@@ -361,19 +361,19 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     J = copy(I)
 
     #TODO?
-    if params.vars_reversed == false
+    # if params.vars_reversed == false
         V = rev_chooseV(Array{Int}(divexact.(I,p)),d, S)
-    else
-        V = chooseV(Array{Int}(divexact.(I,p)),d, S)
-    end
+    # else
+    #     V = chooseV(Array{Int}(divexact.(I,p)),d, S)
+    # end
     (4 < verbose) && println("LOOK! I=$I, V = $V")
 
 
-    if params.vars_reversed == true
-         gVec = I .- rev_tweak(I,n*d-n)
-    else
+    # if params.vars_reversed == true
+    #      gVec = I .- rev_tweak(I,n*d-n)
+    # else
          gVec = I .- tweak(I,n*d-n)
-    end
+    # end
     #ev = gen_exp_vec(n+1,n*d-n,termorder)
 
     @. I = I - gVec
@@ -427,11 +427,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     (4 < verbose) && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
-        if params.vars_reversed == true
-            y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
-        else
+        # if params.vars_reversed == true
+        #     y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
+        # else
             y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
-        end
+        # end
         (4 < verbose) && println("Getting y direction reduction matrix for V = $(y)") 
         
         # there's some sort of parity issue between our code and Costa's
@@ -440,13 +440,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
         matrices1 = Ruv[y]#computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
         #println(matrices1)
 
-        if params.vars_reversed == true
-            #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
-            B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
-        else
+        #if params.vars_reversed == true
+        #    #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
+        #    B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
+        #else
             #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
             B,A = eval_to_linear!(B,A,temp,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y)
-        end
+        # end
         
         my_add!(temp,A,B)
         gMat = temp*gMat
@@ -488,11 +488,11 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     #    reverse!(u)
     #end
     
-    if params.vars_reversed == true 
-        J = rev_tweak(u,n*d-n)
-    else
+    # if params.vars_reversed == true 
+    #     J = rev_tweak(u,n*d-n)
+    # else
         J = tweak(u,n*d-n)
-    end
+    # end
 
     #if cache.vars_reversed
     #    reverse!(u)
@@ -515,22 +515,22 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
 
 
     while m > n
-         if params.vars_reversed == true 
-             V = chooseV(J, d, S)
-         else
+         # if params.vars_reversed == true 
+         #     V = chooseV(J, d, S)
+         # else
              V = rev_chooseV(J,d,S)
-         end
+         # end
 
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement should never hit.
-            for i in 1:length(V)
-                if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-                    print("Illegal choice of V!")
-                    println("J = $J, S = $S")
-                end
-            end
+            # for i in 1:length(V)
+            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+            #         print("Illegal choice of V!")
+            #         println("J = $J, S = $S")
+            #     end
+            # end
         end
         @. mins = J
         K = 0
@@ -649,12 +649,12 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement should never hit.
-            for i in 1:length(V)
-                if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-                    print("Illegal choice of V!")
-                    println("J = $J, S = $S")
-                end
-            end
+            # for i in 1:length(V)
+            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+            #         print("Illegal choice of V!")
+            #         println("J = $J, S = $S")
+            #     end
+            # end
         end
 
         K = 0
@@ -727,41 +727,41 @@ function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
     #ss = zeros(Int,n+1)
     #ss[S .+ 1] .= 1
     #o = ones(Int,length(exponent_vector(i[1],1)))
-    if vars_reversed
-        U = reverse(exponent_vector(i[1],1) + Stilda)
-    else
+    # if vars_reversed
+    #     U = reverse(exponent_vector(i[1],1) + Stilda)
+    # else
         U = exponent_vector(i[1],1) + Stilda
-    end
+    # end
     
     gCoeff = coeff(i[1],1)
 
-    if vars_reversed 
-        g_exps = U - rev_tweak(U, n*d-n)  
-    else
+    # if vars_reversed 
+    #     g_exps = U - rev_tweak(U, n*d-n)  
+    # else
         g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
-    end 
+    # end 
     ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
     my_zero!(g)
 
     for j in axes(g,1)
-        if vars_reversed && !cache.vars_reversed
-            if g_exps == reverse(ev[j])
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end 
-        elseif vars_reversed && cache.vars_reversed
+        # if vars_reversed && !cache.vars_reversed
+        #     if g_exps == reverse(ev[j])
+        #         CUDA.@allowscalar g[j] = lift(gCoeff)
+        #         break
+        #     end 
+        # elseif vars_reversed && cache.vars_reversed
+        #     if g_exps == ev[j]
+        #         CUDA.@allowscalar g[j] = lift(gCoeff)
+        #         break
+        #     end
+        # else
             if g_exps == ev[j]
                 CUDA.@allowscalar g[j] = lift(gCoeff)
                 break
             end
-        else
-            if g_exps == ev[j]
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end
-        end 
+        # end 
     end
 
     #println(U,Int.(g))
@@ -844,11 +844,11 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
 
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
-    if params.vars_reversed
-        return [prod(vars .^ reverse(u)) * g, n]
-    else
+    # if params.vars_reversed
+    #     return [prod(vars .^ reverse(u)) * g, n]
+    # else
         return [prod(vars .^ u) * g, n]
-    end
+    # end
 end
 
 
