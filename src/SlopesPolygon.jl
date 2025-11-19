@@ -32,7 +32,7 @@ upon creation of the struct.
 struct SlopesPolygon
     slopes::Array{Rational{Int}}
     slopelengths::Array{Int}
-    values::Array{Int}
+    values::Array{Rational{Int}}
     slopesbefore::Array{Rational{Int}}
 end
 
@@ -87,6 +87,8 @@ function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
         slopes[i-1] = slopevec[2] // slopevec[1]
         slopelengths[i-1] = slopevec[2]
     end
+    println(slopelengths)
+    println(typeof(slopes))
     SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
 end
 
@@ -196,7 +198,8 @@ end
 
 function newton_polygon(p,coeffs)
     #valuation = x -> x == 0 ? typemax(typeof(x)) : padic_val(p,x)
-    padic_val = x -> x == 0 ? typemax(typeof(x)) : valuation(x, p)
+    #padic_val = x -> x == 0 ? typemax(typeof(x)) : valuation(x, p)
+    padic_val = x -> x == 0 ? typemax(Int64) : valuation(x, p) # TODO: make this correct
 
     SlopesPolygon(coeffs,padic_val)
 end
