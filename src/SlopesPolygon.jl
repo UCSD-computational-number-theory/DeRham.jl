@@ -87,8 +87,7 @@ function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
         slopes[i-1] = slopevec[2] // slopevec[1]
         slopelengths[i-1] = slopevec[2]
     end
-    println(slopelengths)
-    println(typeof(slopes))
+    
     SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
 end
 

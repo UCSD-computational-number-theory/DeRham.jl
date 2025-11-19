@@ -605,6 +605,10 @@ function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, te
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
     zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+    
+    if !zf # f isn't smooth
+        return false
+    end 
 
     return newton_polygon(p, zf)
 end 
