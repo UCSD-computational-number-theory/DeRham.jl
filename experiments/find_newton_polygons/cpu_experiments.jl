@@ -12,9 +12,10 @@ function cpu_example_fast_random(n,d,p,N,resultsdict)
     Threads.@threads for i = 1:N
         f = DeRham.random_hypersurface(n,d,p)
         np = DeRham.newton_polygon(f,S=T,fastevaluation=true,algorithm=:naive)
-        println(np.slopes)
-        println(np.slopelengths)
+        
         if np != false # f is smooth
+            println(np.slopes)
+            println(np.slopelengths)
             @lock l begin 
                 if !haskey(resultsdict,np)
                     resultsdict[np] = f

@@ -85,7 +85,8 @@ function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
         #push!(slopes, slopevec[2] // slopevec[1])
         #push!(slopelengths,slopevec[2])
         slopes[i-1] = slopevec[2] // slopevec[1]
-        slopelengths[i-1] = slopevec[2]
+        #slopelengths[i-1] = slopevec[2]
+        slopelengths[i-1] = slopevec[1]
     end
     
     SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
@@ -218,6 +219,10 @@ end
 function Base.:(==)(x::SlopesPolygon,y::SlopesPolygon) 
     (x.slopes == y.slopes) && (x.slopelengths == y.slopelengths)
 end
+
+#function Base.hash(x::SlopesPolygon, h::UInt64)
+#    hash((x.slopes, x.slopelengths))
+#end
 
 endcoord(sp::SlopesPolygon) = length(values(sp)) - 1
     
