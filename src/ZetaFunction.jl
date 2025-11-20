@@ -455,7 +455,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 
 
     if (f == false)
-        println("f is not smooth (or not S-smooth) and we're done. ")
+        (0 < verbose) && println("f is not smooth (or not S-smooth) and we're done. ")
         return false
     end 
 

@@ -15,11 +15,11 @@ function cpu_example_fast_random(n,d,p,N,resultsdict)
         
         
         if np != false # f is smooth
-            np_key = tuple(np.slopes, np.slopelengths)
+            #np_key = tuple(np.slopes, np.slopelengths)
             
             @lock l begin 
-                if !haskey(resultsdict, np_key)
-                    resultsdict[np_key] = f
+                if !haskey(resultsdict, np)
+                    resultsdict[np] = f
                 end
             end
         end

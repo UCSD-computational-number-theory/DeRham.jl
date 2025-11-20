@@ -220,9 +220,9 @@ function Base.:(==)(x::SlopesPolygon,y::SlopesPolygon)
     (x.slopes == y.slopes) && (x.slopelengths == y.slopelengths)
 end
 
-#function Base.hash(x::SlopesPolygon, h::UInt64)
-#    hash((x.slopes, x.slopelengths))
-#end
+function Base.hash(x::SlopesPolygon, h::UInt64)
+    hash((x.slopes, x.slopelengths))
+end
 
 endcoord(sp::SlopesPolygon) = length(values(sp)) - 1
     
