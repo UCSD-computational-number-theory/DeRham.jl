@@ -91,6 +91,12 @@ function convert_results(raw::Dict)
     return out
 end
 
+function save_results(data, filename)
+    open(filename, "w") do io
+        write(io, JSON.json(data))
+    end
+end
+
 ########## MAIN COMPUTE FUNCTION ##########
 
 function cpu_example_fast_random(n,d,p,N,resultsdict)
@@ -145,7 +151,12 @@ function run_pipeline()
     println("Updating Supabase…")
     update_row(client, table, n, d, p, merged)
 
+    println("Saving results to file…")
+    save_results(merged, "n=$(n)_d=$(d)_p=$(p).json")
+    
     println("Done.")
+
+    return merged
 end
 
 run_pipeline()
