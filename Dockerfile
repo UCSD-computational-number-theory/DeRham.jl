@@ -1,33 +1,55 @@
-# CUDA base image (with NVCC + toolkit + runtime)
-FROM nvidia/cuda:12.1.1-devel-ubuntu20.04
+ARG IMAGE=nvidia/cuda:12.1.1-devel-ubuntu20.04
+FROM $IMAGE
 
-# Basic tools
+# ---------------------------------------------------------
+# System tools
+# ---------------------------------------------------------
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get install --yes --no-install-recommends \
-        curl ca-certificates git && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+        curl ca-certificates git vim gcc g++ make && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Julia
-ARG JULIA_VERSION=1.11.2
-RUN curl -fsSL https://julialang-s3.julialang.org/bin/linux/x64/1.11/julia-$JULIA_VERSION-linux-x86_64.tar.gz \
-    | tar -C /usr/local -xz --strip-components=1
+# ---------------------------------------------------------
+# Install Julia (Linux build)
+# ---------------------------------------------------------
+ARG JULIA_RELEASE=1.12
+ARG JULIA_VERSION=1.12.2
 
-# Create application directory
-WORKDIR /app
+RUN curl -s -L https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_RELEASE}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz \
+    | tar -C /usr/local -x -z --strip-components=1 -f -
 
-# Copy your sysimage
-COPY SysImage/DeRhamSysImage.so /usr/local/lib/julia/
+# ---------------------------------------------------------
+# Prepare depot
+# ---------------------------------------------------------
+ENV JULIA_DEPOT_PATH=/usr/local/share/julia
 
-# Optionally copy your package source if needed
-# COPY DeRham/ /app/DeRham/
+# ---------------------------------------------------------
+# Copy DeRham project
+# ---------------------------------------------------------
+WORKDIR /opt/DeRham
+COPY Project.toml .
+COPY Manifest.toml .
+COPY src/ src/
 
-# Add a default runscript to test “using DeRham”
-COPY supabase.jl /app/supabase.jl
+# ---------------------------------------------------------
+# Bring GPUFiniteFieldMatrices from external context
+# ---------------------------------------------------------
+COPY --from=gf / /opt/GPUFiniteFieldMatrices/
 
-# Use the sysimage by default
-ENV JULIA_SYSIMAGE=/usr/local/lib/julia/DeRhamSysImage.so
+# ---------------------------------------------------------
+# Instantiate full environment (Linux artifacts!)
+# ---------------------------------------------------------
+RUN julia -e 'using Pkg; \
+    Pkg.activate("/opt/DeRham"); \
+    # Overwrite any existing path dependency from host
+    Pkg.develop(path="/opt/GPUFiniteFieldMatrices"); \
+    Pkg.resolve(); \
+    Pkg.instantiate(); \
+    Pkg.add("HTTP"); \
+    Pkg.add("JSON");'
 
-# Start julia by default using this sysimage
-ENTRYPOINT ["julia", "--sysimage=/usr/local/lib/julia/DeRhamSysImage.so"]
-CMD ["julia", "supabase.jl"]
+# ---------------------------------------------------------
+# Runtime settings
+# ---------------------------------------------------------
+
+WORKDIR /opt/DeRham

@@ -22,36 +22,57 @@ function get_row(c::SupabaseClient, table::String, n::Int, d::Int, p::Int)
     resp = HTTP.get(url, headers=headers(c))
     arr = JSON.parse(String(resp.body))
 
-    if length(arr) == 0
-        # Row does not exist, make it
-        println("No existing row. Creating a new one…")
-        init_payload = JSON.json(Dict(
-            "n" => n,
-            "d" => d,
-            "p" => p,
-            "data" => Dict()
-        ))
-        post_url = "$(c.url)/rest/v1/$table"
-        HTTP.post(post_url, headers=headers(c), body=init_payload)
-        return Dict()
+    if isempty(arr)
+        println("No existing row. Returning empty dict.")
+        return Dict{String,String}()
     end
 
-    # Return existing data dictionary
-    return arr[1]["data"]
+    row = arr[1]
+
+    # Construct dictionary of key → polynomial (as before)
+    np = Dict(
+        "slopes"       => row["slopes"],
+        "slopelengths" => row["slopelengths"],
+        "values"       => row["values"],
+        "slopesbefore" => row["slopesbefore"]
+    )
+
+    key = JSON.json(np)
+    val = row["polystr"]
+
+    return Dict(key => val)
 end
 
 # Patch row's data column
-function update_row(c::SupabaseClient, table::String, n::Int, d::Int, p::Int, newdata::Dict)
-    url = "$(c.url)/rest/v1/$table?n=eq.$n&d=eq.$d&p=eq.$p"
+function update_row(c::SupabaseClient, table::String, n::Int, d::Int, p::Int, dict::Dict)
+    baseurl = "$(c.url)/rest/v1/$table"
 
-    payload = JSON.json(Dict("data" => newdata))
+    valid_entries = filter(((k,_),) -> startswith(k, "{"), dict)
+    if isempty(valid_entries)
+        println("No valid entries to update. Skipping.")
+        return
+    end
+    
+    (k, polystr) = first(valid_entries)
+    parsed = JSON.parse(k)
 
-    HTTP.patch(url,
+    payload = JSON.json(Dict(
+        "n" => n,
+        "d" => d,
+        "p" => p,
+        "slopes"       => parsed["slopes"],
+        "slopelengths" => parsed["slopelengths"],
+        "values"       => parsed["values"],
+        "slopesbefore" => parsed["slopesbefore"],
+        "polystr"      => polystr
+    ))
+
+    HTTP.post(baseurl,
         headers = [
             "apikey" => c.key,
             "Authorization" => "Bearer $(c.key)",
             "Content-Type" => "application/json",
-            "Prefer" => "return=representation"
+            "Prefer" => "resolution=merge-duplicates"
         ],
         body = payload
     )
@@ -83,9 +104,7 @@ function cpu_example_fast_random(n,d,p,N,resultsdict)
 
         if np != false
             @lock l begin
-                if !haskey(resultsdict, np)
-                    resultsdict[np] = f
-                end
+                resultsdict[encode_key(np)] = encode_value(f)
             end
         end
     end
@@ -111,9 +130,10 @@ function run_pipeline()
 
     println("Fetching existing row…")
     existing_data = get_row(client, table, n, d, p)
+    println("Existing data: $existing_data")
 
     println("Running computation…")
-    local_raw = cpu_example_fast_random(n, d, p, N, Dict())
+    local_raw = cpu_example_fast_random(n, d, p, N, existing_data)
     new_entries = convert_results(local_raw)
 
     println("Merging results…")
@@ -129,3 +149,9 @@ function run_pipeline()
 end
 
 run_pipeline()
+
+# create_sysimage(
+#     [:HTTP, :JSON, :BitIntegers, :CSV, :Combinatorics, :DataFrames, :LFUDACache, :LRUCache, :LinearAlgebra, :Memoize, :OhMyThreads, :Oscar, :PProf];
+#     sysimage_path="SysImage/CpuSysImage.so",
+#     include_transitive_dependencies=false,
+# )
