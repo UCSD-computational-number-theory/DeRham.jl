@@ -23,6 +23,7 @@ include("ManageCSVTests.jl")
     #testRedOfTerms()
     testT()
     #testFrobMat()
+    test_akr()
 end
 
 # currently, this runs on all the examples that can be done with a full S
