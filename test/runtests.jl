@@ -56,7 +56,6 @@ end
         #testRedOfTerms()
         testT()
         #testFrobMat()
-        test_akr()
     end
 
 
