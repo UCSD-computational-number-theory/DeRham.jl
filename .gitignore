@@ -33,3 +33,6 @@ alloc-profile.pb.gz
 
 # Mac
 .DS_Store
+
+# Files generated from experiments
+.json
