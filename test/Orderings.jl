@@ -86,3 +86,15 @@ function test_fastevaluation()
 
     @test zeta == zeta_fasteval
 end
+
+function test_akr()
+
+    R, (x1,x2,x3) = polynomial_ring(GF(7),3)
+    f = 6*x1^3 + 6*x1*x3^2 + x2^2*x3 + 6*x3^3
+
+    zeta = DeRham.zeta_function(f,fastevaluation=true,use_gpu=false,changef=false,verbose=0)
+    zeta_akr = DeRham.zeta_function(f,fastevaluation=true,algorithm=:akr,use_gpu=false,changef=false,verbose=0)
+
+    @test = zeta == zeta_akr
+end
+

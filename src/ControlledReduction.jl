@@ -607,6 +607,31 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     return (J, gMat)
 end
 
+function reducechain_akr(g,m,f,p,picache,params)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
+
+    while m > n
+        gtemp = picache[m]*g
+        len = Int(length(gtemp)/(n+1))
+        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,:invlex),n+1)
+        for i in 1:n
+            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,:invlex),n+1-i)
+            g = g + gpolytemp
+        end
+        g = polynomial_to_vector(g,n+1,:invlex)
+        if size(g)[1] == 0
+            g = fill(R(0), binomial(d*(m-1)-1,n))
+        end
+        m = m - 1
+    end
+
+
+    return g
+end
+
 function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -996,6 +1021,27 @@ function reducepoly_naive(pol,S,f,p,context,cache,params)
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(result,XS), n]]
     #return poly_of_end_costadatas(result,PR,p,d,n,S,params)
+end
+
+function reducepoly_akr(pol,S,f,p,picache,params)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
+    result = PR()
+    for term in pol
+        #println("Reducing terms of order $(term[2])")
+        terms = termsoforder(pol,term[2])
+        #println(terms)
+        for t in terms
+            g = polynomial_to_vector(t[1],n+1,:invlex)
+            reduced = reducechain_akr(g,t[2],f,p,picache,params)
+            reduced_poly = vector_to_polynomial(reduced,n,d*n-n-1,PR,:invlex)
+            result += reduced_poly
+        end
+    end
+
+    return [[result, n]]
 end
 
 """
@@ -1429,6 +1475,49 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
+function reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+    d = total_degree(f)
+    n = nvars(parent(f)) - 1
+    M = factor(modulus(base_ring(parent(f))))[7]
+
+    result = similar(FT)
+
+    highm = FT[length(FT)][length(FT[length(FT)])][2]
+    
+    picache = Vector{typeof(pseudoInverseMat)}(undef, highm)
+    picache[n] = pseudoInverseMat
+    for i in (n+1):highm
+        l = d*i - n - 1
+        generate_degree_forward(cache,l)
+        generate_degree_forward(cache,l-(d-1))
+        generate_degree_forward(cache,l-d)
+        pi_new = pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
+        MS = matrix_space(base_ring(parent(f)), nrows(pi_new), ncols(pi_new))
+        pseudo_inverse_mat = MS()
+        for i in 1:nrows(pi_new)
+            for j in 1:ncols(pi_new)
+                pseudo_inverse_mat[i,j] = ZZ(pi_new[i,j])
+            end
+        end
+        picache[i] = pseudo_inverse_mat
+    end
+
+    for i in 1:length(FT) #pol in FT
+
+        pol = FT[i]
+        if (0 < params.verbose)
+            println("Reducing vector $i")
+            @time reduction = reducepoly_akr(pol,S,f,p,picache,params)
+        else
+            reduction = reducepoly_akr(pol,S,f,p,picache,params)
+        end
+        result[i] = reduction
+
+    end
+
+    return result
+end
+
 function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache)
     if params.algorithm == :costachunks
         reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
@@ -1436,6 +1525,8 @@ function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache)
         reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     elseif params.algorithm == :varbyvar
         reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+    elseif params.algorithm == :akr
+        reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else
         throw(ArgumentError("Unsupported Algorithm: $algorithm"))
     end
