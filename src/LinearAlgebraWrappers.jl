@@ -108,6 +108,7 @@ end
 my_zero!(a::zzModMatrix) = zero!(a)
 my_zero!(a::ZZModMatrix) = zero!(a)
 my_zero!(a::CuModArray) = GPUFiniteFieldMatrices.zero!(a)
+my_zero!(a::KaratsubaArray) = GPUFiniteFieldMatrices.zero!(a)
 
 function my_zero!(a::Vector{ZZRingElem})
     # this is here because of BigInts/ZZRingElem behaving weird in Julia

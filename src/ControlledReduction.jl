@@ -645,14 +645,16 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     tempv = copy(J)
 
     (4 < params.verbose) && println("Starting: J = $J")
+    #=
     (5 < params.verbose) && begin
-        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
+        CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
         if params.always_use_bigints || params.use_gpu
             println("Starting: g = $((gMat)) = $g_poly")
         else    
             println("Starting: g = $(Int.(gMat)) = $g_poly")
         end
     end
+    =#
 
     l = 1
     for i in eachindex(J)
@@ -701,8 +703,11 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
             K = K+1
         end
 
+        (4 < params.verbose) && println("Getting Ruv matrices; ")
         matrices = context.Ruvs[V]
+        (4 < params.verbose) && println("Computing A and B; ")
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        (4 < params.verbose) && println("Starting the reduction steps; ")
         gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         @. J = J - K*V
         m = m - K
@@ -712,6 +717,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
+        #=
         if (5 < params.verbose) 
             CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
             if params.always_use_bigints || params.use_gpu
@@ -722,6 +728,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
                 println("g = $(gMat) = $g")
             end
         end
+        =#
 
     end
     return ((J, gMat), m)
@@ -861,8 +868,9 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
     vars = gens(PR)
 
     cpu_g = Array(g_vec)
-    g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
+    CUDA.@allowscalar g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
+    #=
     (5 < params.verbose) && begin
         if params.fastevaluation && !params.use_gpu
             println("$(Int.(g_vec)) --> $g")
@@ -870,6 +878,7 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
             println("$(g_vec) --> $g")
         end
     end
+    =#
 
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
