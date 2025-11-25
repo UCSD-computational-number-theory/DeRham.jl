@@ -30,3 +30,6 @@ alloc-profile.pb.gz
 
 # vim stuff
 *.swp
+
+# Mac
+.DS_Store
