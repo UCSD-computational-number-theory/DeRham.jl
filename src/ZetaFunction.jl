@@ -392,7 +392,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
