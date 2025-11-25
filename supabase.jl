@@ -1,8 +1,12 @@
 using HTTP
 using JSON
+using CSV
+using DataFrames
 using DeRham
 
-########## SIMPLE SUPABASE FUNCTIONS ##########
+############################################################
+# SUPABASE CLIENT
+############################################################
 
 struct SupabaseClient
     url::String
@@ -17,108 +21,101 @@ function headers(c::SupabaseClient)
     ]
 end
 
-function get_row(c::SupabaseClient, table::String, n::Int, d::Int, p::Int)
-    url = "$(c.url)/rest/v1/$table?n=eq.$n&d=eq.$d&p=eq.$p"
+############################################################
+# GET TABLE AS DATAFRAME
+############################################################
+
+function fetch_table(c::SupabaseClient, table::String)
+    url = "$(c.url)/rest/v1/$table?select=*"
     resp = HTTP.get(url, headers=headers(c))
-    arr = JSON.parse(String(resp.body))
 
-    if isempty(arr)
-        println("No existing row. Returning empty dict.")
-        return Dict{String,String}()
-    end
-
-    row = arr[1]
-
-    # Construct dictionary of key → polynomial (as before)
-    np = Dict(
-        "slopes"       => row["slopes"],
-        "slopelengths" => row["slopelengths"],
-        "values"       => row["values"],
-        "slopesbefore" => row["slopesbefore"]
-    )
-
-    key = JSON.json(np)
-    val = row["polystr"]
-
-    return Dict(key => val)
+    rows = JSON.parse(String(resp.body))
+    df = DataFrame(rows)
+    return df
 end
 
-# Patch row's data column
-function update_row(c::SupabaseClient, table::String, n::Int, d::Int, p::Int, dict::Dict)
+############################################################
+# UPSERT A SINGLE ROW
+############################################################
+
+function push_row(c::SupabaseClient, table::String, row::Dict)
     baseurl = "$(c.url)/rest/v1/$table"
+    payload = JSON.json(row)
 
-    valid_entries = filter(((k,_),) -> startswith(k, "{"), dict)
-    if isempty(valid_entries)
-        println("No valid entries to update. Skipping.")
-        return
-    end
-    
-    (k, polystr) = first(valid_entries)
-    parsed = JSON.parse(k)
-
-    payload = JSON.json(Dict(
-        "n" => n,
-        "d" => d,
-        "p" => p,
-        "slopes"       => parsed["slopes"],
-        "slopelengths" => parsed["slopelengths"],
-        "values"       => parsed["values"],
-        "slopesbefore" => parsed["slopesbefore"],
-        "polystr"      => polystr
-    ))
-
-    HTTP.post(baseurl,
+    HTTP.post(
+        baseurl,
         headers = [
-            "apikey" => c.key,
+            "apikey"        => c.key,
             "Authorization" => "Bearer $(c.key)",
-            "Content-Type" => "application/json",
-            "Prefer" => "resolution=merge-duplicates"
+            "Content-Type"  => "application/json",
+            "Prefer"        => "resolution=merge-duplicates"
         ],
         body = payload
     )
 end
 
-########## NEWTON POLYGON STORAGE ##########
+############################################################
+# ENCODERS
+############################################################
 
 encode_key(np) = JSON.json(np)
 encode_value(f) = string(f)
 
-function convert_results(raw::Dict)
-    out = Dict{String,String}()
-    for (np, f) in raw
-        out[encode_key(np)] = encode_value(f)
-    end
-    return out
-end
+############################################################
+# MAIN EXPERIMENT LOOP
+############################################################
 
-function save_results(data, filename)
-    open(filename, "w") do io
-        write(io, JSON.json(data))
-    end
-end
-
-########## MAIN COMPUTE FUNCTION ##########
-
-function cpu_example_fast_random(n,d,p,N,resultsdict)
-
+function cpu_example_fast_random(n,d,p,N,df::DataFrame)
     T = d < n ? collect(0:d-1) : collect(0:n-1)
-    l = ReentrantLock()
+    lock = ReentrantLock()
+
+    newrows = Vector{Dict}()
 
     Threads.@threads for i = 1:N
         f = DeRham.random_hypersurface(n,d,p)
         np = DeRham.newton_polygon(f, S=T, fastevaluation=true, algorithm=:naive)
+        np === false && continue
 
-        if np != false
-            @lock l begin
-                resultsdict[encode_key(np)] = encode_value(f)
+        slopes       = np.slopes
+        slopelengths = np.slopelengths
+        values       = np.values
+        slopesbefore = np.slopesbefore
+
+        @lock lock begin
+            # Check if an identical row exists
+            same = filter(row ->
+                row.n == n &&
+                row.d == d &&
+                row.p == p &&
+                row.values == string(np.values),
+            df)
+
+
+
+            if nrow(same) == 0
+                row = Dict(
+                    "n"            => n,
+                    "d"            => d,
+                    "p"            => p,
+                    "slopes"       => string(np.slopes),
+                    "slopelengths" => string(np.slopelengths),
+                    "values"       => string(np.values),
+                    "slopesbefore" => string(np.slopesbefore),
+                    "polystr"      => string(f)
+                )
+
+                push!(newrows, row)
+                push!(df, row)
             end
         end
     end
 
-    return resultsdict
+    return df, newrows
 end
 
-########## PIPELINE ##########
+############################################################
+# PIPELINE
+############################################################
 
 function run_pipeline()
     println("Enter Supabase URL: ")
@@ -132,37 +129,34 @@ function run_pipeline()
     println("Enter number of random samples N: "); N = parse(Int, readline())
 
     client = SupabaseClient(url, key)
-    table = "derham"
+    table  = "derham"
 
-    println("Fetching existing row…")
-    existing_data = get_row(client, table, n, d, p)
-    println("Existing data: $existing_data")
+    println("\nFetching existing table…")
+    df = fetch_table(client, table)
+    println("Loaded $(nrow(df)) rows.\n")
 
-    println("Running computation…")
-    local_raw = cpu_example_fast_random(n, d, p, N, existing_data)
-    new_entries = convert_results(local_raw)
+    println("Running experiment…")
+    df, newrows = cpu_example_fast_random(n,d,p,N,df)
 
-    println("Merging results…")
-    merged = copy(existing_data)
-    for (k,v) in new_entries
-        merged[k] = v
+    println("New rows generated: ", length(newrows))
+
+    ########################################################
+    # SAVE FULL TABLE TO CSV
+    ########################################################
+    filename = "$(table).csv"
+    println("Saving full table to CSV: $filename")
+    CSV.write(filename, df)
+
+    ########################################################
+    # PUSH ONLY NEW ROWS TO SUPABASE
+    ########################################################
+    println("Pushing new rows to Supabase…")
+    for row in newrows
+        push_row(client, table, row)
     end
 
-    println("Updating Supabase…")
-    update_row(client, table, n, d, p, merged)
-
-    println("Saving results to file…")
-    save_results(merged, "n=$(n)_d=$(d)_p=$(p).json")
-    
     println("Done.")
-
-    return merged
+    return df
 end
 
 run_pipeline()
-
-# create_sysimage(
-#     [:HTTP, :JSON, :BitIntegers, :CSV, :Combinatorics, :DataFrames, :LFUDACache, :LRUCache, :LinearAlgebra, :Memoize, :OhMyThreads, :Oscar, :PProf];
-#     sysimage_path="SysImage/CpuSysImage.so",
-#     include_transitive_dependencies=false,
-# )
