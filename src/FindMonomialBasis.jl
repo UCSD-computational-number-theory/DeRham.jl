@@ -41,7 +41,7 @@ function compute_basis_matrix(f, l, m, params, cache)
     @assert(0 <= m && m <= n)
 
     section = binomial(n + l - (d-1), n)
-    domain_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder, cache, vars_reversed=cache.vars_reversed)
+    domain_mons = compute_monomials(n+1, l - (d - 1), PR, params.termorder, cache)#, vars_reversed=cache.vars_reversed)
 
     if length(domain_mons) <= 0
         return []
@@ -56,7 +56,7 @@ function compute_basis_matrix(f, l, m, params, cache)
     #We should probably double check for this in ZetaFunction.jl
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
-            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, params.termorder, cache)#, vars_reversed=cache.vars_reversed)
         end
     end
     
@@ -105,18 +105,18 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     not_in_S_mons_vec = cache[l-d]
 
 
-    if cache.vars_reversed
-        reverse!.(in_S_mons_vec)
-        reverse!.(not_in_S_mons_vec)
-    end
+    # if cache.vars_reversed
+    #     reverse!.(in_S_mons_vec)
+    #     reverse!.(not_in_S_mons_vec)
+    # end
 
     in_S_mons = gen_mon(in_S_mons_vec, PR)
     not_in_S_mons = gen_mon(not_in_S_mons_vec, PR)
 
-    if cache.vars_reversed
-        reverse!.(in_S_mons_vec)
-        reverse!.(not_in_S_mons_vec)
-    end
+    # if cache.vars_reversed
+    #     reverse!.(in_S_mons_vec)
+    #     reverse!.(not_in_S_mons_vec)
+    # end
 
     in_set_section = binomial(n + l - (d-1), n)
     not_in_set_section =  binomial(n + l - d, n)
@@ -138,16 +138,17 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     end
     #partials = [ derivative(f, i) for i in 1:n+1 ] # ∂_0, ∂_1, ∂_2
     
-    if params.vars_reversed == true
-        # one needs to be quite careful with the ordering of partials 
-        reverse!(partials)
-        #partials = reverse(partials)  
-        reverse!(Stilda)
-        #Stilda = reverse(Stilda)
-        reverse!(vars)
-        #vars = reverse(vars)        
-    end
-    #println("partials = $partials")
+    #println("partials before possibly reversing = $partials")
+    #if params.vars_reversed == true
+    #    # one needs to be quite careful with the ordering of partials 
+    #    reverse!(partials)
+    #    #partials = reverse(partials)  
+    #    reverse!(Stilda)
+    #    #Stilda = reverse(Stilda)
+    #    reverse!(vars)
+    #    #vars = reverse(vars)        
+    #end
+    #println("partials after possibly reversing = $partials")
     #println("Stilda = $Stilda")
     #println("vars = $vars")
     #println("in_S_mons = $in_S_mons")
@@ -159,16 +160,15 @@ function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     for i in 1:(n+1)
         if Stilda[i] == 1
             for monomial in eachindex(in_S_mons)
-
                 #M[:, col_idx] = polynomial_to_vector(in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
-                polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                polynomial_to_vector!(v, in_S_mons[monomial] * partials[i], n+1, params.termorder, cache)#), vars_reversed=cache.vars_reversed)
                 M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
         else
             for monomial in eachindex(not_in_S_mons)
                 #M[:, col_idx] = polynomial_to_vector(not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
-                polynomial_to_vector!(v,not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache, vars_reversed=cache.vars_reversed)
+                polynomial_to_vector!(v,not_in_S_mons[monomial] * vars[i] * partials[i], n+1, params.termorder, cache)#, vars_reversed=cache.vars_reversed)
                 M[:, col_idx] = v
                 col_idx = col_idx + 1
             end
@@ -264,6 +264,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     end
     #U = compute_controlled_matrix(f, l, S, R, PR, params)
     
+    #println("controlled matrix: \n$U")
     (6 < params.verbose) && println("controlled matrix: \n$U")
   
     #temp = size(U)

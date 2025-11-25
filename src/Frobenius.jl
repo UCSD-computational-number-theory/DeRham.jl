@@ -51,10 +51,6 @@ INPUTS:
 * "PR" -- ring, polynomial ring with coefficients in R 
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_reversed; verbose=false)
-    #FIXME reversed to match Costa's code
-    if vars_reversed == false
-        beta = reverse(beta)
-    end
     (9 < verbose) && println("Applying Frobenius to $beta with pole order $m")
     (9 < verbose) && println("N=$N, m=$m")
     (9 < verbose) && println("Scaling by factorial of: ", p * (N + m - 1) - 1)

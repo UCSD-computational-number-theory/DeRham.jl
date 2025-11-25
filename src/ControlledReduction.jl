@@ -210,27 +210,30 @@ INPUTS:
 * "I" -- list/tuple, exponents of monomials
 * "d" -- integer, degree of f 
 """
-function rev_chooseV(I, d)
+function rev_chooseV(I, d, S)
     reverse!(I)
 
-    V = zeros(Int,length(I))
-    i = 0
-    s = 1
-    foundNonZero = false
-    while i < d
-        if s > length(I) && foundNonZero == false
-            return V
-        elseif s > length(I)
-            s = 1
-            foundNonZero = false
-        end
-        if (I - V)[s] > 0
-            V[s] = V[s] + 1
-            i = i + 1
-            foundNonZero = true
-        end
-        s = s + 1
-    end
+    V = chooseV(I,d,S)
+
+    reverse!(I)
+    # V = zeros(Int,length(I))
+    # i = 0
+    # s = 1
+    # foundNonZero = false
+    # while i < d
+    #     if s > length(I) && foundNonZero == false
+    #         return V
+    #     elseif s > length(I)
+    #         s = 1
+    #         foundNonZero = false
+    #     end
+    #     if (I - V)[s] > 0
+    #         V[s] = V[s] + 1
+    #         i = i + 1
+    #         foundNonZero = true
+    #     end
+    #     s = s + 1
+    # end
 
     reverse!(V)
 
@@ -350,10 +353,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
 
     
     I = u
-    #TODO?
-    if params.vars_reversed == false
-        reverse!(I) # parity issue due to Costa's code being reverse from ours
-    end
+   
     (4 < verbose) && println("Expanded I: $I")
 
     gMat = g
@@ -361,19 +361,19 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     J = copy(I)
 
     #TODO?
-    if params.vars_reversed == false
-        V = rev_chooseV(Array{Int}(divexact.(I,p)),d)
-    else
-        V = chooseV(Array{Int}(divexact.(I,p)),d, S)
-    end
+    # if params.vars_reversed == false
+        V = rev_chooseV(Array{Int}(divexact.(I,p)),d, S)
+    # else
+    #     V = chooseV(Array{Int}(divexact.(I,p)),d, S)
+    # end
     (4 < verbose) && println("LOOK! I=$I, V = $V")
 
 
-    if params.vars_reversed == true
-         gVec = I .- rev_tweak(I,n*d-n)
-    else
+    # if params.vars_reversed == true
+    #      gVec = I .- rev_tweak(I,n*d-n)
+    # else
          gVec = I .- tweak(I,n*d-n)
-    end
+    # end
     #ev = gen_exp_vec(n+1,n*d-n,termorder)
 
     @. I = I - gVec
@@ -402,7 +402,7 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     
     (4 < verbose) && println("Before reduction chunk, I is $I")
     if params.fastevaluation && 1 ≤ nend-(d*n-n)
-      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
+      #gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
@@ -427,11 +427,11 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
     (4 < verbose) && println("After steps 1-$i, I is $I")
     i = i-1
     while i <= nend-1
-        if params.vars_reversed == true
-            y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
-        else
+        # if params.vars_reversed == true
+        #     y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
+        # else
             y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
-        end
+        # end
         (4 < verbose) && println("Getting y direction reduction matrix for V = $(y)") 
         
         # there's some sort of parity issue between our code and Costa's
@@ -440,13 +440,13 @@ function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp
         matrices1 = Ruv[y]#computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
         #println(matrices1)
 
-        if params.vars_reversed == true
-            #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
-            B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
-        else
+        #if params.vars_reversed == true
+        #    #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
+        #    B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
+        #else
             #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
             B,A = eval_to_linear!(B,A,temp,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y)
-        end
+        # end
         
         my_add!(temp,A,B)
         gMat = temp*gMat
@@ -488,7 +488,11 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
     #    reverse!(u)
     #end
     
-    J = rev_tweak(u,n*d-n)
+    # if params.vars_reversed == true 
+    #     J = rev_tweak(u,n*d-n)
+    # else
+        J = tweak(u,n*d-n)
+    # end
 
     #if cache.vars_reversed
     #    reverse!(u)
@@ -511,17 +515,22 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
 
 
     while m > n
-        V = chooseV(J, d, S)
+         # if params.vars_reversed == true 
+         #     V = chooseV(J, d, S)
+         # else
+             V = rev_chooseV(J,d,S)
+         # end
+
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement should never hit.
-            for i in 1:length(V)
-                if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-                    print("Illegal choice of V!")
-                    println("J = $J, S = $S")
-                end
-            end
+            # for i in 1:length(V)
+            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+            #         print("Illegal choice of V!")
+            #         println("J = $J, S = $S")
+            #     end
+            # end
         end
         @. mins = J
         K = 0
@@ -550,7 +559,8 @@ function reducechain_naive(u,g,m,S,f,p,context,cache,params)
         #        println(matrices[i][:,end])
         #    end
         #end
-        (6 < params.verbose && V == [1,1,2] && firsttime) && begin println(matrices); firsttime=false end
+        (6 < params.verbose && V == [0,0,0,3] && firsttime) && begin println(matrices[5][:,25]); firsttime=false; error() end
+        
 
         #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
@@ -638,12 +648,12 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (6 < params.verbose) && begin
             # the way that chooseV works right now,
             # the following if statement should never hit.
-            for i in 1:length(V)
-                if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-                    print("Illegal choice of V!")
-                    println("J = $J, S = $S")
-                end
-            end
+            # for i in 1:length(V)
+            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
+            #         print("Illegal choice of V!")
+            #         println("J = $J, S = $S")
+            #     end
+            # end
         end
 
         K = 0
@@ -716,41 +726,41 @@ function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
     #ss = zeros(Int,n+1)
     #ss[S .+ 1] .= 1
     #o = ones(Int,length(exponent_vector(i[1],1)))
-    if vars_reversed
-        U = reverse(exponent_vector(i[1],1) + Stilda)
-    else
+    # if vars_reversed
+    #     U = reverse(exponent_vector(i[1],1) + Stilda)
+    # else
         U = exponent_vector(i[1],1) + Stilda
-    end
+    # end
     
     gCoeff = coeff(i[1],1)
 
-    if vars_reversed 
-        g_exps = U - rev_tweak(U, n*d-n)  
-    else
+    # if vars_reversed 
+    #     g_exps = U - rev_tweak(U, n*d-n)  
+    # else
         g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
-    end 
+    # end 
     ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
     # this is UInt instead of R to get Oscar to use the fast FLINT method
     #g = zeros(R,length(ev)) 
     my_zero!(g)
 
     for j in axes(g,1)
-        if vars_reversed && !cache.vars_reversed
-            if g_exps == reverse(ev[j])
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end 
-        elseif vars_reversed && cache.vars_reversed
+        # if vars_reversed && !cache.vars_reversed
+        #     if g_exps == reverse(ev[j])
+        #         CUDA.@allowscalar g[j] = lift(gCoeff)
+        #         break
+        #     end 
+        # elseif vars_reversed && cache.vars_reversed
+        #     if g_exps == ev[j]
+        #         CUDA.@allowscalar g[j] = lift(gCoeff)
+        #         break
+        #     end
+        # else
             if g_exps == ev[j]
                 CUDA.@allowscalar g[j] = lift(gCoeff)
                 break
             end
-        else
-            if g_exps == ev[j]
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end
-        end 
+        # end 
     end
 
     #println(U,Int.(g))
@@ -832,11 +842,11 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
 
     # no need to do rev_tweak since reducechain_costachunks returns the "true" u
     # on the last run
-    if params.vars_reversed
-        return [prod(vars .^ reverse(u)) * g, n]
-    else
+    # if params.vars_reversed
+    #     return [prod(vars .^ reverse(u)) * g, n]
+    # else
         return [prod(vars .^ u) * g, n]
-    end
+    # end
 end
 
 
@@ -1068,7 +1078,7 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end
@@ -1374,7 +1384,7 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     if (0 < params.verbose)
         println("Creating the Ruv PEP object...")
         #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        CUDA.@time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     else
         Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
     end

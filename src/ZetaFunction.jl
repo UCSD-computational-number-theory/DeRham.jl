@@ -31,7 +31,7 @@ struct ZetaFunctionParams
     use_gpu::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,true,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -83,9 +83,63 @@ function controlled_reduction_cache(n,d,S,params)
                  params.termorder,
                  degsforward,
                  degsreverse,
-                 #vars_reversed=false)
-                 vars_reversed=params.vars_reversed)
+                 vars_reversed=false)
+                 #vars_reversed=params.vars_reversed)
                  #marker
+end
+
+"""
+    compute_
+
+Takes a polynomial with pole of order n, and converts
+it to a vector in terms of the basis of cohomology
+
+
+e - the original pole order of the element before the frobenius was applied
+precision - the series precision for the vector
+VS - a matrix space for where the vector will end up
+poly_to_reduce - a polynomial with pole that will 
+
+"""
+function reduce_order_n_to_basis(n,p,e,precision,VS,poly_to_reduce,T,R,cache,ev)
+
+    # e = Basis[i][2] # pole order of basis element 
+    # N = N_m[e]
+    N = precision
+
+    ff = factorial(ZZ(p*(e+N-1)-1)) 
+    val_ff = valuation(ff,p)
+    final_val = (n-1) - val_ff  
+    ff_invertible = ff / p^val_ff
+
+    inverse_ff = inv(R(ff_invertible))
+
+    temp = VS()
+    temp2 = convert_p_to_m([poly_to_reduce[1]],ev,vars_reversed=cache.vars_reversed)
+    for i in 1:length(ev)
+        temp[i,1] = R(temp2[i])
+    end
+    temp = T * temp
+    # (9 < verbose) && println("temp: $temp")
+    for i in 1:length(temp)
+#            println(temp[i])
+        ele = inverse_ff * temp[i]
+        if 0 ≤ final_val
+            ele *= p^final_val
+        else
+            lifted = lift(ZZ,ele)
+            #println(typeof(ele))
+            #println("Char: \n$(characteristic(parent(ele)))")
+            #println(ele)
+            #println(lifted)
+            ele = divexact(ele,p^(-final_val)) 
+            #println(ele)
+        end
+        temp[i] = ele
+    end 
+    
+    temp
+
 end
 
 """
@@ -115,41 +169,43 @@ function compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, ca
     for i in 1:length(Reductions)
         e = Basis[i][2] # pole order of basis element 
         N = N_m[e]
-        (9 < verbose) && println("e: $e")
+        poly_to_reduce = Reductions[i][1]
+        temp = reduce_order_n_to_basis(n,p,e,N,VS,poly_to_reduce,T,R,cache,ev)
+        #(9 < verbose) && println("e: $e")
 
-        (9 < verbose) && println(p*(e+N-1)-1)
+        #(9 < verbose) && println(p*(e+N-1)-1)
 
-        ff = factorial(ZZ(p*(e+N-1)-1)) 
-        val_ff = valuation(ff,p)
-        final_val = (n-1) - val_ff  
-        ff_invertible = ff / p^val_ff
+        #ff = factorial(ZZ(p*(e+N-1)-1)) 
+        #val_ff = valuation(ff,p)
+        #final_val = (n-1) - val_ff  
+        #ff_invertible = ff / p^val_ff
 
-        inverse_ff = inv(R(ff_invertible))
+        #inverse_ff = inv(R(ff_invertible))
 
 
-        temp = VS()
-        temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
-        for i in 1:length(ev)
-            temp[i,1] = R(temp2[i])
-        end
-        temp = T * temp
-        (9 < verbose) && println("temp: $temp")
-        for i in 1:length(temp)
-#            println(temp[i])
-            ele = inverse_ff * temp[i]
-            if 0 ≤ final_val
-                ele *= p^final_val
-            else
-                lifted = lift(ZZ,ele)
-                #println(typeof(ele))
-                #println("Char: \n$(characteristic(parent(ele)))")
-                #println(ele)
-                #println(lifted)
-                ele = divexact(ele,p^(-final_val)) 
-                #println(ele)
-            end
-            temp[i] = ele
-        end 
+        #temp = VS()
+        #temp2 = convert_p_to_m([Reductions[i][1][1]],ev,vars_reversed=cache.vars_reversed)
+        #for i in 1:length(ev)
+        #    temp[i,1] = R(temp2[i])
+        #end
+        #temp = T * temp
+        #(9 < verbose) && println("temp: $temp")
+        #for i in 1:length(temp)
+##            println(temp[i])
+        #    ele = inverse_ff * temp[i]
+        #    if 0 ≤ final_val
+        #        ele *= p^final_val
+        #    else
+        #        lifted = lift(ZZ,ele)
+        #        #println(typeof(ele))
+        #        #println("Char: \n$(characteristic(parent(ele)))")
+        #        #println(ele)
+        #        #println(lifted)
+        #        ele = divexact(ele,p^(-final_val)) 
+        #        #println(ele)
+        #    end
+        #    temp[i] = ele
+        #end 
         
         push!(frob_mat_temp, temp)
         #push!(denomArray, QQ(lift(ZZ,Reductions[i][3])))
@@ -336,7 +392,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -348,6 +404,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         S = collect(0:n)
     end
 
+    # vars_reversed = false
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
 
     cache = controlled_reduction_cache(n,d,S,params)
@@ -362,10 +419,13 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
             push!(Basis,[j,i])
         end
     end
+    
+    #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
     (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
-    println("N_m=$N_m")
+
+    (1 < verbose) && println("N_m=$N_m")
 
     (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
 
@@ -395,13 +455,14 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 
 
     if (f == false)
-        println("f is not smooth (or not S-smooth) and we're done. ")
+        (0 < verbose) && println("f is not smooth (or not S-smooth) and we're done. ")
         return false
     end 
 
     #println("ending early (for testing)")
     #return 
 
+    #println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
     (9 < verbose) && println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
     # recomputes basis if f is different 
@@ -520,6 +581,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #        println()
     #    end 
     #end 
+    
     ev = cache[n*d - n - 1] 
     #ev = gen_exp_vec(n+1,n*d-n-1,termorder)
     (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
@@ -537,6 +599,21 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         LPolynomial(FM,n,q,hodge_polygon,r_m, verbose)
     end
 end
+
+function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false)
+    PR = parent(f)
+    R = coefficient_ring(PR)
+    p = Int64(characteristic(PR))
+    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+    
+    if zf == false # f isn't smooth
+        return false
+    end 
+
+    return newton_polygon(p, zf)
+end 
+
+
 
 """
     hodgepolygon(basis::Array)

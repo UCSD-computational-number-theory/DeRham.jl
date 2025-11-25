@@ -32,7 +32,7 @@ upon creation of the struct.
 struct SlopesPolygon
     slopes::Array{Rational{Int}}
     slopelengths::Array{Int}
-    values::Array{Int}
+    values::Array{Rational{Int}}
     slopesbefore::Array{Rational{Int}}
 end
 
@@ -71,6 +71,28 @@ function values(slopes,slopelengths)
 end
 
 """
+Given an array of vertices
+"""
+#function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
+function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
+    #TODO implement
+    
+    n = length(vertices)-1
+    slopelengths = zeros(Int,n)
+    slopes = zeros(Rational{Int},n)
+    for i = 2:n+1
+        slopevec = vertices[i] .- vertices[i-1]
+        #push!(slopes, slopevec[2] // slopevec[1])
+        #push!(slopelengths,slopevec[2])
+        slopes[i-1] = slopevec[2] // slopevec[1]
+        #slopelengths[i-1] = slopevec[2]
+        slopelengths[i-1] = slopevec[1]
+    end
+    
+    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
+end
+
+"""
 This constructor assumes integer slopes
 starting at zero, and slope i goes for
 slopelengths[i] units
@@ -88,36 +110,98 @@ Given an array of points
 (xs[i],yvals[i]),
 creates a newton polygon by taking the lower
 convex hull of the points.
+
+This should work for newton and hodge polygons of varieties,
+but I don't know exactly what I'm assuming about the
+points here.
+
+This assumes that xs is sorted in ascending order
 """
 function SlopesPolygon(xs::Array{T},yvals::Array{T}) where T<:Real
-    #TODO: implement this when we have some zeta functions to take 
-    #the newton polygon of
-    error("not implemented")
+    vertices = [(0,0)]
+
+    points = [(xs[i],yvals[i]) for i in eachindex(yvals)]
+    
+    x = 0
+    while x < xs[end] # i.e. end of the hodge polygon
+
+        startpoint = points[x+1]
+        x2 = x + 1
+        smallest_slope = typemax(Int128)
+        finalx = x
+
+        while x2 ≤ length(yvals) - 1
+
+            thispoint = points[x2 + 1]
+            thisslope = (thispoint[2] - startpoint[2]) // (thispoint[1] - startpoint[1])
+            if thisslope ≤ smallest_slope # we do \leq even though the slope won't change so we can update finalpoint
+              smallest_slope = thisslope
+              finalx = x2
+            end
+            x2 = x2 + 1
+        end # postcondition: x2 is the next vertex
+
+        # add x2 to the vertices
+        push!(vertices,points[finalx+1])
+
+        x = finalx
+    end
+
+    SlopesPolygon(vertices)
 end
+
+#"""
+#Given a list of coefficients of a polynomial,
+#starting with the constant term and ending with the
+#highest degree term, gives the newton polygon
+#using a very naive algorithm.
+
+#"""
+#function newton_polygon(p,coefs)
+#  vertices = [(0,0)]
+
+#  points = [(i-1,padic_val(2,coefs[i])) for i in eachindex(coefs)]
+
+#  x = 0
+#  while x < length(coefs) - 1 # i.e. the end of the hodge polygon
+#    #println("x=$x")
+#    startpoint = points[x+1]
+#    x2 = x + 1
+#    smallest_slope = typemax(Int128)
+#    finalx = x
+#    while x2 ≤ length(coefs) - 1
+#      #println("x2=$x2, y1=$(points[x2 + 1][2])")
+#      thispoint = points[x2 + 1]
+#      thisslope = (thispoint[2] - startpoint[2]) // (thispoint[1] - startpoint[1])
+#      if thisslope ≤ smallest_slope # we do \leq even though the slope won't change so we can update finalpoint
+#        smallest_slope = thisslope
+#        finalx = x2
+#      end
+#      x2 = x2 + 1
+#    end # postcondition: x2 is the next vertex
+
+#    # add x2 to the vertices
+#    push!(vertices,points[finalx+1])
+
+#    x = finalx
+
+#  end
+
+#  vertices
+#end
 
 function SlopesPolygon(coefficients,valuation)
     n = length(coefficients)-1
-    SlopesPolygon(collect(0:n),valuation.(coefficients))
+    SlopesPolygon(collect(0:n),reverse!(valuation.(coefficients)))
 end
 
-"""
-Given an array of vertices
-"""
-#function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
-function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
-    #TODO implement
-    
-    n = length(vertices)-1
-    slopelengths = zeros(Int,n)
-    slopes = zeros(Rational{Int},n)
-    for i = 2:n+1
-        slopevec = vertices[i] .- vertices[i-1]
-        #push!(slopes, slopevec[2] // slopevec[1])
-        #push!(slopelengths,slopevec[2])
-        slopes[i-1] = slopevec[2] // slopevec[1]
-        slopelengths[i-1] = slopevec[2]
-    end
-    SlopesPolygon(slopes,slopelengths,values(slopes,slopelengths)...)
+
+function newton_polygon(p,coeffs)
+    #valuation = x -> x == 0 ? typemax(typeof(x)) : padic_val(p,x)
+    #padic_val = x -> x == 0 ? typemax(typeof(x)) : valuation(x, p)
+    padic_val = x -> x == 0 ? typemax(Int64) : valuation(x, p) # TODO: make this correct
+
+    SlopesPolygon(coeffs,padic_val)
 end
 
 # MARK - creating polygons from other polygons
@@ -134,6 +218,10 @@ end
 
 function Base.:(==)(x::SlopesPolygon,y::SlopesPolygon) 
     (x.slopes == y.slopes) && (x.slopelengths == y.slopelengths)
+end
+
+function Base.hash(x::SlopesPolygon, h::UInt64)
+    hash((x.slopes, x.slopelengths))
 end
 
 endcoord(sp::SlopesPolygon) = length(values(sp)) - 1
