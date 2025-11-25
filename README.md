@@ -8,11 +8,11 @@ This package aims to implement cutting-edge-speed algorithms that calculate the 
 
 ## Current functionality
 
-All that is currently implemented is Kedlaya's algorithm with controlled reduction, without the nondegeneracy optimization (see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf)).
+The implementation that is currently available is Kedlaya's algorithm that computes the zeta functions of projective hypersurfaces using a method known as controlled reduction (developed by Costa, Harvey, and Kedlaya), without the nondegeneracy optimization (see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf)).
 
 ### Getting Started
 
-Dependencies: Need to install Julia and Oscar [ToDo: Add installation guides]. Within Julia, require the BigIntegers, LinearAlgebra, and Combinatorics package.
+Dependencies: Need to install Julia and Oscar [ToDo: Add installation guides]. Within Julia, require the BigIntegers, LinearAlgebra, and Combinatorics package [ToDo: Add more dependencies].
 
 ### Sample code
 
