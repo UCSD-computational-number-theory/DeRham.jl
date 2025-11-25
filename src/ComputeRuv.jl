@@ -117,23 +117,23 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     ev4 = (cache[n*d-n-length(S)])#gen_exp_vec(n+1,n*d-n-length(S),termorder)
     explookup = cache[n*d - n,:reverse]
     explookup2 = cache[n*d-n+d-length(S),:reverse]
-    if vars_reversed && !cache.vars_reversed
-        for vec in ev1
-            reverse!(vec)
-        end 
+    # if vars_reversed && !cache.vars_reversed
+    #     for vec in ev1
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev2
-            reverse!(vec)
-        end 
+    #     for vec in ev2
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev3
-            reverse!(vec)
-        end 
+    #     for vec in ev3
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev4
-            reverse!(vec)
-        end     
-    end 
+    #     for vec in ev4
+    #         reverse!(vec)
+    #     end     
+    # end 
     
     #ev1 = cache[n*d - n]#gen_exp_vec(n+1,n*d-n,termorder)
     #ev2 = cache[n*d-n+d-length(S)]#gen_exp_vec(n+1,n*d-n+d-length(S),termorder)
@@ -161,11 +161,11 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
 
     Stilda = zeros(Int, n+1)
     for i in S
-        if vars_reversed
-            Stilda[n+1-i] = 1
-        else
+        # if vars_reversed
+        #     Stilda[n+1-i] = 1
+        # else
             Stilda[i+1] = 1
-        end
+        # end
     end
     distances = Vector{Int64}(undef, n+1)
     for i in 1:(n+1)
@@ -222,13 +222,13 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    if vars_reversed && !cache.vars_reversed
-                        reverse!(temp)
-                        l = get(explookup, temp, -1)
-                        reverse!(temp)
-                    else 
+                    # if vars_reversed && !cache.vars_reversed
+                    #     reverse!(temp)
+                    #     l = get(explookup, temp, -1)
+                    #     reverse!(temp)
+                    # else 
                         l = get(explookup,temp,-1)
-                    end 
+                    # end 
                     #println(j, " ", l, " ", i, " ", k, " ", distance)
                     
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k]
@@ -245,18 +245,19 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                     #print("ev1[l]: $((ev1[l],typeof(ev1[l])));")
                     #print("ev3[k]: $((ev3[k],typeof(ev3[k])));") 
                     #println(" $(ev1[l] == ev3[k])")
-                    if vars_reversed && !cache.vars_reversed
-                        reverse!(temp)
-                        l = get(explookup, temp, -1)
-                        reverse!(temp)
-                    else 
+                    # if vars_reversed && !cache.vars_reversed
+                    #     reverse!(temp)
+                    #     l = get(explookup, temp, -1)
+                    #     reverse!(temp)
+                    # else 
                         l = get(explookup,temp,-1)
-                    end
+                    # end
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k]
                     result[1][l,i] = result[1][l,i] + (ev4[k][j])*gJS[distance+k] + gJS[distance+k]
                 end
             end
             distance = distance + distances[j]
+        
         end
     end
     #TODO: there is some sort of race condition on 
@@ -273,23 +274,23 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         end
     end
     
-    if vars_reversed && !cache.vars_reversed
-        for vec in ev1
-            reverse!(vec)
-        end 
+    # if vars_reversed && !cache.vars_reversed
+    #     for vec in ev1
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev2
-            reverse!(vec)
-        end 
+    #     for vec in ev2
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev3
-            reverse!(vec)
-        end 
+    #     for vec in ev3
+    #         reverse!(vec)
+    #     end 
 
-        for vec in ev4
-            reverse!(vec)
-        end     
-    end 
+    #     for vec in ev4
+    #         reverse!(vec)
+    #     end     
+    # end 
 
     return result
 end

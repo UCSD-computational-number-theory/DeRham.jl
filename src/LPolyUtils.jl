@@ -21,6 +21,7 @@ function vp(a, p)
     return e
 end 
 
+#=
 """
     newton_polygon(f, p)
     Returns the Newton polygon of f 
@@ -59,6 +60,7 @@ function newton_polygon(f, p)
     return SlopesPolygon(hull)
    #return hull
 end 
+=#
 
 """
 zeta_to_pointcount(Z,n)
