@@ -65,6 +65,19 @@ encode_value(f) = string(f)
 # MAIN EXPERIMENT LOOP
 ############################################################
 
+function update_df(df::DataFrame, n, d, p, np, f)
+    row = Dict(
+        "n"            => n,
+        "d"            => d,
+        "p"            => p,
+        "slopes"       => string(np.slopes),
+        "slopelengths" => string(np.slopelengths),
+        "values"       => string(np.values),
+        "slopesbefore" => string(np.slopesbefore),
+        "polystr"      => string(f)
+    )
+end
+
 function cpu_example_fast_random(n,d,p,N,df::DataFrame)
     T = d < n ? collect(0:d-1) : collect(0:n-1)
     lock = ReentrantLock()
@@ -76,11 +89,6 @@ function cpu_example_fast_random(n,d,p,N,df::DataFrame)
         np = DeRham.newton_polygon(f, S=T, fastevaluation=true, algorithm=:naive)
         np === false && continue
 
-        slopes       = np.slopes
-        slopelengths = np.slopelengths
-        values       = np.values
-        slopesbefore = np.slopesbefore
-
         @lock lock begin
             # Check if an identical row exists
             same = filter(row ->
@@ -90,20 +98,8 @@ function cpu_example_fast_random(n,d,p,N,df::DataFrame)
                 row.values == string(np.values),
             df)
 
-
-
             if nrow(same) == 0
-                row = Dict(
-                    "n"            => n,
-                    "d"            => d,
-                    "p"            => p,
-                    "slopes"       => string(np.slopes),
-                    "slopelengths" => string(np.slopelengths),
-                    "values"       => string(np.values),
-                    "slopesbefore" => string(np.slopesbefore),
-                    "polystr"      => string(f)
-                )
-
+                row = update_df(df, n, d, p, np, f)
                 push!(newrows, row)
                 push!(df, row)
             end
