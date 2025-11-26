@@ -95,6 +95,6 @@ function test_akr()
     zeta = DeRham.zeta_function(f,fastevaluation=true,use_gpu=false,changef=false,verbose=0)
     zeta_akr = DeRham.zeta_function(f,fastevaluation=true,algorithm=:akr,use_gpu=false,changef=false,verbose=0)
 
-    @test = zeta == zeta_akr
+    @test zeta == zeta_akr
 end
 
