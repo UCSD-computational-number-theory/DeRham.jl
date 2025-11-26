@@ -1,5 +1,5 @@
 
-function cpu_example_fast_random(n,d,p,N,resultsdict)
+function cpu_example_fast_random(n,d,p,N,df)
 
     if d < n
         T = collect(0:d-1)
@@ -18,16 +18,12 @@ function cpu_example_fast_random(n,d,p,N,resultsdict)
             #np_key = tuple(np.slopes, np.slopelengths)
             
             @lock l begin 
-                if !haskey(resultsdict, np)
-                    println("Found new Newton polygon!")
-                    println(np)
-                    resultsdict[np] = f
-                end
+                update_df(df, n, d, p, np, f)
             end
         end
     end
 
-    resultsdict
+    return df
 end
 
 function cpu_vector_fast_random(n,d,p,N)
@@ -56,7 +52,7 @@ function random_monomial(R,p,exp_vecs,context)
     finish(context)
 end
 
-function cpu_example_fast_example(n,d,p,N,f,resultsdict; skip_single_monomials=false)
+function cpu_example_fast_example(n,d,p,N,f,df; skip_single_monomials=false)
 
     R = parent(f)
     F = base_ring(R)
@@ -92,11 +88,7 @@ function cpu_example_fast_example(n,d,p,N,f,resultsdict; skip_single_monomials=f
             #np_key = tuple(np.slopes, np.slopelengths)
             
             @lock l begin 
-                if !haskey(resultsdict, np)
-                    println("Found new Newton polygon!")
-                    println(np)
-                    resultsdict[np] = g
-                end
+                update_df(df, n, d, p, np, g)
             end
         end
     end
@@ -149,7 +141,7 @@ function cpu_example_fast_example(n,d,p,N,f,resultsdict; skip_single_monomials=f
 
     end
 
-    resultsdict
+    return df
 end
 
 function cpu_vector_fast_fermat(n,d,p,N)
