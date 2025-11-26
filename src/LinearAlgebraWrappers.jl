@@ -85,6 +85,18 @@ function my_copy!(a::Vector{ZZRingElem},b::Vector{ZZRingElem})
     end
 end
 
+function my_copy(a)
+    copy(a)
+end
+
+function my_copy(a::KaratsubaArray)
+    GPUFiniteFieldMatrices.Karatsubacopy(a)
+end
+
+function my_copy(a::CuModArray)
+    GPUFiniteFieldMatrices.CuModcopy(a)
+end
+
 # zero
 
 function my_zero!(a)
@@ -125,5 +137,5 @@ end
 # add
 
 my_add!(A,B,C) = Oscar.add!(A,B,C)
-my_add!(A::CuModMatrix,B::CuModMatrix,C::CuModMatrix) = GPUFiniteFieldMatrices.add!(A,B,C)
+my_add!(A::CuModArray,B::CuModArray,C::CuModArray) = GPUFiniteFieldMatrices.add!(A,B,C)
 my_add!(A::KaratsubaArray,B::KaratsubaArray,C::KaratsubaArray) = GPUFiniteFieldMatrices.add!(A,B,C)

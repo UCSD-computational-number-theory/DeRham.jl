@@ -833,7 +833,13 @@ function remove_duplicates!(costadata_arr)
         j = i+1
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
-                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2] .+ costadata_arr[j][1][2]),costadata_arr[i][2][1])
+                #println(Int.(costadata_arr[i][1][2]))
+                #println(Int.(costadata_arr[j][1][2]))
+                my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
+                #println(Int.(costadata_arr[i][1][2]))
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
+                #println(Int.(costadata_arr[i][1][2]))
+                #throw(error)
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -968,7 +974,7 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
 
     allcostadata = []
     for term in terms
-        g = copy(context.g)
+        g = my_copy(context.g)
         term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
         append!(allcostadata,[((rev_tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
     end
@@ -1189,7 +1195,7 @@ function KaratsubaMat(A::zzModMatrix)
     N1 = Int(p)^Int(round(d/2))
     N2 = Int(p)^Int(d - round(d/2))
 
-    GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1^2)
+    GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
 end
 
 #TODO: incorporate this idiomatically using adapt.jl
@@ -1211,8 +1217,9 @@ function default_context(matspace,Ruv,params)
     g_length = number_of_rows(matspace)
     B = base_ring(matspace)
     m = modulus(B)
-    #if params.use_gpu == true && (ZZ(2)^22 < m < ZZ(2)^106)
-    if params.use_gpu == true && (m < ZZ(2)^106)
+    if params.use_gpu == true && (ZZ(2)^25 < m < ZZ(2)^106)
+    #if params.use_gpu == true && (m < ZZ(2)^106)
+        println("using karatsuba")
         temp = collect(factor(m))[1]
         d = temp[2]
         p = temp[1]
@@ -1220,15 +1227,15 @@ function default_context(matspace,Ruv,params)
         N1 = Int(p)^Int(round(d/2))
         N2 = Int(p)^Int((d - round(d/2)))
 
-        A = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
-        B = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
-        temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1^2,true)
+        A = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
+        B = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
+        temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
         GPUFiniteFieldMatrices.initialize_plan!(A)
         GPUFiniteFieldMatrices.initialize_plan!(B)
         GPUFiniteFieldMatrices.initialize_plan!(temp)
 
-        g = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1^2,true)
-        g_temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1^2,true)
+        g = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1*N2,true)
+        g_temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1*N2,true)
         GPUFiniteFieldMatrices.initialize_plan!(g)
         GPUFiniteFieldMatrices.initialize_plan!(g_temp)
 
@@ -1314,15 +1321,69 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
 
-    if (3 < params.verbose)
+    if (3 < params.verbose) && (ZZ(2)^25 < m < ZZ(2)^106)
+        compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); KaratsubaMat.(compute(V)) end
+    elseif (3 < params.verbose)
         compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
+    elseif (ZZ(2)^25 < m < ZZ(2)^106)
+        compute_gpu = V -> KaratsubaMat.(compute(V))
     else
         compute_gpu = V -> cuMod.(compute(V))
     end 
 
     compute_float = V -> float_entries.(compute(V))
 
-    if 3 < n && d == 3 && S == [0] && params.use_gpu #4 < n
+    if 3 < n && d == 3 && S == [0] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
+
+        eager_Vs = cubic_S_zero_Vs(n)
+
+        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float,eagerVs=eager_Vs,usethreads=false)
+        m = M = Int(modulus(base_ring(oscar_matspace)))
+        temp = collect(factor(m))[1]
+        d = temp[2]
+        p = temp[1]
+
+        N1 = Int(p)^Int(round(d/2))
+        N2 = Int(p)^Int(d - round(d/2))
+
+        if (3 < params.verbose)
+            create_gpu = matrices -> begin
+                println("Moving an Ruv to the GPU (first time creation!)")
+                CUDA.@time KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
+            end
+
+            convert_gpu = (dest,matrices) -> begin
+                println("Moving an Ruv to the GPU (already allocated)")
+
+                CUDA.@time begin
+                    for i in 1:length(dest)
+                        copyto!(dest[i],matrices[i])
+                    end
+                end
+            end
+        else
+            create_gpu = matrices -> KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
+            convert_gpu = (dest,matrices) -> begin
+                for i in 1:length(dest)
+                    copyto!(dest[i],matrices[i])
+                end
+            end
+        end
+        s = size(oscar_matspace(),1)
+
+        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        memory = s^2 * 8 * (n+2)
+
+        maxsize = div(memory_cap,memory)
+
+        #println(maxsize)
+        #testing
+        #maxsize = 13 
+
+        Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+
+    elseif 3 < n && d == 3 && S == [0] && params.use_gpu #4 < n
 
         eager_Vs = cubic_S_zero_Vs(n)
 
@@ -1367,16 +1428,16 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
-    #elseif params.use_gpu && lazy && (ZZ(2)^22 < m < ZZ(2)^106)
-    elseif params.use_gpu && lazy && (m < ZZ(2)^106)
+    elseif params.use_gpu && lazy && (ZZ(2)^25 < m < ZZ(2)^106)
+    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
         compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
         Ruv = LazyPEP{KaratsubaMatrix{Float64}}(compute_gpu_karatsuba)
 
     elseif params.use_gpu && lazy
         Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
 
-    #elseif params.use_gpu && (ZZ(2)^22 < m < ZZ(2)^106)
-    elseif params.use_gpu && (m < ZZ(2)^106)
+    elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
+    #elseif params.use_gpu && (m < ZZ(2)^106)
         compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
         Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
