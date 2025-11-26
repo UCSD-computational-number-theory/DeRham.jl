@@ -413,6 +413,10 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
     basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
+    if basis == nothing
+        (0 < verbose) && println("Cannont compute monomial basis, this f appears to be non-smooth")
+        return false
+    end
     Basis = []
     for i in 1:n
         for j in basis[i]
