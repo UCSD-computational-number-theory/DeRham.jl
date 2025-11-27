@@ -150,7 +150,8 @@ struct CachePEP{T,S} <: AbstractPEP{S}
         temp = Ref{Union{Vector{S},Nothing}}(nothing)
         tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
         recover = (key, value) -> recover!(tempV,temp,key,value)
-        Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
+        #Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
+        Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize)
 
         new{T,S}(Ucomponent,backing,create,convert_entry,temp,tempV)
     end

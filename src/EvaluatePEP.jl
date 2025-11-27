@@ -76,14 +76,13 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
 
   my_mul!(temp,a,stop)
   my_add!(temp,temp,b)
-  
+
   if start == stop
     my_matvecmul!(g_temp,temp,g)
     my_copy!(g,g_temp)
 
     return g
   end
-
   my_matvecmul!(g_temp,temp,g)
   my_copy!(g,g_temp)
 
@@ -93,10 +92,41 @@ function finitediff_prodeval_linear!(a,b,start,stop,g,temp,g_temp,ui=nothing)
     
     # Fk = Fk - a
     my_sub!(temp,temp,a)
-
     my_matvecmul!(g_temp,temp,g)
     my_copy!(g,g_temp)
   end
+  return g
+end
 
+function finitediff_prodeval_linear!(a::KaratsubaArray,b::KaratsubaArray,start,stop,g::KaratsubaArray,temp::KaratsubaArray,g_temp::KaratsubaArray,ui=nothing)
+
+  my_mul!(temp,a,stop)
+  my_add!(temp,temp,b)
+
+  if start == stop
+    my_matvecmul!(g_temp,temp,g)
+    my_copy!(g,g_temp)
+
+    return g
+  end
+  my_matvecmul!(g_temp,temp,g)
+  my_copy!(g,g_temp)
+
+  my_copy!(b,temp)
+  i = 1
+  for k = stop-1:-1:start
+    # right now, Fk = F(k+1)
+    
+    # Fk = Fk - a
+    if i == 1
+      my_sub!(temp,b,a)
+      my_matvecmul!(g_temp,temp,g)
+    else
+      my_sub!(b,temp,a)
+      my_matvecmul!(g_temp,b,g)
+    end
+    my_copy!(g,g_temp)
+    i = (i + 1)%2
+  end
   return g
 end

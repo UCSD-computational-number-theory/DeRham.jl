@@ -19,12 +19,15 @@ OhMyThreads = "67456a42-1dca-4109-a031-0a68de7e3ad5"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 PProf = "e4faabce-9ead-11e9-39d9-4379958e3056"
 
+[sources]
+GPUFiniteFieldMatrices = {path = "../GPUFiniteFieldMatrices.jl"}
+
 [compat]
 CSV = "0.10.15"
 CUDA = "5.7.3"
 DataFrames = "1.7.0"
-GPUFiniteFieldMatrices = "0.2.3"
 HTTP = "1.10.19"
+GPUFiniteFieldMatrices = "0.3.0"
 JSON = "0.21.4"
 LFUDACache = "0.1.1"
 LRUCache = "1.6.2"
