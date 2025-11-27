@@ -543,7 +543,7 @@ function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:default, 
     
     if zf == false # f isn't smooth
         return false
-    end 
+    end#TODO: all of the "return false" should be "return nothing" 
 
     return newton_polygon(p, zf)
 end 
