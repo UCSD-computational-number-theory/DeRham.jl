@@ -56,7 +56,11 @@ function compute_basis_matrix(f, l, m, params, cache)
     #We should probably double check for this in ZetaFunction.jl
     for i in 1:n+1
         for monomial in eachindex(domain_mons)
-            M[:, section * (i-1) + monomial] = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, params.termorder, cache)#, vars_reversed=cache.vars_reversed)
+            vec = polynomial_to_vector(domain_mons[monomial] * partials[i], n+1, params.termorder, cache)#, vars_reversed=cache.vars_reversed)
+            if length(vec) == 0 && size(M,2) != 0
+                return nothing # this f is not smooth (or something)
+            end
+            M[:, section * (i-1) + monomial] = vec
         end
     end
     
@@ -200,6 +204,9 @@ function compute_monomial_basis(f, m, params, cache)
     end
 
     M = compute_basis_matrix(f, d*m - n - 1, m, params, cache)
+    if M == nothing
+        return nothing
+    end
     if isempty(M)
         return row_monomials
     end
@@ -226,7 +233,11 @@ function compute_monomial_bases(f, params, cache)
     res = []
 
     for m in 1:n
-        push!(res, compute_monomial_basis(f, m, params, cache))
+        b = compute_monomial_basis(f, m, params, cache)
+        if b == nothing
+            return nothing
+        end
+        push!(res, b)
     end
     return res
 end
@@ -266,7 +277,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     
     #println("controlled matrix: \n$U")
     (6 < params.verbose) && println("controlled matrix: \n$U")
-  
+
     #temp = size(U)
     if (0 < params.verbose)
         println("Computing pseudoinverse of matrix of size $(size(U))")
@@ -274,7 +285,7 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     else
         flag, B = Oscar.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
     end
-    
+
     (6 < params.verbose) && println("pinv mod p: \n$B")
 
     if flag
