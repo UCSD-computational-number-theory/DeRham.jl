@@ -26,8 +26,28 @@ function cpu_example_fast_random(n,d,p,N,df)
     return df
 end
 
-function cpu_vector_fast_random(n,d,p,N)
+function cpu_vector_fast_random(n,d,p,N,df)
 
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+
+    for i = 1:N
+        f = DeRham.random_hypersurface(n,d,p)
+        np = DeRham.newton_polygon(f,S=T,fastevaluation=true,algorithm=:naive,use_threads=true)
+        
+        
+        if np != false # f is smooth
+            #np_key = tuple(np.slopes, np.slopelengths)
+            
+            update_df(df, n, d, p, np, f)
+        end
+    end
+
+    return df
 end
 
 function all_monomials(n,d,p)
@@ -144,7 +164,71 @@ function cpu_example_fast_example(n,d,p,N,f,df; skip_single_monomials=false)
     return df
 end
 
-function cpu_vector_fast_fermat(n,d,p,N)
+function cpu_vector_fast_example(n,d,p,N,f,df)
+    R = parent(f)
+    F = base_ring(R)
 
+    exp_vecs = DeRham.gen_exp_vec(n,d)
+
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+    ctx = MPolyBuildCtx(R)
+
+    function run_example(g)
+        np = false 
+
+        np = DeRham.newton_polygon(g,S=T,fastevaluation=true,algorithm=:naive,use_threads=true)
+            
+        if np != false # f is smooth
+            update_df(df, n, d, p, np, g)
+        end
+    end
+
+    nMons = length(exp_vecs)*p
+
+    # if N is big, just do all of the single monomials
+    if nMons < N
+        if !skip_single_monomials
+
+            println("N=$N exceeds the number of monomials of degree $d in $n variables. Computing f + mon for all such `mon`")
+            for (coef, exp_vec) in all_monomials(n,d,p)
+                push_term!(ctx,F(coef),exp_vec)
+                mon = finish(ctx)
+                ff = f + mon
+
+                run_example(ff)
+            end
+        end
+
+        if nMons^2 < N
+            println("N is more than the number of pairs of monomials. This experiment only considers random pairs of monomials, so this test is suboptimal.")
+        end
+
+        println("Randomly trying pairs of monomials.")
+        for i = 1:N
+            mon1 = random_monomial(R,p,exp_vecs,ctx)
+            mon2 = random_monomial(R,p,exp_vecs,ctx)
+
+            ff = f + mon1 + mon2
+
+            run_example(ff)
+        end
+    else
+        println("Randomly trying monomials.")
+        for i = 1:N
+            mon = random_monomial(R,p,exp_vecs,ctx)
+
+            ff = f + mon
+
+            run_example(ff)
+        end
+
+    end
+
+    return df
 end
 

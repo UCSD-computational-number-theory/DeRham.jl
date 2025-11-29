@@ -107,6 +107,14 @@ end
 # PIPELINE
 ############################################################
 
+function my_example(p)
+    R, (x1,x2,x3,x4) = GF(p)[:x1,:x2,:x3,:x4]
+    # f = x1^4 + x2^4 + x3^4 + x4^4 + 2x1*x2*x3*x4
+    # penc(a) = x^6 + y^6 + z^6 + a*(x^5*y + y^5*x + x^5*z + z^5*x + y^5*z + z^5*y)
+
+    x^6 + 3*x^3*y^3 + y^6 + 3*y^3*z^3 + 4*z^6
+end
+
 function run_pipeline()
     println("Enter Supabase URL: ")
     url = "https://oigzppmsalxtinyuegpy.supabase.co"
@@ -132,8 +140,10 @@ function run_pipeline()
 
     # RUN EXPERIMENT
     println("Running experiment…")
-    df = cpu_example_fast_random(n,d,p,N,df_old)
-    # df = cpu_example_fast_example(n,d,p,N,f,df_old)
+    # @time df = cpu_example_fast_random(n,d,p,N,df_old)
+    @time df = cpu_example_fast_example(n,d,p,N,my_example(p),df_old)
+    # df = cpu_vector_fast_random(n,d,p,N,df_old)
+    # @time df = cpu_vector_fast_example(n,d,p,N,my_example(p),df_old)
 
     # SAVE TO CSV
     filename = "$(table).csv"
