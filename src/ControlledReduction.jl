@@ -1453,10 +1453,11 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
     elseif params.use_gpu
         Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
 
-    elseif lazy
+    elseif lazy && !params.use_threads
         Ruv = LazyPEP{typeof(oscar_matspace())}(compute)
 
     else
+        #TODO: change to usethreads=params.use_threads, need to debug the crashes first
         Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=false)
     end
 
