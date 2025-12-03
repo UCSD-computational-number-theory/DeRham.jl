@@ -1,4 +1,10 @@
+using Combinatorics
 
+"""
+For this one, the example is fast, probably
+less than 10s,
+so we use course-grained parallelism
+"""
 function cpu_example_fast_random(n,d,p,N,df)
 
     if d < n
@@ -26,6 +32,11 @@ function cpu_example_fast_random(n,d,p,N,df)
     return df
 end
 
+"""
+In this experiment, reducing a single vector is fast,
+so we use threading so that each example can be finished in a
+shorter period of time.
+"""
 function cpu_vector_fast_random(n,d,p,N,df)
 
     if d < n
@@ -232,3 +243,191 @@ function cpu_vector_fast_example(n,d,p,N,f,df)
     return df
 end
 
+"""
+Takes an example, randomly weights 
+"""
+function cpu_vector_fast_weighted_example(n,d,p,N,f,df; num_monomials=1,nonzero_weights=false)
+    R = parent(f)
+    F = base_ring(R)
+
+    exp_vecs = DeRham.gen_exp_vec(n,d)
+
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+    ctx = MPolyBuildCtx(R)
+
+    function run_example(g)
+        np = false 
+
+        np = DeRham.newton_polygon(g,S=T,fastevaluation=true,algorithm=:naive,use_threads=true)
+            
+        if np != false # f is smooth
+            update_df(df, n, d, p, np, g)
+        end
+    end
+
+    nMons = length(exp_vecs)*p
+    nWeights = p^length(terms(f))
+    nExamples = nMons*nWeights
+
+    # if N is big, just do all of the single monomials
+    if nExamples < N
+
+        println("Warning: N=$N exceeds the number of monomial-weight combinations of degree $d in $n variables. Consider using a different test that enumerates these combinations.")
+    end
+
+    println("Randomly scaling monomials of f by weights and adding monomials.")
+    for i = 1:N
+
+        ts = terms(f)
+
+        if nonzero_weights
+            weights = rand(1:p-1,length(ts))
+        else
+            weights = rand(0:p-1,length(ts))
+        end
+
+        ff = sum(weights .* ts)
+
+        for i in 1:num_monomials
+            mon = random_monomial(R,p,exp_vecs,ctx)
+            ff = f + mon
+        end
+
+        run_example(ff)
+    end
+
+    return df
+end
+
+"""
+Returns the integer partitions of n
+with less than or equal to k parts.
+
+The result is returned as a vector of vectors,
+with each inner vector having length k.
+Each inner vector is padded with zeros so it has length k
+"""
+function partitions_leq(n,k)
+
+    function padwithzeros!(partition,size) 
+        padding_length = size - length(partition)
+        if 0 < padding_length
+            append!(partition,zeros(eltype(partition), padding_length))
+        end
+    end
+
+    result = collect.(Oscar.partitions(n,1))# = [[n]]
+    padwithzeros!.(result,k)
+
+    for i in 2:k
+        new_partitions = collect.(Oscar.partitions(n,i))
+        padwithzeros!.(new_partitions,k)
+        result = vcat(result,new_partitions)
+    end
+    
+    result
+end
+
+"""
+TODO: PR this to Oscar? I don't think Oscar has such a method...
+"""
+function monomial_symmetric_polynomial(R,partition; ctx=nothing)
+    d = sum(partition)
+    vars = gens(R)
+    l = length(partition)
+    nDistinct = length(unique(partition))
+    n = length(vars)
+
+    n != l && throw("Need $l variables for partition $partition but have $n.")
+
+    if ctx == nothing
+        ctx = MPolyBuildCtx(R)
+    end
+
+    for p in Combinatorics.multiset_permutations(partition,l)
+        push_term!(ctx, one(base_ring(R)), p)
+    end
+
+    finish(ctx)
+end
+        
+function all_monomial_symmetric_polynomials(n,d,p)
+    R, _ = polynomial_ring(GF(p),n)
+
+    partitions = partitions_leq(d,n)
+
+    ctx = MPolyBuildCtx(R)
+    
+    monomial_symmetric_polynomial.((R,),partitions,ctx=ctx)
+end
+
+function all_tuples_of_length(n,p)
+    collect(Iterators.product(fill(0:p-1,n)...))[:]
+end
+
+"""
+Takes random linear combinations of symmetric polynomials and computes
+their newton polygons
+"""
+function cpu_vector_fast_symmetric(n,d,p,N,df)
+
+    symmpolys = all_monomial_symmetric_polynomials(n,d,p)
+
+    # R = parent(symmpolys[1])
+
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+    function run_example(g)
+        np = false 
+
+        np = DeRham.newton_polygon(g,S=T,fastevaluation=true,algorithm=:naive,use_threads=true)
+            
+        if np != false # f is smooth
+            update_df(df, n, d, p, np, g)
+        end
+    end
+
+
+
+    # formula comes from p^l possible vectors, but scaling
+    # by an element in the base gives the same surface
+    # So we fix the first coordiate to be either 1 
+    # (p^(l-1) possibilities) or 0 (p^(l-1) possibilites)
+    l = length(symmpolys)
+    nExamples = 2*p^(l - 1)
+
+    # if N is big, just do all of the single monomials
+    if nExamples < N
+
+        println("N=$N exceeds the number of symmetric polynomials of degree $d in $n variables. Computing the newton polygon for all such examples")
+
+        for weights in all_tuples_of_length(l-1,p)
+            interesting_term = sum(weights .* symmpolys[2:end])
+
+            run_example(interesting_term)
+            run_example(symmpolys[1] + ineresting_term)
+        end
+
+    else
+        println("Randomly trying linear combinations of symmetric polynomials.")
+        for i = 1:N
+            weights = rand(0:p-1,l)
+
+            ff = sum(weights .* symmpolys)
+
+            run_example(ff)
+        end
+
+    end
+
+    return df
+end
