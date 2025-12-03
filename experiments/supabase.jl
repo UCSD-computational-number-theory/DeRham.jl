@@ -97,7 +97,8 @@ function update_df(df::DataFrame, n, d, p, np, f, push_to_supabase=false)
         "polystr"      => string(f)
     )
 
-    println("Found new Newton polygon: $row")
+    println("Found new Newton polygon:")# $row")
+    println("$np")
     push!(df, row)
 
     return df
@@ -108,17 +109,17 @@ end
 ############################################################
 
 function my_example(p)
-    # R, (x1,x2,x3,x4) = GF(p)[:x1,:x2,:x3,:x4]
-    R, (x1,x2,x3) = GF(p)[:x1,:x2,:x3]
+    R, (x1,x2,x3,x4) = GF(p)[:x1,:x2,:x3,:x4]
+    # R, (x1,x2,x3) = GF(p)[:x1,:x2,:x3]
     # f = x1^4 + x2^4 + x3^4 + x4^4 + 2x1*x2*x3*x4
     # penc(a) = x^6 + y^6 + z^6 + a*(x^5*y + y^5*x + x^5*z + z^5*x + y^5*z + z^5*y)
 
     # x^6 + 3*x^3*y^3 + y^6 + 3*y^3*z^3 + 4*z^6
-    # f = x1^5 + x2^5 + x3^5 + x4^5
-    # f
+    f = x1^5 + x2^5 + x3^5 + x4^5
+    f
     # 6*x1^6 + 7*x1^5*x2 + 7*x1^5*x3 + x1^4*x2^2 + 4*x1^4*x2*x3 + x1^4*x3^2 + 10*x1^3*x2^3 + 4*x1^3*x2^2*x3 + 4*x1^3*x2*x3^2 + 10*x1^3*x3^3 + x1^2*x2^4 + 4*x1^2*x2^3*x3 + x1^2*x2^2*x3^2 + 4*x1^2*x2*x3^3 + x1^2*x3^4 + 7*x1*x2^5 + 4*x1*x2^4*x3 + 4*x1*x2^3*x3^2 + 4*x1*x2^2*x3^3 + 4*x1*x2*x3^4 + 7*x1*x3^5 + 6*x2^6 + 7*x2^5*x3 + x2^4*x3^2 + 10*x2^3*x3^3 + x2^2*x3^4 + 7*x2*x3^5 + 6*x3^6
-    
-    4*x^6 + 3*x^3*y^3 + y^6 + 3*y^3*z^3 + 4*z^6
+
+    # 4*x^6 + 3*x^3*y^3 + y^6 + 3*y^3*z^3 + 4*z^6
 end
 
 function run_pipeline()
@@ -149,8 +150,8 @@ function run_pipeline()
     # @time df = cpu_example_fast_random(n,d,p,N,df_old)
     # @time df = cpu_example_fast_example(n,d,p,N,my_example(p),df_old)
     # df = cpu_vector_fast_random(n,d,p,N,df_old)
-    # @time df = cpu_vector_fast_example(n,d,p,N,my_example(p),df_old)
-    @time df = cpu_vector_fast_symmetric(n,d,p,N,df_old)
+    @time df = cpu_vector_fast_example(n,d,p,N,my_example(p),df_old)
+    # @time df = cpu_vector_fast_symmetric(n,d,p,N,df_old)
     # @time df = cpu_vector_fast_weighted_example(n,d,p,N,my_example(p),df_old,num_monomials=2,nonzero_weights=true)
 
     # SAVE TO CSV
