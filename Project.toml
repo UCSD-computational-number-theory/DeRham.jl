@@ -17,16 +17,19 @@ Memoize = "c03570c3-d221-55d1-a50c-7939bbd78826"
 OhMyThreads = "67456a42-1dca-4109-a031-0a68de7e3ad5"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 PProf = "e4faabce-9ead-11e9-39d9-4379958e3056"
+UnicodePlots = "b8865327-cd53-5732-bb35-84acbb429228"
 
 [sources]
-GPUFiniteFieldMatrices = {path = "../GPUFiniteFieldMatrices.jl"}
+GPUFiniteFieldMatrices = {rev = "main", url = "https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git"}
 
 [compat]
 CSV = "0.10.15"
 CUDA = "5.7.3"
 DataFrames = "1.7.0"
 GPUFiniteFieldMatrices = "0.3.0"
+HTTP = "1.10.19"
 JSON = "0.21.4"
 LFUDACache = "0.1.1"
 LRUCache = "1.6.2"
 OhMyThreads = "0.8.3"
+UnicodePlots = "3.8.1"
