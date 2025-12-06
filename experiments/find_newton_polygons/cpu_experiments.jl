@@ -61,6 +61,90 @@ function cpu_vector_fast_random(n,d,p,N,df)
     return df
 end
 
+# MARK - pasted from MMPSingularities.jl
+
+"""
+Calculates if the hypersuface defined by the 
+polynomial poly is F-split
+
+note that p must be prime for this to have mathematical meaning
+"""
+function isFSplit(p,poly)
+  #maybe TODO: check that p is prime
+
+  !inPowerOfVariableIdeal(p,p,poly^(p-1))
+
+end#function
+
+"""
+Returns true if the polynomial f 
+is in the "frobenius power" \\frak{m}^[m],
+where \\frak{m} is the ideal of variables of the ring.
+
+"""
+function inPowerOfVariableIdeal(p,m,f)
+  # don't need this because exponent_vectors will have 
+  # no elements for the zero polynomial
+  f == zero(f) && return true
+
+
+  for i in 1:length(f)
+    ev = exponent_vector(f,i)
+
+    if all(ev .< m)
+      #println("Found term not in the Frob power of the maximal ideal: " * string(exponent_vector))
+      
+      # We not in the power of the maximal ideal, we don't have any
+      # powers that are big enough
+      return false
+    end
+  end
+
+  true
+end#function
+
+# MARK - end pasted from MMPSingularities.jl
+
+"""
+In this experiment, reducing a single vector is fast,
+so we use threading so that each example can be finished in a
+shorter period of time.
+"""
+function cpu_vector_fast_random_K3(n,d,p,N,df)
+
+    if d < n
+        T = collect(0:d-1)
+    else
+        T = collect(0:n-1)
+    end
+
+
+    i = 1
+    while i ≤ N
+        f = DeRham.random_hypersurface(n,d,p)
+
+        if isFSplit(p,f)
+            continue
+        end
+
+        println("Found non-F-split example!")
+        np = DeRham.newton_polygon(f,S=T,fastevaluation=true,algorithm=:naive,use_threads=true)
+        
+        println("Completed Zeta function.")
+        
+        if np != false # f is smooth
+            #np_key = tuple(np.slopes, np.slopelengths)
+            
+            update_df(df, n, d, p, np, f)
+        end
+        
+        i = i + 1
+    end
+
+    return df
+end
+
+
 function all_monomials(n,d,p)
 
     exp_vecs = DeRham.gen_exp_vec(n,d)
