@@ -645,7 +645,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     tempv = copy(J)
 
     (4 < params.verbose) && println("Starting: J = $J")
-    #=
+    
     (5 < params.verbose) && begin
         CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
         if params.always_use_bigints || params.use_gpu
@@ -654,7 +654,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
             println("Starting: g = $(Int.(gMat)) = $g_poly")
         end
     end
-    =#
+    
 
     l = 1
     for i in eachindex(J)
@@ -717,7 +717,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
-        #=
+        
         if (5 < params.verbose) 
             CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
             if params.always_use_bigints || params.use_gpu
@@ -728,7 +728,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
                 println("g = $(gMat) = $g")
             end
         end
-        =#
+        
 
     end
     return ((J, gMat), m)
