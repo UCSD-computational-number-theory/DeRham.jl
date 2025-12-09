@@ -645,7 +645,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     tempv = copy(J)
 
     (4 < params.verbose) && println("Starting: J = $J")
-    
+    #=
     (5 < params.verbose) && begin
         CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
         if params.always_use_bigints || params.use_gpu
@@ -654,7 +654,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
             println("Starting: g = $(Int.(gMat)) = $g_poly")
         end
     end
-    
+    =#
 
     l = 1
     for i in eachindex(J)
@@ -717,7 +717,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
-        
+        #=
         if (5 < params.verbose) 
             CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
             if params.always_use_bigints || params.use_gpu
@@ -728,7 +728,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
                 println("g = $(gMat) = $g")
             end
         end
-        
+        =#
 
     end
     return ((J, gMat), m)
@@ -834,19 +834,30 @@ function incorporate_initial_term!(costadata_arr,costadata)
     end
 end
 
+function remove_duplicates_gpu!(costadata_arr)
+    i = 1
+    while i <= (length(costadata_arr)-1)
+        j = i+1
+        while j <= length(costadata_arr)
+            if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
+                my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
+                deleteat!(costadata_arr,j)
+            else
+                j = j + 1
+            end
+        end
+        i = i + 1
+    end
+end
+
 function remove_duplicates!(costadata_arr)
     i = 1
     while i <= (length(costadata_arr)-1)
         j = i+1
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
-                #println(Int.(costadata_arr[i][1][2]))
-                #println(Int.(costadata_arr[j][1][2]))
-                my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                #println(Int.(costadata_arr[i][1][2]))
-                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
-                #println(Int.(costadata_arr[i][1][2]))
-                #throw(error)
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2] + costadata_arr[j][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -985,7 +996,7 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     for term in terms
         g = my_copy(context.g)
         term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
-        append!(allcostadata,[((rev_tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
+        append!(allcostadata,[((tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
     end
 
     notallred = true
@@ -993,7 +1004,11 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
         for i in eachindex(allcostadata)
             allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
         end
-        remove_duplicates!(allcostadata)
+        if params.use_gpu == true
+            remove_duplicates_gpu!(allcostadata)
+        else
+            remove_duplicates!(allcostadata)
+        end
         for i in 1:length(allcostadata)
             if allcostadata[i][2] > n
                 break
