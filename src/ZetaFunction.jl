@@ -404,6 +404,10 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         S = collect(0:n)
     end
 
+    if algorithm==:varbyvar && !(n in S)
+        throw("S must contain last variable")
+    end
+
     # vars_reversed = false
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
 

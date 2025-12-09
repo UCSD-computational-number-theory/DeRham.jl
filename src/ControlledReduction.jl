@@ -877,7 +877,6 @@ Thus, the pole order is n.
 function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
     vars = gens(PR)
-
     cpu_g = Array(g_vec)
     CUDA.@allowscalar g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
@@ -994,8 +993,8 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
 
     allcostadata = []
     for term in terms
-        g = my_copy(context.g)
-        term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
+        #g = my_copy(context.g)
+        term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
         append!(allcostadata,[((tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
     end
 
