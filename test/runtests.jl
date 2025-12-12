@@ -277,6 +277,18 @@ end
         runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
     end 
 
+    @testset "CPU Multithreading Fast Evaluation + Naive Strategy" begin
+
+        # do dimension 1, degree 3 and 4
+        zf = f -> DeRham.zeta_function(f,algorithm=:naive,fastevaluation=true,use_threads=true)
+
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
+        end
+    end
+
     if CUDA.functional()
         @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
         
