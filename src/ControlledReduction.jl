@@ -616,12 +616,12 @@ function reducechain_akr(g,m,f,p,picache,params)
     while m > n
         gtemp = picache[m]*g
         len = Int(length(gtemp)/(n+1))
-        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,:invlex),n+1)
+        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,params.termorder),1)
         for i in 1:n
-            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,:invlex),n+1-i)
+            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,params.termorder),i+1)
             g = g + gpolytemp
         end
-        g = polynomial_to_vector(g,n+1,:invlex)
+        g = polynomial_to_vector(g,n+1,params.termorder)
         if size(g)[1] == 0
             g = fill(R(0), binomial(d*(m-1)-1,n))
         end
