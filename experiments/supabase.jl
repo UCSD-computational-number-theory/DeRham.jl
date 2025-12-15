@@ -125,6 +125,11 @@ function my_example(p)
 end
 
 function run_pipeline()
+
+    start_time = time()
+
+    println("Number of threads: $(Threads.nthreads())")
+
     println("Enter Supabase URL: ")
     url = "https://oigzppmsalxtinyuegpy.supabase.co"
     println("Enter Supabase API key (anon key): ")
@@ -171,6 +176,9 @@ function run_pipeline()
     end
 
     println("Done.")
+
+    println("Time taken: $(time() - start_time) seconds")
+    
     return df[df.n .== n .&& df.d .== d .&& df.p .== p, :]
 end
 
