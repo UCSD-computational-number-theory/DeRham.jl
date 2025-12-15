@@ -27,7 +27,6 @@ GPUFiniteFieldMatrices = {rev = "main", url = "https://github.com/UCSD-computati
 CSV = "0.10.15"
 CUDA = "5.7.3"
 DataFrames = "1.7.0"
-GPUFiniteFieldMatrices = "0.3.0"
 HTTP = "1.10.19"
 JSON = "0.21.4"
 LFUDACache = "0.1.1"
