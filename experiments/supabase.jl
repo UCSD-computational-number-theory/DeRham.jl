@@ -104,6 +104,69 @@ function update_df(df::DataFrame, n, d, p, np, f, push_to_supabase=false)
     return df
 end
 
+function add_heights_patch!(c::SupabaseClient, heights::DataFrame. heights_table::String, atomic::Bool=false)
+    server = fetch_table(c, heights_table)
+    server_map = Dict(row.id => row.num for row in eachrow(server))
+
+    for row in eachrow(heights)
+        delta = row.num
+        delta == 0 && continue
+
+        current = get(server_map, row.id, 0)
+        newval = current + delta
+
+        url = "$(c.url)/rest/v1/$(heights_table)?id=eq.$(row.id)"
+        payload = JSON.json(Dict("num" => newval))
+
+        resp = HTTP.patch(
+            url,
+            headers = headers(c),
+            body = payload
+        )
+
+        resp.status >= 300 && error(
+            "PATCH failed for id=$(row.id): $(String(resp.body))"
+        )
+    end
+
+    heights.num .= 0
+
+    return heights
+end
+
+function add_heights_patch!(c::SupabaseClient, heights::DataFrame, heights_table::String, atomic::Bool=true)
+    rows = [
+        Dict("id" => row.id, "num" => row.num)
+        for row in eachrow(heights)
+        if row.num != 0
+    ]
+
+    isempty(rows) && return nothing
+
+    url = "$(c.url)/rest/v1/rpc/add_heights_generic"
+    payload = JSON.json(Dict(
+        "target_table" => heights_table,
+        "rows" => rows
+    ))
+
+    resp = HTTP.post(
+        url,
+        headers = [
+            "apikey"        => c.key,
+            "Authorization" => "Bearer $(c.key)",
+            "Content-Type"  => "application/json"
+        ],
+        body = payload
+    )
+
+    if resp.status >= 300
+        error("Supabase RPC failed: $(String(resp.body))")
+    end
+
+    heights.num .= 0
+    return heights
+end
+
 ############################################################
 # PIPELINE
 ############################################################
@@ -128,6 +191,11 @@ function run_pipeline()
 
     start_time = time()
 
+    heights = DataFrame(
+        id  = collect(1:11),
+        num = zeros(Int, 11)
+    )
+
     println("Number of threads: $(Threads.nthreads())")
 
     println("Enter Supabase URL: ")
@@ -143,6 +211,10 @@ function run_pipeline()
     table = "n$(n)_d$(d)_np"
     println("Enter table name; leave blank for default $(table)"); t = readline()
     table = length(t) == 0 ? table : t
+
+    heights_table = "heights"
+    println("Enter heights table name; leave blank for default $(heights_table)"); t = readline()
+    heights_table = length(t) == 0 ? heights_table : t
 
     client = SupabaseClient(url, key)
 
@@ -162,6 +234,9 @@ function run_pipeline()
     # @time df = cpu_vector_fast_symmetric(n,d,p,N,df_old)
     # @time df = cpu_vector_fast_weighted_example(n,d,p,N,my_example(p),df_old,num_monomials=2,nonzero_weights=true)
 
+    # TO RUN WITH HEIGHTS
+    # @time df, heights = func()
+
     # SAVE TO CSV
     filename = "$(table).csv"
     println("Saving full table to CSV: $filename")
@@ -174,6 +249,9 @@ function run_pipeline()
         row_dict = Dict(names(newrows) .=> values(row))
         push_row(client, table, row_dict)
     end
+
+    println("Pushing new heights to Supabase…")
+    add_heights_patch!(client, heights, heights_table, atomic=false)
 
     println("Done.")
 
