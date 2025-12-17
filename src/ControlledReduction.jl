@@ -616,12 +616,12 @@ function reducechain_akr(g,m,f,p,picache,params)
     while m > n
         gtemp = picache[m]*g
         len = Int(length(gtemp)/(n+1))
-        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,:invlex),n+1)
+        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,params.termorder),1)
         for i in 1:n
-            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,:invlex),n+1-i)
+            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,params.termorder),i+1)
             g = g + gpolytemp
         end
-        g = polynomial_to_vector(g,n+1,:invlex)
+        g = polynomial_to_vector(g,n+1,params.termorder)
         if size(g)[1] == 0
             g = fill(R(0), binomial(d*(m-1)-1,n))
         end
@@ -834,19 +834,30 @@ function incorporate_initial_term!(costadata_arr,costadata)
     end
 end
 
+function remove_duplicates_gpu!(costadata_arr)
+    i = 1
+    while i <= (length(costadata_arr)-1)
+        j = i+1
+        while j <= length(costadata_arr)
+            if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
+                my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
+                deleteat!(costadata_arr,j)
+            else
+                j = j + 1
+            end
+        end
+        i = i + 1
+    end
+end
+
 function remove_duplicates!(costadata_arr)
     i = 1
     while i <= (length(costadata_arr)-1)
         j = i+1
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
-                #println(Int.(costadata_arr[i][1][2]))
-                #println(Int.(costadata_arr[j][1][2]))
-                my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                #println(Int.(costadata_arr[i][1][2]))
-                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
-                #println(Int.(costadata_arr[i][1][2]))
-                #throw(error)
+                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2] + costadata_arr[j][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -866,7 +877,6 @@ Thus, the pole order is n.
 function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
     vars = gens(PR)
-
     cpu_g = Array(g_vec)
     CUDA.@allowscalar g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
@@ -983,9 +993,9 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
 
     allcostadata = []
     for term in terms
-        g = my_copy(context.g)
-        term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
-        append!(allcostadata,[((rev_tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
+        #g = my_copy(context.g)
+        term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
+        append!(allcostadata,[((tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
     end
 
     notallred = true
@@ -993,7 +1003,11 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
         for i in eachindex(allcostadata)
             allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
         end
-        remove_duplicates!(allcostadata)
+        if params.use_gpu == true
+            remove_duplicates_gpu!(allcostadata)
+        else
+            remove_duplicates!(allcostadata)
+        end
         for i in 1:length(allcostadata)
             if allcostadata[i][2] > n
                 break
