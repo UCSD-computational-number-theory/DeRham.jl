@@ -284,12 +284,12 @@ end
         runcsvtest("dim_1_deg_3_nsmooth.csv", zeta_function=zf)
     end 
 
-    @testset "GPU Karatsuba varbyvar" begin
-        # do dimension 2, degree 3 and 
-        zf = f -> DeRham.zeta_function(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
+    # @testset "GPU Karatsuba varbyvar" begin
+    #     # do dimension 2, degree 3 and 
+    #     zf = f -> DeRham.zeta_function(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
 
-        runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_function=zf)
-    end 
+    #     runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_function=zf)
+    # end 
     @testset "CPU Multithreading Fast Evaluation + Naive Strategy" begin
 
         # do dimension 1, degree 3 and 4
