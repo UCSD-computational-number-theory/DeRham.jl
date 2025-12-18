@@ -405,10 +405,6 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         S = collect(0:n)
     end
 
-    if algorithm==:varbyvar && (S != [n])
-        throw("S must be [$n] for varbyvar")
-    end
-
     # vars_reversed = false
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
 
