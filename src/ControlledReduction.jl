@@ -1168,7 +1168,6 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     context = default_context(MS1,Ruv,params)
     for i in 1:length(FT) #pol in FT
-    
 
         pol = FT[i]
         if (0 < params.verbose)
@@ -1456,7 +1455,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
         Ruv = LazyPEP{KaratsubaMatrix{Float64}}(compute_gpu_karatsuba)
 
-    elseif params.use_gpu && lazy
+    elseif params.use_gpu && lazy && !params.use_threads
         Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
 
     elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
@@ -1465,13 +1464,13 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
     elseif params.use_gpu
-        Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
+        Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=params.use_threads)
 
-    elseif lazy
+    elseif lazy && !params.use_threads
         Ruv = LazyPEP{typeof(oscar_matspace())}(compute)
 
     else
-        Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=false)
+        Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=params.use_threads)
     end
 
     Ruv

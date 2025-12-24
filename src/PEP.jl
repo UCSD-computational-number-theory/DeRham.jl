@@ -42,10 +42,11 @@ struct EagerPEP{T} <: AbstractPEP{T}
     function EagerPEP{T}(Vs, compute; usethreads=false) where T
         #Ucomponent = Dict{Vector{Int},Vector{T}}()
         if usethreads
+            dictlock = ReentrantLock()
             Ucomponent = Dict{Vector{Int},Vector{T}}()
             Threads.@threads for V in Vs
                 coeffs = compute(V)
-                Ucomponent[V] = coeffs #TODO: make thread safe?
+                @lock dictlock Ucomponent[V] = coeffs 
             end
         else
             Ucomponent = Dict{Vector{Int},Vector{T}}()
