@@ -8,10 +8,12 @@ using Memoize
 using LRUCache
 using LFUDACache
 using OhMyThreads
+using UnicodePlots
 
 using CUDA
 using GPUFiniteFieldMatrices
 # Pkg.add(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl")
+
 
 # comment this out when not debugging
 #using Debugger

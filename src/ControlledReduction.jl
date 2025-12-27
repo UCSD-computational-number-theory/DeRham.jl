@@ -1467,7 +1467,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
     elseif params.use_gpu
         Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
 
-    elseif lazy
+    elseif lazy && !params.use_threads
         Ruv = LazyPEP{typeof(oscar_matspace())}(compute)
 
     else
@@ -1521,29 +1521,48 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     result = similar(FT)
 
-    #context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-    #    () -> default_context(MS1,Ruv,params)
-    #)
-    #Threads.@threads for i in 1:length(FT) 
-    #    context = context_tlv[]
-
-    context = default_context(MS1,Ruv,params)
-    for i in 1:length(FT) #pol in FT
+    if params.use_threads
     
+        context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+            () -> default_context(MS1,Ruv,params)
+        )
+        Threads.@threads for i in 1:length(FT) 
+            context = context_tlv[]
 
-        pol = FT[i]
-        if (0 < params.verbose)
-            println("Reducing vector $i")
-            @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
-        else
-            reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i")
+                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            else
+                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            end
+            result[i] = reduction
+
+            #println("cache info: $(cache_info(Ruv.Ucomponent))")
+            #i == 5 && error("stopping after vector $i for testing purposes")
+            
+            #push!(result, reduction)
         end
-        result[i] = reduction
-
-        #println("cache info: $(cache_info(Ruv.Ucomponent))")
-        #i == 5 && error("stopping after vector $i for testing purposes")
+    else
+        context = default_context(MS1,Ruv,params)
         
-        #push!(result, reduction)
+        for i in 1:length(FT) #pol in FT
+        
+
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i")
+                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            else
+                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            end
+            result[i] = reduction
+
+            #println("cache info: $(cache_info(Ruv.Ucomponent))")
+            #i == 5 && error("stopping after vector $i for testing purposes")
+            
+            #push!(result, reduction)
+        end
     end
 
     #(0 < params.verbose && Ruv isa CachePEP) && begin

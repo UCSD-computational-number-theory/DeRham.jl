@@ -29,9 +29,10 @@ struct ZetaFunctionParams
     fastevaluation::Bool
     always_use_bigints::Bool
     use_gpu::Bool
+    use_threads::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -392,7 +393,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -409,7 +410,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     end
 
     # vars_reversed = false
-    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
 
     cache = controlled_reduction_cache(n,d,S,params)
 
@@ -608,15 +609,15 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     end
 end
 
-function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false)
+function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false,use_threads=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
-    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu, use_threads=use_threads)
     
     if zf == false # f isn't smooth
         return false
-    end 
+    end#TODO: all of the "return false" should be "return nothing" 
 
     return newton_polygon(p, zf)
 end 
