@@ -199,7 +199,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         ind = get(explookup2,mon,-1)
         if ind == -1
             #gJS = zeros(base_ring(pseudoInverseMat),size(pseudoInverseMat,1))
-            zero!(gJS)
+            my_zero!(gJS)
         else
             #gJS = pseudoInverseMat[:,ind]
             for h in 1:size(pseudoInverseMat,1)

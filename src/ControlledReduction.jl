@@ -631,8 +631,8 @@ function reducechain_akr(g,m,f,p,picache,params)
 
     return g
 end
-
-function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
+        
+function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params,index)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -645,6 +645,27 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     tempv = copy(J)
 
     (4 < params.verbose) && println("Starting: J = $J")
+
+    my_zero!(context.A)
+    my_zero!(context.B)
+
+    # context.A[1,1] = 0
+
+    # println("A: $(objectid(context.A))")
+    # println("B: $(objectid(context.B))")
+
+    # println("$index, id=$(Threads.threadid()) context: $(objectid(context))")
+    # println("$index: id=$(Threads.threadid()) ctx.A=$(objectid(context.A)) ctx.temp=$(objectid(context.temp)) ctx.g=$(objectid(context.g))")
+    
+    if index == 1 #&& V == [0,0,0,4] 
+        # println("Starting g = $(Int.(gMat))")
+        # println("$index, id=$(Threads.threadid()) context: $(objectid(context))")
+        # println("inif- $index: id=$(Threads.threadid()) ctx.A=$(objectid(context.A)) ctx.temp=$(objectid(context.temp)) ctx.g=$(objectid(context.g))")
+        # println("A: $(objectid(context.A))")
+        # println("A = $(context.A)")
+        # println("B = $(context.B)")
+        # println("temp = $(context.temp)")
+    end
     #=
     (5 < params.verbose) && begin
         CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
@@ -705,6 +726,11 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && println("Getting Ruv matrices; ")
         matrices = context.Ruvs[V]
+        # if index == 1
+        #     println("matrices = $matrices")
+        # end
+        # (0 < params.verbose && V == [0,0,0,4]) && begin println(matrices[4][:,25]); firsttime=false; error() end
+        # (0 < params.verbose && V == [0,0,4,0]) && begin println(Int.(context.g_temp)); firsttime=false; error() end
         (4 < params.verbose) && println("Computing A and B; ")
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
         (4 < params.verbose) && println("Starting the reduction steps; ")
@@ -717,6 +743,11 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
+        # if index == 1 && V == [0,0,4] 
+        #     println("After V = $V...")
+        #     println("g = $(Int.(gMat))")
+        # end
+        # error()
         #=
         if (5 < params.verbose) 
             CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
@@ -976,7 +1007,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,pa
     return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
 end
 
-function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+function reducepoly_varbyvar(pol,S,f,p,context,cache,params,index)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -1000,8 +1031,10 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
 
     notallred = true
     while notallred
+        println("About to reduce chain in vector $index")
+        println("$index: id=$(Threads.threadid()) ctx.A=$(objectid(context.A)) ctx.temp=$(objectid(context.temp)) ctx.g=$(objectid(context.g))")
         for i in eachindex(allcostadata)
-            allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
+            allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params,index)
         end
         if params.use_gpu == true
             remove_duplicates_gpu!(allcostadata)
@@ -1160,28 +1193,97 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     result = similar(FT)
 
-    #context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-    #    () -> default_context(MS1,Ruv,params)
-    #)
-    #Threads.@threads for i in 1:length(FT) 
-    #    context = context_tlv[]
-
-    context = default_context(MS1,Ruv,params)
-    for i in 1:length(FT) #pol in FT
-
-        pol = FT[i]
-        if (0 < params.verbose)
-            println("Reducing vector $i")
-            @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-        else
-            reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+    if params.use_threads
+    
+        nT = Threads.nthreads()
+        ctx_channel = Channel{default_context_type(MS1,params)}(nT)
+        for i in 1:nT
+            ctx = default_context(MS1,deepcopy(Ruv),params)
+            println("$i: ctx.A=$(objectid(ctx.A)) ctx.temp=$(objectid(ctx.temp)) ctx.g=$(objectid(ctx.g))")
+            put!(ctx_channel, ctx)
         end
-        result[i] = reduction
 
-        #println("cache info: $(cache_info(Ruv.Ucomponent))")
-        #i == 5 && error("stopping after vector $i for testing purposes")
         
-        #push!(result, reduction)
+        # context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+        #     () -> default_context(MS1,Ruv,params)
+        # )
+        # context = default_context(MS1, Ruv, params) #take!(ctx_channel)
+        # context2 = default_context(MS1, Ruv, params) #take!(ctx_channel)
+        # println(context.g === context2.g)
+        # println(context.g_temp === context2.g_temp)
+        # println(context.A === context2.A)
+        # println(context.B === context2.B)
+        # println(context.temp === context2.temp)
+        # println(context.Ruvs === context2.Ruvs)
+        # println(context === context2)
+        # error()
+        println("---")
+        # Threads.@threads for i in 1:length(FT) 
+        #     context = take!(ctx_channel)
+
+        #     try
+        #         # println("$i, context: $(objectid(context))")
+        #         println("$i: ctx.A=$(objectid(context.A)) ctx.temp=$(objectid(context.temp)) ctx.g=$(objectid(context.g))")
+        #         pol = FT[i]
+        #         if (0 < params.verbose)
+        #             println("Reducing vector $i")
+        #             @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+        #         else
+        #             reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+        #         end
+        #         result[i] = reduction
+
+        #         # reset!(context)
+
+        #     finally
+        #         put!(ctx_channel, context)
+        #     end
+        # end
+        
+        tasks = map(1:length(FT)) do i
+        # Threads.@sync for i in 1:length(FT) 
+
+            Threads.@spawn begin 
+                context = take!(ctx_channel)
+
+                try
+                    # println("$i, context: $(objectid(context))")
+                    println("$i: id=$(Threads.threadid()) ctx.A=$(objectid(context.A)) ctx.temp=$(objectid(context.temp)) ctx.g=$(objectid(context.g))")
+                    pol = FT[i]
+                    if (0 < params.verbose)
+                        println("Reducing vector $i")
+                        @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+                    else
+                        reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+                    end
+                    # result[i] = reduction
+                    return (i,reduction)
+
+                finally
+                    put!(ctx_channel, context)
+                end
+
+            end
+        end
+
+        tuples = fetch.(tasks)
+
+        for (i,reduction) in tuples
+            result[i] = reduction
+        end
+    else
+        context = default_context(MS1,Ruv,params)
+        for i in 1:length(FT) #pol in FT
+
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i")
+                @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+            else
+                reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params,i)
+            end
+            result[i] = reduction
+        end
     end
 
     #(0 < params.verbose && Ruv isa CachePEP) && begin

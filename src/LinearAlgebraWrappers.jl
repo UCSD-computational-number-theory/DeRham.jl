@@ -105,7 +105,21 @@ function my_zero!(a)
     #zero!(a)
 end
 
-my_zero!(a::zzModMatrix) = zero!(a)
+
+my_zero!(a::Vector{zzModRingElem}) = begin
+    isempty(a) && return a
+    z = zero(parent(a[1]))  # use parent of an element
+    fill!(a, z)
+    a
+end
+
+my_zero!(a::zzModMatrix) = map!(zero,a,a,) #= begin 
+    isempty(a) && return a
+    z = zero(parent(a[1,1]))  # use parent of an element
+    fill!(a, z)
+    a
+end#zero!(a)=#
+
 my_zero!(a::ZZModMatrix) = zero!(a)
 my_zero!(a::CuModArray) = GPUFiniteFieldMatrices.zero!(a)
 my_zero!(a::KaratsubaArray) = GPUFiniteFieldMatrices.zero!(a)
