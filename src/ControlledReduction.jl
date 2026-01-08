@@ -706,7 +706,11 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (4 < params.verbose) && println("Getting Ruv matrices; ")
         matrices = context.Ruvs[V]
         (4 < params.verbose) && println("Computing A and B; ")
-        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        if params.use_gpu
+            eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
+        else
+            eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        end
         (4 < params.verbose) && println("Starting the reduction steps; ")
         gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         @. J = J - K*V
