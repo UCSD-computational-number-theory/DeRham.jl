@@ -4,6 +4,8 @@ abstract type GradedExpCache end
 #TODO: convert to SVector, that might help with allocation pressure
 #using StaticArrays
 
+#TODO: convert this from a "dense" representation to a "sparse" representation
+#so the need for union types is unnecessary
 """
 A PolyExpCache is a GradedExpCache for the stadard 
 \\Z-grading on the polynomial ring.
@@ -26,39 +28,53 @@ end
 Gets the exponent vector cache for the degree d,
 returning it as a vector.
 
-This throws an error if the cached degree doesn't exist.
+This does not create a new entry if the entry doesn't exist,
+it merely returns a default value.
+
+This method is intended to be type-stable with return type 
+Vector{Vector{Int}}
 """
 function Base.getindex(c::PolyExpCache,d::Int)
-    d < 0 && return []
+    d < 0 && return Vector{Vector{Int64}}()
     d == 0 && return c.constant_term
 
     if c.exp_vec_pieces[d] == nothing
-        errormsg = "This PolyExpCache does not have degree=$d stored. "* 
-                   "This probably means that the PolyExpCache hasn't been "* 
-                   "fully initialized, or there is a bug. If you want to "* 
-                   "initialize this cache to work for degree $d, use the "*
-                   "`get_forward` function."
-        throw(ArgumentError(errormsg))
+        # errormsg = "This PolyExpCache does not have degree=$d stored. "* 
+        #            "This probably means that the PolyExpCache hasn't been "* 
+        #            "fully initialized, or there is a bug. If you want to "* 
+        #            "initialize this cache to work for degree $d, use the "*
+        #            "`get_forward` function."
+        # throw(ArgumentError(errormsg))
+        return Vector{Vector{Int64}}()
     end
     c.exp_vec_pieces[d]
 end
 
+"""
+Gets the exponents vector cache, either for :forward,
+which is the same as getindex(c::PolyExpCache,d::Int),
+or :reverse, when it gets the reverse lookup.
+
+This does not create a new entry if the entry doesn't exist,
+it merely returns a default value.
+"""
 function Base.getindex(c::PolyExpCache,d::Int,kind::Symbol)
-    d < 0 && return []
-    d == 0 && return c.constant_term
 
     if kind == :forward
         c[d]
     elseif kind == :reverse
+        d < 0 && return Dict{Vector{Int64},Int64}()
+        d == 0 && return c.constant_term
 
         if c.rev_look_pieces[d] == nothing
-            errormsg = "This PolyExpCache does not have degree=$d stored for "*
-                       "reverse lookup. "* 
-                       "This probably means that the PolyExpCache hasn't been "* 
-                       "fully initialized, or there is a bug. If you want to "* 
-                       "initialize this cache to work for degree $d, use the "*
-                       "`get_forward` and `generate_degree_reverse` functions."
-            throw(ArgumentError(errormsg))
+            # errormsg = "This PolyExpCache does not have degree=$d stored for "*
+            #            "reverse lookup. "* 
+            #            "This probably means that the PolyExpCache hasn't been "* 
+            #            "fully initialized, or there is a bug. If you want to "* 
+            #            "initialize this cache to work for degree $d, use the "*
+            #            "`get_forward` and `generate_degree_reverse` functions."
+            # throw(ArgumentError(errormsg))
+            return Dict{Vector{Int64},Int64}()
         end
         c.rev_look_pieces[d]
     else
