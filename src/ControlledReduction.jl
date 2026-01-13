@@ -848,7 +848,7 @@ function remove_duplicates_gpu!(costadata_arr)
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
                 my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
+                # costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -998,7 +998,8 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
         highpoleorder = highpoleorder - p
     end
 
-    allcostadata = []
+    vectype = typeof(context.g)
+    allcostadata = Vector{Tuple{Tuple{Vector{Int},vectype},Int}}()
     for term in terms
         #g = my_copy(context.g)
         term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
