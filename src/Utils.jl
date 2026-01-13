@@ -532,8 +532,9 @@ function float_entries(A::zzModMatrix)
 
     for i in 1:size(A,1)
         for j in 1:size(A,2)
-            lifted = lift(ZZ,A[i,j])
-            res[i,j] = convert.(Float64,convert.(Int64,lifted))
+            dat = data(A[i,j])
+            # lifted = lift(ZZ,A[i,j])
+            res[i,j] = convert(Float64,dat)
         end
     end
 
