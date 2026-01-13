@@ -640,6 +640,8 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
     J = copy(u)
 
+    modm = Integer(modulus(base_ring(parent(f))))
+
     gMat = g
     mins = copy(J)
     tempv = copy(J)
@@ -706,7 +708,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (4 < params.verbose) && println("Getting Ruv matrices; ")
         matrices = context.Ruvs[V]
         (4 < params.verbose) && println("Computing A and B; ")
-        if params.use_gpu
+        if params.use_gpu && !(ZZ(2)^25 < modm < ZZ(2)^106) # so not Karatsuba
             eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
         else
             eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
@@ -735,6 +737,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         =#
 
     end
+
     return ((J, gMat), m)
 end
 
@@ -1003,6 +1006,8 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     end
 
     notallred = true
+    # TODO: prime the jitter here?
+
     while notallred
         for i in eachindex(allcostadata)
             allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)

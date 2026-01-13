@@ -45,8 +45,9 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
         end
     end
     distance = 0
+    mon = Vector{Int64}(undef,n+1)
     for i in 1:length(ev1)  # indexing over the columns of the Ruv matrices 
-        mon = Vector{Int64}(undef, n+1)
+        fill!(mon,0)
         for m in 1:(n+1)  # forming the polynomial x^v*g / x^S
             mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
@@ -99,6 +100,7 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
                         temp[m] = ev4[k][m] + Stilda[m]
                     end
                     l = get(explookup,temp,-1)
+
                     result[j+1][l,i] = result[j+1][l,i] + gJS[distance+k]
                     result[1][l,i] = result[1][l,i] + (ev4[k][j])*gJS[distance+k] + gJS[distance+k]
                 end
