@@ -212,4 +212,31 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     #return P.Ucomponent[V]
 end
 
+mutable struct PregenLazyPEP{T} <: AbstractPEP{T}
+    Vs::Vector{Vector{Int}}
+    Ucomponent::Dict{Vector{Int},Vector{T}}
+    compute::Union{Function,Nothing}
+
+    function PregenLazyPEP{T}(compute;Vs=Vector{Vector{Int}}()) where T
+        Ucomponent = Dict{Vector{Int},Vector{T}}()
+        new{T}(Vs,Ucomponent,compute)
+    end
+end
+
+allpoints(P::PregenLazyPEP) = P.Vs
+allcomponents(P::PregenLazyPEP) = P.Ucomponent
+
+function Base.getindex(P::PregenLazyPEP, V::Vector{Int})
+    if haskey(P.Ucomponent,V)
+        return P.Ucomponent[V]
+    end
+
+    coeffs = P.compute(V)
+
+    push!(P.Vs,V)
+    P.Ucomponent[V] = coeffs
+
+    return coeffs
+end
+
 
