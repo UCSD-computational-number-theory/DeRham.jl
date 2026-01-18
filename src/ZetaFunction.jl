@@ -30,10 +30,8 @@ struct ZetaFunctionParams
     always_use_bigints::Bool
     use_gpu::Bool
     use_threads::Bool
-    use_threads::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false,false)
 default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false,false)
 
 """

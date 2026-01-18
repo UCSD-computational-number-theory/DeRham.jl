@@ -1,4 +1,6 @@
 using Combinatorics
+using Distributed
+using Oscar
 
 """
 For this one, the example is fast, probably
@@ -89,7 +91,7 @@ function inPowerOfVariableIdeal(p,m,f)
 
 
   for i in 1:length(f)
-    ev = exponent_vector(f,i)
+    ev = Oscar.exponent_vector(f,i)
 
     if all(ev .< m)
       #println("Found term not in the Frob power of the maximal ideal: " * string(exponent_vector))
@@ -139,6 +141,39 @@ function cpu_vector_fast_random_K3(n,d,p,N,df)
         end
         
         i = i + 1
+    end
+
+    return df
+end
+
+function cpu_vector_fast_random_K3_distributed(n,d,p,N,df)
+
+    if nworkers() == 0
+        addprocs()
+    end
+
+    for pid in workers()
+        Distributed.remotecall_eval(Main, pid, :(using DeRham))
+    end
+
+    S = [n]
+
+    results = Distributed.pmap(1:N) do _
+        while true
+            f = find_nsmooth(n,d,p,1)[1]
+            if isFSplit(p,f)
+                continue
+            end
+            np = DeRham.newton_polygon(f,S=[2],fastevaluation=true,algorithm=:varbyvar)
+            if np == false
+                continue
+            end
+            return (np, f)
+        end
+    end
+
+    for (np, f) in results
+        update_df(df, n, d, p, np, f)
     end
 
     return df
