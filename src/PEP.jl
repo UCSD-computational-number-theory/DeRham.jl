@@ -41,15 +41,18 @@ struct EagerPEP{T} <: AbstractPEP{T}
 
     function EagerPEP{T}(Vs, compute; usethreads=false) where T
         #Ucomponent = Dict{Vector{Int},Vector{T}}()
+        l = ReentrantLock()
+        Ucomponent = Dict{Vector{Int},Vector{T}}()
         if usethreads
-            Ucomponent = Dict{Vector{Int},Vector{T}}()
             Threads.@threads for V in Vs
+                # println("Making R_u,$V")
                 coeffs = compute(V)
-                Ucomponent[V] = coeffs #TODO: make thread safe?
+                @lock l Ucomponent[V] = coeffs #TODO: make thread safe?
             end
         else
-            Ucomponent = Dict{Vector{Int},Vector{T}}()
+            # Ucomponent = Dict{Vector{Int},Vector{T}}()
             for V in Vs
+                # println("Making R_u,$V")
                 coeffs = compute(V)
                 Ucomponent[V] = coeffs 
             end
@@ -207,6 +210,33 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     #P.Ucomponent[V] = map(x -> S(x), coeffs)
 
     #return P.Ucomponent[V]
+end
+
+mutable struct PregenLazyPEP{T} <: AbstractPEP{T}
+    Vs::Vector{Vector{Int}}
+    Ucomponent::Dict{Vector{Int},Vector{T}}
+    compute::Union{Function,Nothing}
+
+    function PregenLazyPEP{T}(compute;Vs=Vector{Vector{Int}}()) where T
+        Ucomponent = Dict{Vector{Int},Vector{T}}()
+        new{T}(Vs,Ucomponent,compute)
+    end
+end
+
+allpoints(P::PregenLazyPEP) = P.Vs
+allcomponents(P::PregenLazyPEP) = P.Ucomponent
+
+function Base.getindex(P::PregenLazyPEP, V::Vector{Int})
+    if haskey(P.Ucomponent,V)
+        return P.Ucomponent[V]
+    end
+
+    coeffs = P.compute(V)
+
+    push!(P.Vs,V)
+    P.Ucomponent[V] = coeffs
+
+    return coeffs
 end
 
 

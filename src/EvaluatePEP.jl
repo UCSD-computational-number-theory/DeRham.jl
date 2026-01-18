@@ -44,6 +44,43 @@ function eval_to_linear!(A,B,temp,pep::AbstractPEP,U,V)
     eval_to_linear!(A,B,temp,matrices,U,V)
 end
 
+
+#TODO: this won't work quite yet, as `matrices` is an array of arrays
+#      and U and V haven't been moved to the GPU...
+function eval_to_linear_kernel!(A,B,matrices,U,V)
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+
+    B[i,j] = matrices[1][i,j]
+    A[i,j] = 0
+
+    for k in 2:length(matrices)
+
+        B[i,j] += matrices[k][i,j] * U[k-1]
+        A[i,j] += matrices[k][i,j] * V[k-1]
+    end
+end
+
+function eval_to_linear_gpu!(A,B,temp,matrices,U,V)
+
+    tw = GPUFiniteFieldMatrices.TILE_WIDTH
+
+    threads = (tw,tw)
+
+    totalsize = size(A.data)
+
+    blocks = (totalsize[1] ÷ threads[1], totalsize[2] ÷ threads[2])
+
+    mat_tuple = tuple(map(A -> A.data, matrices)...)
+
+    @cuda threads=threads blocks=blocks eval_to_linear_kernel!(A.data,
+                                               B.data,
+                                               mat_tuple,
+                                               tuple(U...),
+                                               tuple(V...))
+
+end
+
 """
     finitediff_prodeval_linear!(a,b,start,stop,g,temp)
 
