@@ -51,7 +51,9 @@ include("PrecisionInformation.jl")
 include("PointCounts.jl")
 include("LPolyUtils.jl")
 include("K3OverF3.jl")
+include("../experiments/find_cubic_fourfolds.jl")
 
 # TODO: export Zeta Function functions
+export find_nsmooth
 
 end
