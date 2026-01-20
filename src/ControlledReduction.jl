@@ -1537,7 +1537,6 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
     elseif 3 < n && d == 3 && S == [n] && params.use_gpu #4 < n
-        println("hello")
 
         eager_Vs = cubic_S_zero_Vs(n)
 

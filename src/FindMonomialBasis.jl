@@ -280,32 +280,31 @@ function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
 
     #temp = size(U)
     if (0 < params.verbose)
-        if params.use_gpu
-            println("Computing pseudoinverse of matrix of size $(size(U)) with GPU.")
-            #TODO @ryb: Figure out how to convert the matrix to an Array.
-            @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
-                CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
-                           N=Int(characteristic(PR)))
-            )
-        else
-            println("Computing pseudoinverse of matrix of size $(size(U))")
+        # if params.use_gpu
+        #     println("Computing pseudoinverse of matrix of size $(size(U)) with GPU.")
+        #     #TODO @ryb: Figure out how to convert the matrix to an Array.
+        #     @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+        #         CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
+        #                    N=Int(characteristic(PR)))
+        #     )
+        # else
+            # println("Computing pseudoinverse of matrix of size $(size(U))")
             @time flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
-        end
+        # end
     else
-        if params.use_gpu
-            println("Using GPU to compute pseudoinverse of matrix of size $(size(U))")
-            open("U.txt", "w") do file
-                write(file, string(U))
-            end
-            println("Saved matrix to U.txt")
+        # if params.use_gpu
+        #     println("Using GPU to compute pseudoinverse of matrix of size $(size(U))")
+        #     open("U.txt", "w") do file
+        #         write(file, string(U))
+        #     end
 
-            @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
-                CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
-                           N=Int(characteristic(PR)))
-            )
-        else
+        #     @time flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(
+        #         CuModMatrix(matrix(R,[R(x) for x in Array(U)]), 
+        #                    N=Int(characteristic(PR)))
+        #     )
+        # else
             flag, B = Nemo.is_invertible_with_inverse(matrix(R,[R(x) for x in Array(U)]), side=:right)
-        end
+        # end
     end
 
     (6 < params.verbose) && println("pinv mod p: \n$B")

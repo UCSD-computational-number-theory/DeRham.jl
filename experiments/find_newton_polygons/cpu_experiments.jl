@@ -146,7 +146,7 @@ function cpu_vector_fast_random_K3(n,d,p,N,df)
     return df
 end
 
-function cpu_vector_fast_random_K3_distributed(n,d,p,N,df)
+function cpu_smooth_distributed(n,d,p,N,df)
 
     if nworkers() == 0
         addprocs()
@@ -156,20 +156,12 @@ function cpu_vector_fast_random_K3_distributed(n,d,p,N,df)
         Distributed.remotecall_eval(Main, pid, :(using DeRham))
     end
 
-    S = [n]
+    S = [n-1]
 
     results = Distributed.pmap(1:N) do _
-        while true
-            f = find_nsmooth(n,d,p,1)[1]
-            if isFSplit(p,f)
-                continue
-            end
-            np = DeRham.newton_polygon(f,S=[2],fastevaluation=true,algorithm=:varbyvar)
-            if np == false
-                continue
-            end
-            return (np, f)
-        end
+        f = find_nsmooth(n,d,p,1)[1]
+        np = DeRham.newton_polygon(f,S=S,fastevaluation=true,algorithm=:varbyvar)
+        return (np, f)
     end
 
     for (np, f) in results
@@ -179,6 +171,30 @@ function cpu_vector_fast_random_K3_distributed(n,d,p,N,df)
     return df
 end
 
+function gpu_smooth_distributed(n,d,p,N,df)
+
+    if nworkers() == 0
+        addprocs()
+    end
+
+    for pid in workers()
+        Distributed.remotecall_eval(Main, pid, :(using DeRham))
+    end
+
+    S = [n-1]
+
+    results = Distributed.pmap(1:N) do _
+        f = find_nsmooth(n,d,p,1)[1]
+        np = DeRham.newton_polygon(f,S=S,fastevaluation=true,algorithm=:varbyvar,use_gpu=true)
+        return (np, f)
+    end
+
+    for (np, f) in results
+        update_df(df, n, d, p, np, f)
+    end
+
+    return df
+end
 
 function all_monomials(n,d,p)
 
