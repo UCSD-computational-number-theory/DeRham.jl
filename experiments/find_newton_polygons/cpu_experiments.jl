@@ -1,6 +1,7 @@
 using Combinatorics
 using Distributed
-using Oscar
+@everywhere using Oscar
+@everywhere using DeRham
 
 """
 For this one, the example is fast, probably
@@ -171,21 +172,37 @@ function cpu_smooth_distributed(n,d,p,N,df)
     return df
 end
 
-function gpu_smooth_distributed(n,d,p,N,df)
+function gpu_smooth_distributed(n,d,p,N,df; num_workers=nothing, debug=true)
 
-    if nworkers() == 0
-        addprocs()
+    debug ? println("Starting gpu_smooth_distributed") : nothing
+    debug ? println("Threads.nthreads(): $(Threads.nthreads())") : nothing
+    target_workers = isnothing(num_workers) ? Threads.nthreads() : num_workers
+    target_workers = max(target_workers, 1)
+    needed_workers = target_workers
+
+    if nworkers() < needed_workers
+        debug ? println("Adding $(needed_workers - nworkers()) workers") : nothing
+        addprocs(needed_workers - nworkers())
     end
 
-    for pid in workers()
-        Distributed.remotecall_eval(Main, pid, :(using DeRham))
+    if debug
+        @info "master ready" pid=myid() nworkers=nworkers() target_workers=needed_workers
+        for pid in workers()
+            Distributed.remotecall_eval(Main, pid, :(println("worker $(myid()) ready")))
+        end
     end
 
     S = [n-1]
 
     results = Distributed.pmap(1:N) do _
+        if debug
+            println("worker $(myid()) starting")
+        end
         f = find_nsmooth(n,d,p,1)[1]
         np = DeRham.newton_polygon(f,S=S,fastevaluation=true,algorithm=:varbyvar,use_gpu=true)
+        if debug
+            println("worker $(myid()) done")
+        end
         return (np, f)
     end
 
