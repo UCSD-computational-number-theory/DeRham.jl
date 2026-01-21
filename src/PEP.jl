@@ -196,22 +196,6 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     end
 
     get!(default,P.Ucomponent,V)
-
-    #if haskey(P.Ucomponent,V)
-    #    # cache hit!
-    #
-    #    return P.Ucomponent[V]
-    #end
-
-    ## cache miss!
-
-    #coeffs = backing[V]
-
-    ##TODO: is there a version of this which won't need to allocate?
-    ##Does that even matter?
-    #P.Ucomponent[V] = map(x -> S(x), coeffs)
-
-    #return P.Ucomponent[V]
 end
 
 """
