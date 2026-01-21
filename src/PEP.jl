@@ -142,7 +142,7 @@ create - create an S for the very first time
 convert - function that converts a T to an S
 """
 struct CachePEP{T,S} <: AbstractPEP{S}
-    Ucomponent::LRU{Vector{Int},Vector{S}}
+    Ucomponent::LFUDA{Vector{Int},Vector{S}}
     backing::AbstractPEP{T}
     create::Function
     convert::Function
@@ -175,18 +175,17 @@ end
 function Base.getindex(P::CachePEP, V::Vector{Int})
     default = () -> begin 
         # cache miss!
-        # cache miss!
         if V == P.tempV[]
-            println("re-adding CachePEP entry at $V")
+            # println("re-adding CachePEP entry at $V")
             t = P.temp[]
             P.temp[] = nothing
             P.tempV[] = nothing
             t
         elseif P.tempV[] == nothing
-            println("creating CachePEP entry at $V")
+            # println("creating CachePEP entry at $V")
             P.create(P.backing[V])
         else
-            println("copying CachePEP entry at $V")
+            # println("copying CachePEP entry at $V")
             # in this case, tempV is already initialized
             P.convert(P.temp[],P.backing[V])
             t = P.temp[]
@@ -197,95 +196,24 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     end
 
     get!(default,P.Ucomponent,V)
+
+    #if haskey(P.Ucomponent,V)
+    #    # cache hit!
+    #
+    #    return P.Ucomponent[V]
+    #end
+
+    ## cache miss!
+
+    #coeffs = backing[V]
+
+    ##TODO: is there a version of this which won't need to allocate?
+    ##Does that even matter?
+    #P.Ucomponent[V] = map(x -> S(x), coeffs)
+
+    #return P.Ucomponent[V]
 end
 
-"""
-An LFUDACachePEP is a PEP with coefficients of type S.
-
-We assume that due to resource constraints we 
-cannot have very many terms of type S.
-However, we can readily have things available in type T,
-and we can convert between the two by taking S(t) for t
-some term of type T.
-
-The main example (for which this was designed) is when
-S is a type that lives on the GPU and T is a corresponding
-type that lives on the CPU.
-Due to memory constraints we might not be able to have everything
-allocated on the GPU at once, so we need to manage swapping over.
-
-This cache takes a lazy loading approach, putting elements into
-the cache when they are first accessed.
-
-The cache also keeps data in place
-
-Ucomponent - the cache
-backing - the AbstractPEP{T} which is the backing
-create - create an S for the very first time
-convert - function that converts a T to an S
-"""
-struct LFUDACachePEP{T,S} <: AbstractPEP{S}
-    Ucomponent::LFUDA{Vector{Int},Vector{S}}
-    backing::AbstractPEP{T}
-    create::Function
-    convert::Function
-    temp::Base.RefValue{Union{Vector{S},Nothing}}
-    tempV::Base.RefValue{Union{Vector{Int},Nothing}}
-
-    function LFUDACachePEP{T,S}(backing,create,convert_entry,maxsize) where {T,S}
-        temp = Ref{Union{Vector{S},Nothing}}(nothing)
-        tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
-        recover = (key, value) -> lfuda_recover!(tempV,temp,key,value)
-        Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
-        # Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize)
-
-        new{T,S}(Ucomponent,backing,create,convert_entry,temp,tempV)
-    end
-end
-
-allpoints(P::LFUDACachePEP) = allpoints(P.backing)
-cachedpoints(P::LFUDACachePEP) = keys(P.Ucomponent)
-
-allcomponents(P::LFUDACachePEP) = allcomponents(P.backing)
-cachedcomponents(P::LFUDACachePEP) = P.Ucomponent
-
-function lfuda_recover!(keyref::Ref,valueref::Ref,key::Vector,value::Vector)
-    println("Recovering $key")
-    keyref[] = key
-    valueref[] = value
-end
-
-function Base.getindex(P::LFUDACachePEP, V::Vector{Int})
-    default = () -> begin 
-        # cache miss!
-        if V == P.tempV[]
-            # println("re-adding LFUDACachePEP entry at $V")
-            t = P.temp[]
-            P.temp[] = nothing
-            P.tempV[] = nothing
-            t
-        elseif P.tempV[] == nothing
-            # println("creating LFUDACachePEP entry at $V")
-            P.create(P.backing[V])
-        else
-            # println("copying LFUDACachePEP entry at $V")
-            # in this case, tempV is already initialized
-            P.convert(P.temp[],P.backing[V])
-            t = P.temp[]
-            P.temp[] = nothing
-            P.tempV[] = nothing
-            t
-        end
-    end
-
-    get!(default,P.Ucomponent,V)
-end
-
-"""
-PregenLazyPEP{T}
-
-This isn't documented yet, but presumably it allows for pregeneration
-"""
 mutable struct PregenLazyPEP{T} <: AbstractPEP{T}
     Vs::Vector{Vector{Int}}
     Ucomponent::Dict{Vector{Int},Vector{T}}
