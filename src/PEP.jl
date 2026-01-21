@@ -234,7 +234,7 @@ struct LFUDACachePEP{T,S} <: AbstractPEP{S}
     function LFUDACachePEP{T,S}(backing,create,convert_entry,maxsize) where {T,S}
         temp = Ref{Union{Vector{S},Nothing}}(nothing)
         tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
-        recover = (key, value) -> recover!(tempV,temp,key,value)
+        recover = (key, value) -> lfuda_recover!(tempV,temp,key,value)
         Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
         # Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize)
 
@@ -248,7 +248,7 @@ cachedpoints(P::LFUDACachePEP) = keys(P.Ucomponent)
 allcomponents(P::LFUDACachePEP) = allcomponents(P.backing)
 cachedcomponents(P::LFUDACachePEP) = P.Ucomponent
 
-function recover!(keyref::Ref,valueref::Ref,key::Vector,value::Vector)
+function lfuda_recover!(keyref::Ref,valueref::Ref,key::Vector,value::Vector)
     println("Recovering $key")
     keyref[] = key
     valueref[] = value
