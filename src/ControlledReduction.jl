@@ -1257,8 +1257,10 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     #end
     (0 < params.verbose) && begin
         println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
+        println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
     end
     (1 < params.verbose) && begin
+        println("V that were created: \n$(allpoints(context.Ruvs))")
         println("V that were created: \n$(allpoints(context.Ruvs))")
     end
 
@@ -1604,7 +1606,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         #println(maxsize)
         #testing
         if n == 5 # (cubic) fourfold
-            maxsize = 3 
+            maxsize = 4 
         elseif n == 4 #(cubic) threefold
             maxsize = 20 
         else
@@ -1612,6 +1614,8 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
             # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
             memory = s^2 * 8 * (n+2)
 
+            maxsize = div(memory_cap,memory)
+        end
             maxsize = div(memory_cap,memory)
         end
 
@@ -1650,7 +1654,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         s = size(oscar_matspace(),1)
 
         if n == 5 # (cubic) fourfold
-            maxsize = 3 # really should probably make this an LRU cache for varbyvar
+            maxsize = 4 # really should probably make this an LRU cache for varbyvar
         elseif n == 4 #(cubic) threefold
             maxsize = 20 
         else
@@ -1658,6 +1662,8 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
             # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
             memory = s^2 * 8 * (n+2)
 
+            maxsize = div(memory_cap,memory)
+        end
             maxsize = div(memory_cap,memory)
         end
         #maxsize = 13 
