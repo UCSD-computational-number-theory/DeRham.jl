@@ -197,8 +197,8 @@ function run_pipeline()
 
     # RUN EXPERIMENT
     println("Running experiment…")
-    @time df = cpu_smooth_distributed(n,d,p,N,df_old)
-    # @time df = gpu_smooth_distributed(n,d,p,N,df_old)
+    # @time df = cpu_smooth_distributed(n,d,p,N,df_old)
+    @time df = gpu_smooth_distributed(n,d,p,N,df_old)
     # @time df = cpu_example_fast_random(n,d,p,N,df_old)
     # @time df = cpu_example_fast_example(n,d,p,N,my_example(p),df_old)
     # @time df = cpu_vector_fast_random(n,d,p,N,df_old)
