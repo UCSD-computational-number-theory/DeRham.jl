@@ -142,7 +142,7 @@ create - create an S for the very first time
 convert - function that converts a T to an S
 """
 struct CachePEP{T,S} <: AbstractPEP{S}
-    Ucomponent::LRU{Vector{Int},Vector{S}}
+    Ucomponent::LFUDA{Vector{Int},Vector{S}}
     backing::AbstractPEP{T}
     create::Function
     convert::Function
@@ -175,18 +175,17 @@ end
 function Base.getindex(P::CachePEP, V::Vector{Int})
     default = () -> begin 
         # cache miss!
-        # cache miss!
         if V == P.tempV[]
-            println("re-adding CachePEP entry at $V")
+            # println("re-adding CachePEP entry at $V")
             t = P.temp[]
             P.temp[] = nothing
             P.tempV[] = nothing
             t
         elseif P.tempV[] == nothing
-            println("creating CachePEP entry at $V")
+            # println("creating CachePEP entry at $V")
             P.create(P.backing[V])
         else
-            println("copying CachePEP entry at $V")
+            # println("copying CachePEP entry at $V")
             # in this case, tempV is already initialized
             P.convert(P.temp[],P.backing[V])
             t = P.temp[]
@@ -197,6 +196,22 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     end
 
     get!(default,P.Ucomponent,V)
+
+    #if haskey(P.Ucomponent,V)
+    #    # cache hit!
+    #
+    #    return P.Ucomponent[V]
+    #end
+
+    ## cache miss!
+
+    #coeffs = backing[V]
+
+    ##TODO: is there a version of this which won't need to allocate?
+    ##Does that even matter?
+    #P.Ucomponent[V] = map(x -> S(x), coeffs)
+
+    #return P.Ucomponent[V]
 end
 
 """
