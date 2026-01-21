@@ -473,6 +473,17 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
     end
 
+    # For large examples, force a GC here; Julia's GC doesn't seem to automatically cause the
+    # garbage collector to run if GPU allocations become too much.
+    if 5 <= n
+        if (0 < verbose)
+            println("collecting garbage...")
+            @time GC.gc()
+        else
+            GC.gc()
+        end
+    end
+
 
     if (f == false)
         (0 < verbose) && println("f is not smooth (or not S-smooth) and we're done. ")
