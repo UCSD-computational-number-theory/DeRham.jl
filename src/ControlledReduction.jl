@@ -1254,10 +1254,10 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
     #end
     (0 < params.verbose) && begin
-        println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
+        println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
     end
     (1 < params.verbose) && begin
-        println("V that were created: \n$(allpoints(Ruv))")
+        println("V that were created: \n$(allpoints(context.Ruvs))")
     end
 
     return result
@@ -1361,7 +1361,7 @@ end
 
 """
 pregen_default_context
-Note that n is number of variables - 1 in this case
+Note that n is (number of variables - 1) in this case
 """
 function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false,lazy=false)
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
@@ -1524,15 +1524,25 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         end
         s = size(oscar_matspace(),1)
 
-        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
-        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
-        memory = s^2 * 8 * (n+2)
+        # memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+        # # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        # memory = s^2 * 8 * (n+2)
 
-        maxsize = div(memory_cap,memory)
+        # maxsize = div(memory_cap,memory)
 
         #println(maxsize)
         #testing
-        #maxsize = 13 
+        if n == 5 # (cubic) fourfold
+            maxsize = 4 
+        elseif n == 4 #(cubic) threefold
+            maxsize = 20 
+        else
+            memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+            # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+            memory = s^2 * 8 * (n+2)
+
+            maxsize = div(memory_cap,memory)
+        end
 
         Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
@@ -1568,14 +1578,17 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         end
         s = size(oscar_matspace(),1)
 
-        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
-        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
-        memory = s^2 * 8 * (n+2)
+        if n == 5 # (cubic) fourfold
+            maxsize = 4 # really should probably make this an LRU cache for varbyvar
+        elseif n == 4 #(cubic) threefold
+            maxsize = 20 
+        else
+            memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+            # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+            memory = s^2 * 8 * (n+2)
 
-        maxsize = div(memory_cap,memory)
-
-        #println(maxsize)
-        #testing
+            maxsize = div(memory_cap,memory)
+        end
         #maxsize = 13 
 
         Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
