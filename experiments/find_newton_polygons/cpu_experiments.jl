@@ -1,7 +1,7 @@
 using Combinatorics
 using Distributed
-@everywhere using Oscar
-@everywhere using DeRham
+using Oscar
+using DeRham
 
 """
 For this one, the example is fast, probably
@@ -162,7 +162,7 @@ function cpu_smooth_distributed(n,d,p,N,df)
     results = Distributed.pmap(1:N) do _
         f = find_nsmooth(n,d,p,1)[1]
         np = DeRham.newton_polygon(f,S=S,fastevaluation=true,algorithm=:varbyvar)
-        return (np, f)
+        return (np, string(f))
     end
 
     for (np, f) in results
@@ -172,7 +172,7 @@ function cpu_smooth_distributed(n,d,p,N,df)
     return df
 end
 
-function gpu_smooth_distributed(n,d,p,N,df; num_workers=nothing, debug=true)
+function gpu_smooth_distributed(n,d,p,N,df; num_workers=nothing, debug=true, project_path=nothing)
 
     debug ? println("Starting gpu_smooth_distributed") : nothing
     debug ? println("Threads.nthreads(): $(Threads.nthreads())") : nothing
@@ -182,7 +182,13 @@ function gpu_smooth_distributed(n,d,p,N,df; num_workers=nothing, debug=true)
 
     if nworkers() < needed_workers
         debug ? println("Adding $(needed_workers - nworkers()) workers") : nothing
-        addprocs(needed_workers - nworkers())
+        project = isnothing(project_path) ? Base.active_project() : project_path
+        addprocs(needed_workers - nworkers(); exeflags=string("--project=", project))
+    end
+
+    for pid in workers()
+        Distributed.remotecall_eval(Main, pid, :(using Oscar))
+        Distributed.remotecall_eval(Main, pid, :(using DeRham))
     end
 
     if debug
@@ -203,7 +209,7 @@ function gpu_smooth_distributed(n,d,p,N,df; num_workers=nothing, debug=true)
         if debug
             println("worker $(myid()) done")
         end
-        return (np, f)
+        return (np, string(f))
     end
 
     for (np, f) in results
