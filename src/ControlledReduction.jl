@@ -710,6 +710,8 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (4 < params.verbose) && println("Computing A and B; ")
         if params.use_gpu && !(ZZ(2)^25 < modm < ZZ(2)^106) # so not Karatsuba
             eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
+        elseif params.use_gpu && d == 3 && (n == 4 || n == 5)# karatsuba
+            eval_to_linear_gpu_karatsuba!(context.B,context.A,context.temp,matrices,mins,V)
         else
             eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
         end

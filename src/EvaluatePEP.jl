@@ -45,31 +45,39 @@ function eval_to_linear!(A,B,temp,pep::AbstractPEP,U,V)
 end
 
 
-#TODO: this won't work quite yet, as `matrices` is an array of arrays
-#      and U and V haven't been moved to the GPU...
-function eval_to_linear_kernel!(A,B,matrices,U,V)
+# use linear indexing since this is component-wise
+function eval_to_linear_kernel!(A,B,matrices,U,V,M)
     i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-    j = (blockIdx().y - 1) * blockDim().y + threadIdx().y
 
-    B[i,j] = matrices[1][i,j]
-    A[i,j] = 0
+    bb = matrices[1][i]
+    aa = 0
 
+    # this assumes we can do n operations without overflow.
     for k in 2:length(matrices)
 
-        B[i,j] += matrices[k][i,j] * U[k-1]
-        A[i,j] += matrices[k][i,j] * V[k-1]
+        m = matrices[k][i]
+
+        bb += m * U[k-1]
+        aa += m * V[k-1]
     end
+
+    A[i] = mod(aa, M)
+    B[i] = mod(bb, M)
+
+    nothing
 end
 
 function eval_to_linear_gpu!(A,B,temp,matrices,U,V)
 
     tw = GPUFiniteFieldMatrices.TILE_WIDTH
 
-    threads = (tw,tw)
+    # threads = (tw,tw)
+    threads = tw
 
-    totalsize = size(A.data)
+    # totalsize = size(A.data)
 
-    blocks = (totalsize[1] ÷ threads[1], totalsize[2] ÷ threads[2])
+    blocks = length(A.data) ÷ threads
+    # blocks = (totalsize[1] ÷ threads[1], totalsize[2] ÷ threads[2])
 
     mat_tuple = tuple(map(A -> A.data, matrices)...)
 
@@ -77,7 +85,67 @@ function eval_to_linear_gpu!(A,B,temp,matrices,U,V)
                                                B.data,
                                                mat_tuple,
                                                tuple(U...),
-                                               tuple(V...))
+                                               tuple(V...),
+                                              A.N)
+
+end
+
+function eval_to_linear_karatsuba_kernel!(Adata1,Adata2,Bdata1,Bdata2,matrices1,matrices2,U,V,N1,N2)
+
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+
+    bb1 = matrices1[1][i]
+    bb2 = matrices2[1][i]
+
+    aa1 = 0
+    aa2 = 0
+
+    for k in 2:length(matrices1)
+
+        m1 = matrices1[k][i]
+        m2 = matrices2[k][i]
+
+        temp1, temp2 = GPUFiniteFieldMatrices.karatsuba_scalar_multiply_helper(m1,m2,U[k-1],N1,N2)
+        bb1, bb2 = GPUFiniteFieldMatrices.karatsuba_add_helper(bb1,bb2,temp1,temp2,N1,N2)
+
+        temp1, temp2 = GPUFiniteFieldMatrices.karatsuba_scalar_multiply_helper(m1,m2,V[k-1],N1,N2)
+        aa1, aa2 = GPUFiniteFieldMatrices.karatsuba_add_helper(aa1,aa2,temp1,temp2,N1,N2)
+    end
+
+    Bdata1[i] = mod(bb1, N1)
+    Bdata2[i] = mod(bb2, N2)
+
+    Adata1[i] = mod(aa1, N1)
+    Adata2[i] = mod(aa2, N2)
+
+    nothing
+end
+
+function eval_to_linear_gpu_karatsuba!(A,B,temp,matrices,U,V)
+
+    tw = GPUFiniteFieldMatrices.TILE_WIDTH
+
+    # threads = (tw,tw)
+    threads = tw
+
+    # totalsize = size(A.data)
+
+    blocks = length(A.data1.data) ÷ threads
+    # blocks = (totalsize[1] ÷ threads[1], totalsize[2] ÷ threads[2])
+
+    mat_tuple_1 = tuple(map(A -> A.data1.data, matrices)...)
+    mat_tuple_2 = tuple(map(A -> A.data2.data, matrices)...)
+
+    @cuda threads=threads blocks=blocks eval_to_linear_karatsuba_kernel!(A.data1.data,
+                                                                         A.data2.data,
+                                                                         B.data1.data,
+                                                                         B.data2.data,
+                                                                         mat_tuple_1,
+                                                                         mat_tuple_2,
+                                                                         tuple(U...),
+                                                                         tuple(V...),
+                                                                         A.N1,
+                                                                         A.N2)
 
 end
 
