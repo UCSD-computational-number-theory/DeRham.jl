@@ -8,10 +8,12 @@ using Memoize
 using LRUCache
 using LFUDACache
 using OhMyThreads
+using UnicodePlots
 
 using CUDA
 using GPUFiniteFieldMatrices
 # Pkg.add(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl")
+
 
 # comment this out when not debugging
 #using Debugger
@@ -44,7 +46,9 @@ include("ZetaFunction.jl")
 include("PointCounts.jl")
 include("LPolyUtils.jl")
 include("K3OverF3.jl")
+include("../experiments/find_cubic_fourfolds.jl")
 
 # TODO: export Zeta Function functions
+export find_nsmooth
 
 end

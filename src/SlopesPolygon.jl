@@ -224,6 +224,29 @@ function Base.hash(x::SlopesPolygon, h::UInt64)
     hash((x.slopes, x.slopelengths))
 end
 
+function removetypefromstring(arr) 
+    s = string(arr)
+    i = findfirst(==('['), s)
+    s[i:end]
+end
+
+function Base.show(io::IO, sp::SlopesPolygon)
+    println(io, "SlopesPolygon of length $(length(sp.values) - 1)")
+
+
+    println(io, "Slopes:        $(removetypefromstring(sp.slopes))")
+    println(io, "Slope Lengths: $(sp.slopelengths)")
+    println(io, "Values:        $(removetypefromstring(sp.values))")
+
+    plt = lineplot(collect(0:(length(sp.values) - 1)),
+                   sp.values,
+                   # width=:auto,
+                   width=60,
+                   height=22,
+                   compact=true)
+    println(io, plt)
+end
+
 endcoord(sp::SlopesPolygon) = length(values(sp)) - 1
     
 function vertices(sp::SlopesPolygon)

@@ -640,6 +640,8 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
     J = copy(u)
 
+    modm = Integer(modulus(base_ring(parent(f))))
+
     gMat = g
     mins = copy(J)
     tempv = copy(J)
@@ -706,7 +708,13 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         (4 < params.verbose) && println("Getting Ruv matrices; ")
         matrices = context.Ruvs[V]
         (4 < params.verbose) && println("Computing A and B; ")
-        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        if params.use_gpu && !(ZZ(2)^25 < modm < ZZ(2)^106) # so not Karatsuba
+            eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
+        elseif params.use_gpu && d == 3 && (n == 4 || n == 5)# karatsuba
+            eval_to_linear_gpu_karatsuba!(context.B,context.A,context.temp,matrices,mins,V)
+        else
+            eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+        end
         (4 < params.verbose) && println("Starting the reduction steps; ")
         gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
         @. J = J - K*V
@@ -731,6 +739,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         =#
 
     end
+
     return ((J, gMat), m)
 end
 
@@ -841,7 +850,7 @@ function remove_duplicates_gpu!(costadata_arr)
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
                 my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
+                # costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -991,7 +1000,8 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
         highpoleorder = highpoleorder - p
     end
 
-    allcostadata = []
+    vectype = typeof(context.g)
+    allcostadata = Vector{Tuple{Tuple{Vector{Int},vectype},Int}}()
     for term in terms
         #g = my_copy(context.g)
         term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
@@ -999,6 +1009,8 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     end
 
     notallred = true
+    # TODO: prime the jitter here?
+
     while notallred
         for i in eachindex(allcostadata)
             allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
@@ -1117,12 +1129,13 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
-function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
     g_length = binomial(d*n,d*n-n)
 
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
+    m = Integer(modulus(base_ring(MS1)))
 
     #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
 
@@ -1143,56 +1156,110 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         end
     end
 
-
-    #TODO: right now, it usually seems better to do lazy computations,
-    #  since not all of the Ruv are used. However, I know that for some
-    #  classes of examples, they are all pretty much always used. For 
-    #  such examples, it's better to use an EagerPEP and do threads.
-    lazy_Ruv = length(S) < d || d < n
-
-    if (0 < params.verbose)
-        println("Creating the Ruv PEP object...")
-        #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-    else
-        Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-    end
-
     result = similar(FT)
 
-    #context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-    #    () -> default_context(MS1,Ruv,params)
-    #)
-    #Threads.@threads for i in 1:length(FT) 
-    #    context = context_tlv[]
+    if context == nothing
+        #TODO: right now, it usually seems better to do lazy computations,
+        #  since not all of the Ruv are used. However, I know that for some
+        #  classes of examples, they are all pretty much always used. For 
+        #  such examples, it's better to use an EagerPEP and do threads.
+        lazy_Ruv = true#length(S) < d || d < n
 
-    context = default_context(MS1,Ruv,params)
-    for i in 1:length(FT) #pol in FT
-    
-
-        pol = FT[i]
         if (0 < params.verbose)
-            println("Reducing vector $i")
-            @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+            println("Creating the Ruv PEP object...")
+            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
+            @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         else
-            reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+            Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         end
-        result[i] = reduction
 
-        #println("cache info: $(cache_info(Ruv.Ucomponent))")
-        #i == 5 && error("stopping after vector $i for testing purposes")
+        if params.use_threads
         
-        #push!(result, reduction)
+            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+                () -> default_context(MS1,Ruv,params)
+            )
+            Threads.@threads for i in 1:length(FT) 
+                local context = context_tlv[]
+
+                pol = FT[i]
+                if (0 < params.verbose)
+                    println("Reducing vector $i")
+                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                else
+                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                end
+                result[i] = reduction
+
+                #println("cache info: $(cache_info(Ruv.Ucomponent))")
+                #i == 5 && error("stopping after vector $i for testing purposes")
+                
+                #push!(result, reduction)
+            end
+        else 
+
+            context = default_context(MS1,Ruv,params)
+            for i in 1:length(FT) #pol in FT
+                
+
+                pol = FT[i]
+                if (0 < params.verbose)
+                    println("Reducing vector $i")
+                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                else
+                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                end
+                result[i] = reduction
+
+                #println("cache info: $(cache_info(Ruv.Ucomponent))")
+                #i == 5 && error("stopping after vector $i for testing purposes")
+                    
+                #push!(result, reduction)
+            end
+        end
+    else
+        if (ZZ(2)^25 < m < ZZ(2)^106)
+            compute_gpu = V -> KaratsubaMat.(computeRuv(V))
+        else 
+            compute_gpu = V -> cuMod.(computeRuv(V))
+        end 
+    
+        compute_float = V -> float_entries.(computeRuv(V))
+
+        if 3 < n && d == 3 && S == [n] && params.use_gpu 
+            context.Ruvs.backing.compute = compute_float
+        elseif params.use_gpu
+            context.Ruvs.compute = compute_gpu
+        else
+            context.Ruvs.compute = computeRuv
+        end
+        for i in 1:length(FT) #pol in FT
+            
+
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i")
+                @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+            else
+                reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+            end
+            result[i] = reduction
+
+            #println("cache info: $(cache_info(Ruv.Ucomponent))")
+            #i == 5 && error("stopping after vector $i for testing purposes")
+                
+            #push!(result, reduction)
+        end
     end
+    
 
     #(0 < params.verbose && Ruv isa CachePEP) && begin
     #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
     #end
     (0 < params.verbose) && begin
-        println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
+        println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
     end
     (1 < params.verbose) && begin
-        println("V that were created: \n$(allpoints(Ruv))")
+        println("V that were created: \n$(allpoints(context.Ruvs))")
     end
 
     return result
@@ -1209,7 +1276,7 @@ function cuMod(A::zzModMatrix)
     CuModMatrix(float_A,M,elem_type=Float64)
 end
 
-function KaratsubaMat(A::zzModMatrix)
+function KaratsubaMat(A::zzModMatrix,A_temp=nothing)
     m = modulus(base_ring(parent(A)))
     temp = collect(factor(m))[1]
     d = temp[2]
@@ -1218,7 +1285,43 @@ function KaratsubaMat(A::zzModMatrix)
     N1 = Int(p)^Int(round(d/2))
     N2 = Int(p)^Int(d - round(d/2))
 
-    GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
+    if A_temp == nothing
+        A_temp = zeros(Float64, size(A)...)
+    end
+
+    res = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,size(A)...,N1,N2,N1*N2,true)
+
+    @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
+    copyto!(res.data2, A_temp)
+
+    @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
+    copyto!(res.data1, A_temp)
+
+    # GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
+    res
+end
+
+function Karatsuba_copyto!(A_gpu::KaratsubaMatrix,A::zzModMatrix,A_temp=nothing)
+    m = modulus(base_ring(parent(A)))
+    temp = collect(factor(m))[1]
+    d = temp[2]
+    p = temp[1]
+
+    N1 = Int(p)^Int(round(d/2))
+    N2 = Int(p)^Int(d - round(d/2))
+
+    if A_temp == nothing
+        A_temp = zeros(Float64, size(A)...)
+    end
+
+    @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
+    copyto!(A_gpu.data2, A_temp)
+
+    @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
+    copyto!(A_gpu.data1, A_temp)
+
+    # GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
+    A_gpu
 end
 
 #TODO: incorporate this idiomatically using adapt.jl
@@ -1294,6 +1397,70 @@ function default_context(matspace,Ruv,params)
     end
 end
 
+"""
+pregen_default_context
+Note that n is (number of variables - 1) in this case
+"""
+function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false,lazy=false)
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
+
+    m = pregen_precision_info(n,d,p)
+    M = Integer(p^m)
+    g_length = binomial(d*n,d*n-n)
+    matspace = matrix_space(residue_ring(ZZ,M)[1], g_length, g_length)
+
+    Ruv = pregen_select_Ruv_PEP(n,d,S,params,matspace)
+
+    if params.use_gpu == true && (ZZ(2)^25 < M < ZZ(2)^106)
+    #if use_gpu == true && (m < ZZ(2)^106)
+        println("using karatsuba")
+
+        N1 = Int(p)^Int(round(m/2))
+        N2 = Int(p)^Int((m - round(m/2)))
+
+        A = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
+        B = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
+        temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,g_length,N1,N2,N1*N2,true)
+        GPUFiniteFieldMatrices.initialize_plan!(A)
+        GPUFiniteFieldMatrices.initialize_plan!(B)
+        GPUFiniteFieldMatrices.initialize_plan!(temp)
+
+        g = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1*N2,true)
+        g_temp = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,g_length,N1,N2,N1*N2,true)
+        GPUFiniteFieldMatrices.initialize_plan!(g)
+        GPUFiniteFieldMatrices.initialize_plan!(g_temp)
+
+        return ControlledReductionContext{KaratsubaMatrix{Float64},KaratsubaVector{Float64}}(Ruv,A,B,temp,g,g_temp)
+    elseif params.use_gpu == true
+
+        A = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+        B = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+        temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,g_length,M)
+
+        g = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
+        g_temp = GPUFiniteFieldMatrices.zeros(Float64,g_length,M)
+
+        return ControlledReductionContext{CuModMatrix{Float64},CuModVector{Float64}}(Ruv,A,B,temp,g,g_temp)
+    else # use the CPU
+        A = matspace()
+        B = matspace()
+        temp = matspace()
+
+        if params.always_use_bigints || ZZ(2)^64 < ZZ(M)
+            # Big modulus
+            # NOTE: can't use `similar` for a pointer type
+            g = [ZZ(0) for i in 1:g_length]
+            g_temp = [ZZ(0) for i in 1:g_length]
+        else
+            # Small modulus
+            g = zeros(UInt,g_length) 
+            g_temp = similar(g)
+        end
+
+        return ControlledReductionContext(Ruv,A,B,temp,g,g_temp)
+    end
+end
+
 function default_context_type(matspace,params)
     B = base_ring(matspace)
     m = modulus(B)
@@ -1344,23 +1511,57 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
 
-    if (3 < params.verbose) && (ZZ(2)^25 < m < ZZ(2)^106)
-        compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); KaratsubaMat.(compute(V)) end
-    elseif (3 < params.verbose)
-        compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
-    elseif (ZZ(2)^25 < m < ZZ(2)^106)
-        compute_gpu = V -> KaratsubaMat.(compute(V))
-    else
-        compute_gpu = V -> cuMod.(compute(V))
-    end 
+    # if (3 < params.verbose) && (ZZ(2)^25 < m < ZZ(2)^106)
+    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); KaratsubaMat.(compute(V)) end
+    # elseif (3 < params.verbose)
+    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
+    # elseif (ZZ(2)^25 < m < ZZ(2)^106)
+    #     compute_gpu = V -> KaratsubaMat.(compute(V))
+    # else
+    #     compute_gpu = V -> cuMod.(compute(V))
+    # end 
+
+    function compute_gpu(V; copyto=nothing) 
+
+        if (3 < params.verbose) 
+            println("Moving Ruv for $V to the gpu")
+        end
+
+        if (ZZ(2)^25 < m < ZZ(2)^106)
+            if copyto != nothing
+                Karatsuba_copyto!.(copyto, compute(V))
+            else
+                KaratsubaMat.(compute(V))
+            end
+        else
+            if copyto != nothing
+                copyto!.(copyto, float_entries.(compute(V)))
+                copyto
+            else
+                cuMod.(compute(V))
+            end
+        end 
+    end
 
     compute_float = V -> float_entries.(compute(V))
 
-    if 3 < n && d == 3 && S == [0] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
+    EXTRA_MEMORY = false
+
+    if 5 == n && d == 3 && S == [n] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) && !EXTRA_MEMORY
+        println("hey howdy hey")
+        
+        Ruv = LRULazyPEP{KaratsubaMatrix{Float64}}(compute_gpu,d,usethreads=false)
+    elseif 5 == n && d == 3 && S == [n] && params.use_gpu && !EXTRA_MEMORY
+        println("howdy")
+
+        Ruv = LRULazyPEP{CuModMatrix{Float64}}(compute_gpu,d,usethreads=false)
+
+    elseif 3 < n && d == 3 && S == [n] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
+        println("hey")
 
         eager_Vs = cubic_S_zero_Vs(n)
 
-        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float,eagerVs=eager_Vs,usethreads=false)
+        cpu_Ruv = LazyPEP{zzModMatrix}(compute,eagerVs=eager_Vs,usethreads=false)
         m = M = Int(modulus(base_ring(oscar_matspace)))
         temp = collect(factor(m))[1]
         d = temp[2]
@@ -1380,33 +1581,44 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
                 CUDA.@time begin
                     for i in 1:length(dest)
-                        copyto!(dest[i],matrices[i])
+                        Karatsuba_copyto!(dest[i],matrices[i])
                     end
                 end
             end
         else
-            create_gpu = matrices -> KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
+            create_gpu = matrices -> KaratsubaMat.(matrices) #KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
             convert_gpu = (dest,matrices) -> begin
                 for i in 1:length(dest)
-                    copyto!(dest[i],matrices[i])
+                    Karatsuba_copyto!(dest[i],matrices[i])
                 end
             end
         end
         s = size(oscar_matspace(),1)
 
-        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
-        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
-        memory = s^2 * 8 * (n+2)
+        # memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+        # # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        # memory = s^2 * 8 * (n+2)
 
-        maxsize = div(memory_cap,memory)
+        # maxsize = div(memory_cap,memory)
 
         #println(maxsize)
         #testing
-        #maxsize = 13 
+        if n == 5 # (cubic) fourfold
+            maxsize = 3 
+        elseif n == 4 #(cubic) threefold
+            maxsize = 20 
+        else
+            memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+            # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+            memory = s^2 * 8 * (n+2)
 
-        Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+            maxsize = div(memory_cap,memory)
+        end
 
-    elseif 3 < n && d == 3 && S == [0] && params.use_gpu #4 < n
+        Ruv = CachePEP{zzModMatrix,KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+
+    elseif 3 < n && d == 3 && S == [n] && params.use_gpu #4 < n
+        println("hello")
 
         eager_Vs = cubic_S_zero_Vs(n)
 
@@ -1438,14 +1650,17 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         end
         s = size(oscar_matspace(),1)
 
-        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
-        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
-        memory = s^2 * 8 * (n+2)
+        if n == 5 # (cubic) fourfold
+            maxsize = 3 # really should probably make this an LRU cache for varbyvar
+        elseif n == 4 #(cubic) threefold
+            maxsize = 20 
+        else
+            memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+            # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+            memory = s^2 * 8 * (n+2)
 
-        maxsize = div(memory_cap,memory)
-
-        #println(maxsize)
-        #testing
+            maxsize = div(memory_cap,memory)
+        end
         #maxsize = 13 
 
         Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
@@ -1465,25 +1680,110 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
     elseif params.use_gpu
-        Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=false)
+        Ruv = EagerPEP{CuModMatrix{Float64}}(cache[d],compute_gpu,usethreads=params.use_threads)
 
-    elseif lazy
+    elseif lazy && !params.use_threads
         Ruv = LazyPEP{typeof(oscar_matspace())}(compute)
 
     else
-        Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=false)
+        Ruv = EagerPEP{typeof(oscar_matspace())}(cache[d],compute,usethreads=params.use_threads)
+    end
+
+    Ruv
+end
+
+function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
+
+    m = Integer(modulus(base_ring(oscar_matspace)))
+    #=
+    if (ZZ(2)^25 < m < ZZ(2)^106)
+        compute_gpu = V -> KaratsubaMat.(compute(V))
+    else
+        compute_gpu = V -> cuMod.(compute(V))
+    end 
+    
+    compute_float = V -> float_entries.(compute(V))
+    =#
+
+    if 3 < n && d == 3 && S == [n] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
+
+        cpu_Ruv = PregenLazyPEP{Matrix{Float64}}(nothing)
+        m = M = Int(modulus(base_ring(oscar_matspace)))
+        temp = collect(factor(m))[1]
+        d = temp[2]
+        p = temp[1]
+
+        N1 = Int(p)^Int(round(d/2))
+        N2 = Int(p)^Int(d - round(d/2))
+
+        create_gpu = matrices -> KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
+        convert_gpu = (dest,matrices) -> begin
+            for i in 1:length(dest)
+                copyto!(dest[i],matrices[i])
+            end
+        end
+        s = size(oscar_matspace(),1)
+
+        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        memory = s^2 * 8 * (n+2)
+
+        maxsize = div(memory_cap,memory)
+
+        #println(maxsize)
+        #testing
+        #maxsize = 13 
+
+        Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+
+    elseif 3 < n && d == 3 && S == [n] && params.use_gpu #4 < n
+
+        cpu_Ruv = PregenLazyPEP{Matrix{Float64}}(nothing)
+        m = M = Int(modulus(base_ring(oscar_matspace)))
+
+        create_gpu = matrices -> CuModMatrix.(matrices,M,elem_type=Float64)
+        convert_gpu = (dest,matrices) -> begin
+            for i in 1:length(dest)
+                copyto!(dest[i],matrices[i])
+            end
+        end
+        s = size(oscar_matspace(),1)
+
+        memory_cap = totalmem(CUDA.device())#4_500_000_000 # about 6 gigabytes of gpu memory
+        # 8 bytes per float64, n+2 matrices, s^2 entries per matrix
+        memory = s^2 * 8 * (n+2)
+
+        maxsize = div(memory_cap,memory)
+
+        #println(maxsize)
+        #testing
+        #maxsize = 13 
+
+        Ruv = CachePEP{Matrix{Float64},CuModMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+
+        #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
+    
+    elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
+    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
+        #compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
+        Ruv = PregenLazyPEP{KaratsubaMatrix{Float64}}(nothing)
+    elseif params.use_gpu 
+        Ruv = PregenLazyPEP{CuModMatrix{Float64}}(nothing)
+    else
+        Ruv = PregenLazyPEP{typeof(oscar_matspace())}(nothing)
     end
 
     Ruv
 end
 
 
-function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
     g_length = binomial(d*n,d*n-n)
 
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
+    m = Integer(modulus(base_ring(MS1)))
 
     #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
 
@@ -1504,46 +1804,83 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         end
     end
 
-
-    #TODO: right now, it usually seems better to do lazy computations,
-    #  since not all of the Ruv are used. However, I know that for some
-    #  classes of examples, they are all pretty much always used. For 
-    #  such examples, it's better to use an EagerPEP and do threads.
-    lazy_Ruv = length(S) < d || d < n
-
-    if (0 < params.verbose)
-        println("Creating the Ruv PEP object...")
-        #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-        @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-    else
-        Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-    end
-
     result = similar(FT)
 
-    #context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-    #    () -> default_context(MS1,Ruv,params)
-    #)
-    #Threads.@threads for i in 1:length(FT) 
-    #    context = context_tlv[]
+    if context == nothing
+        #TODO: right now, it usually seems better to do lazy computations,
+        #  since not all of the Ruv are used. However, I know that for some
+        #  classes of examples, they are all pretty much always used. For 
+        #  such examples, it's better to use an EagerPEP and do threads.
+        lazy_Ruv = length(S) < d || d < n
 
-    context = default_context(MS1,Ruv,params)
-    for i in 1:length(FT) #pol in FT
-    
-
-        pol = FT[i]
         if (0 < params.verbose)
-            println("Reducing vector $i")
-            @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            println("Creating the Ruv PEP object...")
+            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
+            @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         else
-            reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         end
-        result[i] = reduction
 
-        #println("cache info: $(cache_info(Ruv.Ucomponent))")
-        #i == 5 && error("stopping after vector $i for testing purposes")
+        context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+            () -> default_context(MS1,Ruv,params)
+        )
+
+        Threads.@threads for i in 1:length(FT) 
+            context = context_tlv[]
+
+        # context = default_context(MS1,Ruv,params)
+        # for i in 1:length(FT) #pol in FT
         
-        #push!(result, reduction)
+
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i in thread $(Threads.threadid())")
+                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            else
+                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            end
+            result[i] = reduction
+
+            #println("cache info: $(cache_info(Ruv.Ucomponent))")
+            #i == 5 && error("stopping after vector $i for testing purposes")
+            
+            #push!(result, reduction)
+        end
+    else
+        if (ZZ(2)^25 < m < ZZ(2)^106)
+            compute_gpu = V -> KaratsubaMat.(computeRuv(V))
+        else 
+            compute_gpu = V -> cuMod.(computeRuv(V))
+        end 
+    
+        compute_float = V -> float_entries.(computeRuv(V))
+
+        if 3 < n && d == 3 && S == [n] && params.use_gpu 
+            context.Ruvs.backing.compute = compute_float
+        elseif params.use_gpu
+            context.Ruvs.compute = compute_gpu
+        else
+            context.Ruvs.compute = computeRuv
+        end
+
+        for i in 1:length(FT) #pol in FT
+        
+
+            pol = FT[i]
+            if (0 < params.verbose)
+                println("Reducing vector $i in thread $(Threads.threadid())")
+                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            else
+                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+            end
+            result[i] = reduction
+
+            #println("cache info: $(cache_info(Ruv.Ucomponent))")
+            #i == 5 && error("stopping after vector $i for testing purposes")
+            
+            #push!(result, reduction)
+        end
+
     end
 
     #(0 < params.verbose && Ruv isa CachePEP) && begin
@@ -1602,13 +1939,13 @@ function reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     return result
 end
 
-function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache)
+function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache,context)
     if params.algorithm == :costachunks
         reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     elseif params.algorithm == :naive
-        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     elseif params.algorithm == :varbyvar
-        reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+        reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     elseif params.algorithm == :akr
         reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else

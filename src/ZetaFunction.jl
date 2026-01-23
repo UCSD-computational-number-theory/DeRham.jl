@@ -29,9 +29,10 @@ struct ZetaFunctionParams
     fastevaluation::Bool
     always_use_bigints::Bool
     use_gpu::Bool
+    use_threads::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -361,6 +362,17 @@ function print_precision_info(n,d,p)
     println("Algorithm precision: $alg")
 end 
 
+function pregen_precision_info(n,d,p)
+    R, vars = polynomial_ring(GF(p),n+1)
+
+    # any hypersurface will do, all we care
+    # about is the hodge polygon
+    fermat_hypersurface = sum(vars .^ d)
+
+    (hp, rel, ser, alg) =  precision_information(fermat_hypersurface)
+
+    return alg
+end 
 """
     zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
 
@@ -392,7 +404,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -409,7 +421,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     end
 
     # vars_reversed = false
-    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu)
+    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
 
     cache = controlled_reduction_cache(n,d,S,params)
 
@@ -459,6 +471,17 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         @time f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
     else
         f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
+    end
+
+    # For large examples, force a GC here; Julia's GC doesn't seem to automatically cause the
+    # garbage collector to run if GPU allocations become too much.
+    if 5 <= n
+        if (0 < verbose)
+            println("collecting garbage...")
+            @time GC.gc()
+        else
+            GC.gc()
+        end
     end
 
 
@@ -578,7 +601,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #TODO: check which algorithm we're using
     #(2 < verbose) && println("Pseudo inverse matrix:\n$pseudo_inverse_mat")
     (0 < verbose) && println("\nStarting controlled reduction...")
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache) 
+    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache,context) 
     (2 < verbose) && println(Reductions)
     #return Reductions
     #if (1 < verbose)
@@ -608,15 +631,15 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     end
 end
 
-function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false)
+function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false,use_threads=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
-    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu, use_threads=use_threads)
     
     if zf == false # f isn't smooth
         return false
-    end 
+    end#TODO: all of the "return false" should be "return nothing" 
 
     return newton_polygon(p, zf)
 end 

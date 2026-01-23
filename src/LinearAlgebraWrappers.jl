@@ -71,7 +71,7 @@ my_mul!(A::KaratsubaMatrix,B::KaratsubaMatrix,c::Number) = GPUFiniteFieldMatrice
 # matvecmul
 
 my_matvecmul!(z::CuModVector,A::CuModMatrix,b::CuModVector) = GPUFiniteFieldMatrices.mul!(z,A,b)
-my_matvecmul!(z::KaratsubaVector,A::KaratsubaMatrix,b::KaratsubaVector) = GPUFiniteFieldMatrices.KMatMul!(z,A,b)
+my_matvecmul!(z::KaratsubaVector,A::KaratsubaMatrix,b::KaratsubaVector) = GPUFiniteFieldMatrices.KMatMul_gemv!(z,A,b)
 
 # copy
 
