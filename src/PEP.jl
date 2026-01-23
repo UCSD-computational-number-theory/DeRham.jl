@@ -176,16 +176,16 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     default = () -> begin 
         # cache miss!
         if V == P.tempV[]
-            # println("re-adding CachePEP entry at $V")
+            println("re-adding CachePEP entry at $V")
             t = P.temp[]
             P.temp[] = nothing
             P.tempV[] = nothing
             t
         elseif P.tempV[] == nothing
-            # println("creating CachePEP entry at $V")
+            println("creating CachePEP entry at $V")
             P.create(P.backing[V])
         else
-            # println("copying CachePEP entry at $V")
+            println("copying CachePEP entry at $V")
             # in this case, tempV is already initialized
             P.convert(P.temp[],P.backing[V])
             t = P.temp[]
@@ -313,3 +313,90 @@ function Base.getindex(P::PregenLazyPEP, V::Vector{Int})
 end
 
 
+"""
+A LRULazyPEP{T} is a PEP with coefficients of type T.
+
+It computes each entry the first time it gets accessed, like a LazyPEP.
+
+Optionally, you may specify some Vs to be computed at creation time.
+
+It only keeps maxsize entries, overwriting them each after the cache is full.
+
+Like a (LRU) CachePEP, it keeps an extra entry so that no allocation is required.
+
+the `compute` function here must have an extra optional parameter for the array which
+the computed thing will be copied into.
+"""
+struct LRULazyPEP{T} <: AbstractPEP{T}
+    Vs::Vector{Vector{Int}}
+    Ucomponent::LRU{Vector{Int},Vector{T}}
+    compute::Function
+    temp::Base.RefValue{Union{Vector{T},Nothing}}
+    tempV::Base.RefValue{Union{Vector{Int},Nothing}}
+
+    function LRULazyPEP{T}(compute,maxsize;eagerVs=Vector{Vector{Int}}(),usethreads=false) where T
+        recover = (key, value) -> recover!(tempV,temp,key,value) # reuse the one from (LRU) CachePEP
+        Ucomponent = LRU{Vector{Int},Vector{T}}(maxsize=maxsize,finalizer=recover)
+        temp = Ref{Union{Vector{T},Nothing}}(nothing)
+        tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
+
+        if usethreads && 0 < length(eagerVs)
+            #OhMyThreads.tforeach(eagerVs) do V 
+            Threads.@threads for V in eagerVs
+                coeffs = compute(V)
+                Ucomponent[V] = coeffs #TODO: make thread safe?
+            end
+        else
+            for V in eagerVs
+                coeffs = compute(V)
+                Ucomponent[V] = coeffs 
+            end
+        end
+
+        new{T}(eagerVs,Ucomponent,compute,temp,tempV)
+    end
+end
+
+allpoints(P::LRULazyPEP) = P.Vs
+allcomponents(P::LRULazyPEP) = P.Ucomponent
+
+function Base.getindex(P::LRULazyPEP, V::Vector{Int})
+    default = () -> begin 
+        # cache miss!
+        if V == P.tempV[]
+            println("re-adding LRULazyPEP entry at $V")
+            t = P.temp[]
+            P.temp[] = nothing
+            P.tempV[] = nothing
+            t
+        elseif P.tempV[] == nothing
+            println("creating LRULazyPEP entry at $V")
+            P.Ucomponent[V] = P.compute(V)
+            # P.create(P.backing[V])
+        else
+            println("copying LRULazyPEP entry at $V")
+            # in this case, tempV is already initialized
+            # P.convert(P.temp[],P.backing[V])
+            t = P.temp[]
+            P.Ucomponent[V] = P.compute(V, copyto=t)
+            P.temp[] = nothing
+            P.tempV[] = nothing
+            t
+        end
+    end
+
+    get!(default,P.Ucomponent,V)
+end
+
+# function Base.getindex(P::LRULazyPEP, V::Vector{Int})
+#     if haskey(P.Ucomponent,V)
+#         return P.Ucomponent[V]
+#     end
+
+#     coeffs = P.compute(V)
+
+#     push!(P.Vs,V)
+#     P.Ucomponent[V] = coeffs
+
+#     return coeffs
+# end
