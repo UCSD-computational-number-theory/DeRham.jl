@@ -1604,7 +1604,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         #println(maxsize)
         #testing
         if n == 5 # (cubic) fourfold
-            maxsize = 4 
+            maxsize = 3 
         elseif n == 4 #(cubic) threefold
             maxsize = 20 
         else
@@ -1650,7 +1650,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         s = size(oscar_matspace(),1)
 
         if n == 5 # (cubic) fourfold
-            maxsize = 4 # really should probably make this an LRU cache for varbyvar
+            maxsize = 3 # really should probably make this an LRU cache for varbyvar
         elseif n == 4 #(cubic) threefold
             maxsize = 20 
         else

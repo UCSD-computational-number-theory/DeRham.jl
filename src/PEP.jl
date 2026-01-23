@@ -176,16 +176,16 @@ function Base.getindex(P::CachePEP, V::Vector{Int})
     default = () -> begin 
         # cache miss!
         if V == P.tempV[]
-            # println("re-adding CachePEP entry at $V")
+            println("re-adding CachePEP entry at $V")
             t = P.temp[]
             P.temp[] = nothing
             P.tempV[] = nothing
             t
         elseif P.tempV[] == nothing
-            # println("creating CachePEP entry at $V")
+            println("creating CachePEP entry at $V")
             P.create(P.backing[V])
         else
-            # println("copying CachePEP entry at $V")
+            println("copying CachePEP entry at $V")
             # in this case, tempV is already initialized
             P.convert(P.temp[],P.backing[V])
             t = P.temp[]
