@@ -1492,7 +1492,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         eager_Vs = cubic_S_zero_Vs(n)
 
-        cpu_Ruv = LazyPEP{Matrix{Float64}}(compute_float,eagerVs=eager_Vs,usethreads=false)
+        cpu_Ruv = LazyPEP{zzModMatrix}(compute,eagerVs=eager_Vs,usethreads=false)
         m = M = Int(modulus(base_ring(oscar_matspace)))
         temp = collect(factor(m))[1]
         d = temp[2]
@@ -1517,7 +1517,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
                 end
             end
         else
-            create_gpu = matrices -> KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
+            create_gpu = matrices -> KaratsubaMat.(matrices) #KaratsubaMatrix.(Float64,CuModMatrix.(matrices,N1,elem_type=Float64),N1,N2,N1*N2)
             convert_gpu = (dest,matrices) -> begin
                 for i in 1:length(dest)
                     copyto!(dest[i],matrices[i])
@@ -1546,7 +1546,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
             maxsize = div(memory_cap,memory)
         end
 
-        Ruv = CachePEP{Matrix{Float64},KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
+        Ruv = CachePEP{zzModMatrix,KaratsubaMatrix{Float64}}(cpu_Ruv,create_gpu,convert_gpu,maxsize)
 
     elseif 3 < n && d == 3 && S == [n] && params.use_gpu #4 < n
 
