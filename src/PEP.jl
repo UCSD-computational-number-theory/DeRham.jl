@@ -143,7 +143,6 @@ convert - function that converts a T to an S
 """
 struct CachePEP{T,S} <: AbstractPEP{S}
     Ucomponent::LRU{Vector{Int},Vector{S}}
-    Ucomponent::LRU{Vector{Int},Vector{S}}
     backing::AbstractPEP{T}
     create::Function
     convert::Function
@@ -154,8 +153,6 @@ struct CachePEP{T,S} <: AbstractPEP{S}
         temp = Ref{Union{Vector{S},Nothing}}(nothing)
         tempV = Ref{Union{Vector{Int},Nothing}}(nothing)
         recover = (key, value) -> recover!(tempV,temp,key,value)
-        Ucomponent = LRU{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
-        # Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize)
         Ucomponent = LRU{Vector{Int},Vector{S}}(maxsize=maxsize,finalizer=recover)
         # Ucomponent = LFUDA{Vector{Int},Vector{S}}(maxsize=maxsize)
 
