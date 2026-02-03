@@ -1547,7 +1547,7 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         if (ZZ(2)^25 < m < ZZ(2)^106)
             if copyto != nothing
-                Karatsuba_copyto!.(copyto, compute(V))
+                Karatsuba_copyto!.(copyto, float_entries.(compute(V)))
             else
                 KaratsubaMat.(compute(V))
             end
