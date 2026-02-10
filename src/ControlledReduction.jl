@@ -343,7 +343,7 @@ takes single monomial in frobenius and reduces to pole order n, currently only d
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
 """
-function reducechain_costachunks(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
+function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
     verbose = params.verbose
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -476,7 +476,7 @@ end
 Iteratively execute reduction chunks in the navie strategy until
 the vector g is reduced to pole order n
 """
-function reducechain_naive(u,g,m,S,f,p,context,cache,params)
+function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -932,7 +932,7 @@ end
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
 """
-function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
+function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
     #p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
@@ -970,7 +970,7 @@ function reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,pa
             #ω[i] = reducechain...
             #(9 < verbose) && println("u is type $(typeof(ω[i][1]))")
             g_temp = similar(ω[i][2])
-            ω[i] = reducechain_costachunks(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
+            ω[i] = reducechain_pchunk(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
         end
 
         poleorder = poleorder - p
@@ -1039,7 +1039,7 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     [[div(result,XS), n]]
 end
 
-function reducepoly_naive(pol,S,f,p,context,cache,params)
+function reducepoly_depthfirst(pol,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -1051,7 +1051,7 @@ function reducepoly_naive(pol,S,f,p,context,cache,params)
         #println(terms)
         for t in terms
             (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,cache,params)
-            reduced = reducechain_naive(u,context.g,t[2],S,f,p,context,cache,params)
+            reduced = reducechain_depthfirst(u,context.g,t[2],S,f,p,context,cache,params)
             (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
             @assert m == n "Controlled reduction outputted a bad pole order"
             result += reduced_poly
@@ -1092,7 +1092,7 @@ trying to emulate Costa's controlled reduction, changes the order that polynomia
 
 N_m - the precision
 """
-function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+function reducetransform_pchunk(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
     d = total_degree(f)
     n = nvars(parent(f)) - 1
@@ -1118,9 +1118,9 @@ function reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
         (0 < params.verbose) && println("Reducing vector $i")
         i += 1
         if (0 < params.verbose)
-            @time reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
+            @time reduction = reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
         else
-            reduction = reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
+            reduction = reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
         end
 
         push!(result, reduction)
@@ -1795,7 +1795,7 @@ function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
 end
 
 
-function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
+function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
     g_length = binomial(d*n,d*n-n)
@@ -1853,9 +1853,9 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,contex
             pol = FT[i]
             if (0 < params.verbose)
                 println("Reducing vector $i in thread $(Threads.threadid())")
-                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+                @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
             else
-                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+                reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
             end
             result[i] = reduction
 
@@ -1887,9 +1887,9 @@ function reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,contex
             pol = FT[i]
             if (0 < params.verbose)
                 println("Reducing vector $i in thread $(Threads.threadid())")
-                @time reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+                @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
             else
-                reduction = reducepoly_naive(pol,S,f,p,context,cache,params)
+                reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
             end
             result[i] = reduction
 
@@ -1957,15 +1957,17 @@ function reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 end
 
 function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache,context)
-    if params.algorithm == :costachunks
-        reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
-    elseif params.algorithm == :naive
-        reducetransform_naive(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
+    if params.algorithm == :pchunk
+        reducetransform_pchunk(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+    elseif params.algorithm == :depthfirst
+        reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     elseif params.algorithm == :varbyvar
         reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
     elseif params.algorithm == :akr
         reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else
-        throw(ArgumentError("Unsupported Algorithm: $algorithm"))
+        #throw(ArgumentError("Unsupported Algorithm: $algorithm"))
+        println(params.algorithm)
+        throw(ArgumentError("Unsupported Algorithm: "))
     end
 end
