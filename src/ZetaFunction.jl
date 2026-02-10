@@ -340,6 +340,25 @@ function precision_information(f)
     precision_information(f,Basis)
 end
 
+function auto_precision(f; basis=nothing, verbose=0)
+    if basis === nothing
+        return precision_information(f)
+    end
+    return precision_information(f, basis, verbose)
+end
+
+function auto_precision(f, field; basis=nothing, verbose=0)
+    if characteristic(field) != characteristic(parent(f))
+        error("Field characteristic $(characteristic(field)) does not match polynomial base field characteristic $(characteristic(parent(f))).")
+    end
+    return auto_precision(f; basis=basis, verbose=verbose)
+end
+
+function zeta_function_auto(f; basis=nothing, verbose=0, kwargs...)
+    precision_info = auto_precision(f; basis=basis, verbose=verbose)
+    return zeta_function(f; precision_info=precision_info, verbose=verbose, kwargs...)
+end
+
 """
     print_precision_info(n,d,p)
 
@@ -404,7 +423,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing, precision_info=nothing)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -469,7 +488,11 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
-    (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
+    if precision_info === nothing
+        (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
+    else
+        (hodge_polygon, r_m, N_m, M) = precision_info
+    end
 
     (1 < verbose) && println("N_m=$N_m")
 
