@@ -32,7 +32,7 @@ struct ZetaFunctionParams
     use_threads::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:costachunks,:invlex,false,false,false,false,false)
+default_params() = ZetaFunctionParams(0,false,:default,:invlex,false,true,false,false,false)
 
 """
 Give the minimal PolyExpCache needed for controlled reduction
@@ -404,7 +404,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -414,6 +414,32 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     
     if S == [-1]
         S = collect(0:n)
+    end
+
+    if algorithm == :default
+        if S == [n]
+            algorithm = :varbyvar
+        elseif n > 4
+            for i in 0:n
+                if is_Ssmooth(f,[n-i])
+                    algorithm = :varbyvar
+                    S = [n]
+                    vars = gens(PR)
+                    new_vars = copy(vars)
+                    for j in 0:n
+                        if j == i
+                            new_vars[i+1] = vars[n+1]
+                        end
+                    end
+                    new_vars[n+1] = vars[i+1]
+                    break
+                elseif i == n
+                    algorithm = :depthfirst
+                end
+            end
+        else
+            algorithm = :depthfirst
+        end
     end
 
     if algorithm==:varbyvar && (S != [n])
