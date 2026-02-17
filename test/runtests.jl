@@ -84,12 +84,6 @@ end
             filename = "dim_$(dim)_deg_$(deg)_many.csv"
             runcsvtest(filename,zeta_function=zf)
         end
-
-        #runcsvtest("ellipticcurves.csv")
-        #runcsvtest("highergenus.csv")
-        
-        #runcsvtest("k3surfaces.csv",zeta_function=zf)
-        #runcsvtest("othersurfaces.csv")
     end
 
     @testset "CPU Fast Evaluation + Naive Strategy (vars_reversed=false)" begin 

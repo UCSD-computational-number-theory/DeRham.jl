@@ -1839,30 +1839,40 @@ function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,c
             Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         end
 
-        context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-            () -> default_context(MS1,Ruv,params)
-        )
 
-        Threads.@threads for i in 1:length(FT) 
-            context = context_tlv[]
+        if params.use_threads
 
-        # context = default_context(MS1,Ruv,params)
-        # for i in 1:length(FT) #pol in FT
-        
-
-            pol = FT[i]
-            if (0 < params.verbose)
-                println("Reducing vector $i in thread $(Threads.threadid())")
-                @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-            else
-                reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-            end
-            result[i] = reduction
-
-            #println("cache info: $(cache_info(Ruv.Ucomponent))")
-            #i == 5 && error("stopping after vector $i for testing purposes")
+            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
+                () -> default_context(MS1,Ruv,params)
+            )
             
-            #push!(result, reduction)
+            Threads.@threads for i in 1:length(FT) 
+                local context = context_tlv[]
+
+                pol = FT[i]
+                if (0 < params.verbose)
+                    println("Reducing vector $i in thread $(Threads.threadid())")
+                    @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
+                else
+                    reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
+                end
+                result[i] = reduction
+
+            end
+        else 
+            context = default_context(MS1,Ruv,params)
+            for i in 1:length(FT) #pol in FT
+                
+                pol = FT[i]
+                if (0 < params.verbose)
+                    println("Reducing vector $i")
+                    @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
+                else
+                    reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
+                end
+                result[i] = reduction
+
+            end
         end
     else
         if (ZZ(2)^25 < m < ZZ(2)^106)
