@@ -5,7 +5,7 @@
 
 This package aims to implement cutting-edge algorithms that calculate
 
-* point counts of equations mod p (algebraic varieties over $\mathbb{F}_p$)
+* point counts of equations mod $p$ (algebraic varieties over $\mathbb{F}_p$)
 * the cohomology of algebraic varieties
 * the extra structure on this cohomology
 
