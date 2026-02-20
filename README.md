@@ -15,7 +15,7 @@ Long term goals include having fast versions of all the various forms of Kedlaya
 
 ## Current functionality
 
-We currently implement a variant of Kedlaya's algorithm that computes the zeta functions of projective hypersurfaces using a method known as controlled reduction, see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf).
+We currently implement a variant of Kedlaya's algorithm that computes the zeta functions (and consequently the newton polygons) of smooth projective hypersurfaces of degree $$d$$ over $$\mathbf{F}_p$$ (for $$p\neq d$$) using a method known as controlled reduction, see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf).
 
 ### Getting Started
 
