@@ -31,6 +31,7 @@ The first time you install DeRham.jl, it will take a while for Julia to download
 
 ```
 activate .
+add https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git
 instantiate
 ```
 
