@@ -402,7 +402,7 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
     
     (4 < verbose) && println("Before reduction chunk, I is $I")
     if params.fastevaluation && 1 ≤ nend-(d*n-n)
-      #gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,ui)
+      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,g_temp)
       i = nend-(d*n-n) + 1
     else
       while i <= (nend-(d*n-n))
@@ -449,7 +449,9 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
         # end
         
         my_add!(temp,A,B)
-        gMat = temp*gMat
+        my_matvecmul!(g_temp,temp,gMat)
+        my_copy!(gMat,g_temp)
+        #gMat = temp*gMat
 
         #gMat = (A+B)*gMat
 
