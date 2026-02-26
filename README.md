@@ -38,7 +38,9 @@ The `instantiate` step will take a while as Julia's package manager downloads an
 
 Then, press backspace to go back to a julia prompt and run
 
-```using DeRham, Oscar```.
+```
+using DeRham, Oscar
+```
 
 #### Starting a new session after installation is complete
 
@@ -52,9 +54,11 @@ using DeRham, Oscar
 
 ### Sample code
 
-Execute the following lines in Julia REPL:
-```
+#### Zeta Functions and Newton polygons
 
+Execute the following lines in Julia REPL:
+
+```julia
 p = 7
 R, (x,y,z) = GF(p)[:x,:y,:z]
 f = y^2*z - x^3 - x*z^2 - z^3
@@ -68,3 +72,29 @@ h = DeRham.fermat_hypersurface(4,4,p)
 DeRham.newton_polygon(g)
 ```
 
+#### Nondegeneracy Conditions (advanced)
+
+We support using the nondegeneracy condition in [Costa's Thesis](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf) called "S-smoothness", where "S" is a subset of `{0, ..., n-1}` (where `n` is the number of variables in the polynomial ring R).
+
+By default, S is the full set `{0, ..., n-1}`, which is equivalent to the smoothness of the hypersufaces. Most users will not have
+to worry about this.
+
+There are two situations (currently) which require the use of S. First, if the degree `d` of the hypersurface is less than the number of varibles `n`. In this case, S can have size at most 3.
+
+```julia
+p = 7
+R, (x,y,z,w) = GF(p)[:x,:y,:z]
+f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
+
+DeRham.zeta_function(f,S=[0,1,2])
+```
+
+Secondly, if one uses that `:varbyvar` reduction policy, then S must be `{n}`
+
+```julia
+p = 11
+R, (x,y,z,w) = GF(p)[:x,:y,:z]
+f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
+
+DeRham.zeta_function(f,S=[n], algorithm=:varbyvar)
+```
