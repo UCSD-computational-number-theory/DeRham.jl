@@ -49,6 +49,7 @@ After starting a new Julia REPL, run
 ```
 using Revise
 ] activate .
+add https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git
 using DeRham, Oscar
 ```
 
