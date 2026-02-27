@@ -331,7 +331,7 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     #println("U lifted: $U_int")
 
     p = characteristic(PR)
-
+    GC.gc()
     if (0 < params.verbose)
         println("Hensel lifting matrix of size $(size(Sol_fp))")
         @time henselLift(p,M,U,Sol_mod_p_int)
