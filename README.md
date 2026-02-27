@@ -17,7 +17,7 @@ Long term goals include having fast versions of all the various forms of Kedlaya
 
 We currently implement a variant of Kedlaya's algorithm that computes the zeta functions (and consequently the newton polygons) of smooth projective hypersurfaces of degree $$d$$ over $$\mathbb{F}_p$$ (for $$p\nmid d$$) using a method known as controlled reduction, see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf).
 
-### Getting Started
+## Getting Started
 
 #### Installing for the first time
 
@@ -31,7 +31,6 @@ The first time you install DeRham.jl, it will take a while for Julia to download
 
 ```
 activate .
-add https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git
 instantiate
 ```
 
@@ -53,7 +52,11 @@ using Revise
 using DeRham, Oscar
 ```
 
-### Sample code
+#### Troubleshooting
+
+Please ensure that you're using the latest version of both Julia and Oscar. If the package manager gives you errors, try deleting Manifest.toml, upgrading Julia, updating the package registry, and updating Oscar. 
+
+## Sample code
 
 #### Zeta Functions and Newton polygons
 
@@ -99,3 +102,27 @@ f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
 
 DeRham.zeta_function(f,S=[n], algorithm=:varbyvar)
 ```
+
+#### Parallel Programming
+
+For cubic threefolds and cubic fourfolds, if you have the CUDA driver installed, you can run the following code to use your Nvidia GPUs:
+
+```
+p = 7
+R, (x,y,z,w,v) = GF(p)[:x,:y,:z,:w,:v]
+f = x^4 + y^4 + z^4 + w^4 + v^4
+
+DeRham.zeta_function(f, S=[n], algorithm=:varbyvar, use_gpu=true)
+```
+
+If you start Julia with `julia --threads n` or `julia --threads auto`, you can also use Julia's mutlithreading. This is most effective for quartic and quintic surfaces:
+
+```
+p = 7
+R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
+f = x^4 + y^4 + z^4 + w^4
+
+DeRham.zeta_function(f, S=[n], use_threads=true)
+```
+
+Simultaneous use of `use_gpu=true` and `use_threads=true` is not currently supported.
