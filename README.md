@@ -127,3 +127,6 @@ DeRham.zeta_function(f, S=[n], use_threads=true)
 ```
 
 Simultaneous use of `use_gpu=true` and `use_threads=true` is not currently supported.
+
+## Citing Our Work 
+You are welcome to use the code in this repository for your own research, but we ask that you please cite our paper [Newton strata realization for hypersurfaces via explicit p-adic cohomology](https://arxiv.org/abs/2602.24155) (by Ryan Batubara, Jack J Garzella, Yongyuan Huang, and Maximus Mellberg, arxiv:2602.24155 (2026)) if and when you publish your results.
