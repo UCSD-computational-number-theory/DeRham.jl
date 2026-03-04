@@ -416,6 +416,10 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
         S = collect(0:n)
     end
 
+    if length(S) > d
+        error("Length of S must be <= $d")
+    end
+
     if algorithm == :default
         if S == [n]
             algorithm = :varbyvar
