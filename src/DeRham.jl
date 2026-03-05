@@ -41,6 +41,7 @@ include("CharPolyFrob.jl")
 include("ExamplePolynomials.jl")
 
 include("ZetaFunction.jl")
+include("PrecisionInformation.jl")
 include("PointCounts.jl")
 include("LPolyUtils.jl")
 include("K3OverF3.jl")

@@ -275,72 +275,6 @@ function LPolynomial(FM, n, q, polygon, relative_precision, verbose)
 end 
 
 """
-   precision_information(f,basis)
-
-returns all the precision information
-related to f
-
-basis -- the basis of cohomology, in the format of 
-         polynomials with pole
-"""
-function precision_information(f,basis,verbose=0)
-    p = Int64(characteristic(parent(f)))
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-
-    hodge_polygon = hodgepolygon(basis, n)
-    hodge_numbers = hodge_polygon.slopelengths
-    #(0 < verbose) && print_precision_info(n,d,p)
-
-    #if verbose == -1 
-    #if (n == 3) && (p == 3) && (d == 4)
-    #   return (hodge_polygon, [1, 2, 2], [4, 4, 3], 6)
-    #end 
-
-    k = sum(hodge_numbers) # dimension of H^n
-    (0 < verbose) && println("There are $k basis total elements in H^$n to be reduced")
-
-    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
-    #r_m = relative_precision(k, p)
-    #N_m = series_precision(r_m, p, n) # series precision 
-    #M = algorithm_precision(r_m, N_m, p)
-    N_m = series_precision(p,n,d,r_m)
-    N_m[N_m .== 0] .= 1 #TODO: understand the meaning of zero precision better
-    M = algorithm_precision(p,n,d,r_m,N_m)
-
-    (hodge_polygon,r_m,N_m,M)
-end
-
-"""
-    precision_information(f)
-
-returns the precision information for a polynomial f
-
-"""
-function precision_information(f)
-    n = nvars(parent(f)) - 1
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-
-    params = default_params()
-
-    d = total_degree(f)
-    S = collect(0:n) #collect(0:d-1)
-    cache = controlled_reduction_cache(n,d,S,params)
-    # the term order doesn't matter, we will discard this
-    # basis
-    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
-    Basis = []
-    for i in 1:n
-        for j in basis[i]
-            push!(Basis,[j,i])
-        end
-    end
-
-    precision_information(f,Basis)
-end
-
-"""
     print_precision_info(n,d,p)
 
 Calcuates how much precision would be needed to compute
@@ -354,7 +288,7 @@ function print_precision_info(n,d,p)
     # about is the hodge polygon
     fermat_hypersurface = sum(vars .^ d)
 
-    (hp, rel, ser, alg) =  precision_information(fermat_hypersurface)
+    (hp, rel, ser, alg) = calculate_precision_information(fermat_hypersurface)
 
     println("Hodge Numbers: $(hp.slopelengths)")
     println("Relative precision: $rel")
@@ -369,7 +303,7 @@ function pregen_precision_info(n,d,p)
     # about is the hodge polygon
     fermat_hypersurface = sum(vars .^ d)
 
-    (hp, rel, ser, alg) =  precision_information(fermat_hypersurface)
+    (hp, rel, ser, alg) = calculate_precision_information(fermat_hypersurface)
 
     return alg
 end 
@@ -404,7 +338,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing, precision_info=nothing)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -469,7 +403,11 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
-    (hodge_polygon, r_m, N_m, M) = precision_information(f,Basis,verbose)
+    if precision_info === nothing
+        (hodge_polygon, r_m, N_m, M) = calculate_precision_information(f, Basis, verbose)
+    else
+        (hodge_polygon, r_m, N_m, M) = precision_info
+    end
 
     (1 < verbose) && println("N_m=$N_m")
 
