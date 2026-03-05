@@ -32,18 +32,7 @@ end
 returns the precision information for a polynomial f
 """
 function calculate_precision_information(f)
-    n = nvars(parent(f)) - 1
-    params = default_params()
-    d = total_degree(f)
-    S = collect(0:n)
-    cache = controlled_reduction_cache(n, d, S, params)
-    basis = compute_monomial_bases(f, params, cache)
-    Basis = []
-    for i in 1:n
-        for j in basis[i]
-            push!(Basis, [j, i])
-        end
-    end
+    Basis = get_basis_of_cohomology(f)
 
     calculate_precision_information(f, Basis)
 end
@@ -81,16 +70,7 @@ function precision_information_user_r_m(f, r_m; basis=nothing, verbose=0)
     d = total_degree(f)
 
     if basis === nothing
-        params = default_params()
-        S = collect(0:n)
-        cache = controlled_reduction_cache(n, d, S, params)
-        basis = compute_monomial_bases(f, params, cache)
-        Basis = []
-        for i in 1:n
-            for j in basis[i]
-                push!(Basis, [j, i])
-            end
-        end
+        Basis = get_basis_of_cohomology(f)
     else
         Basis = basis
     end
@@ -151,4 +131,53 @@ function frobenius_matrix_with_precision(f, r::AbstractVector; basis=nothing, ve
         return false
     end
     return result[1]
+end
+
+function hasse_witt_matrix(f; basis=nothing, verbose=0, kwargs...)
+
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+    p = characteristic(parent(f))
+
+    if d < n
+        throw(ArgumentError("Hasse-Witt matrices are no supported for varieties of negative Kodaira dimensin (i.e. degree < number of variables"))
+    end
+
+    r_m = fill(0,n)
+    r_m[1] = 1
+
+    basis = get_basis_of_cohomology(f)
+
+    hodge_polygon = hodgepolygon(basis, n)
+    hodge_numbers = hodge_polygon.slopelengths
+    fh = hodge_numbers[1]
+
+    F = frobenius_matrix_with_precision(f, r_m, basis=basis, verbose=verbose, kwargs...)
+
+    highprec = F[end-fh+1:end,end-fh+1:end]
+
+    K = GF(p)
+
+    map_entries(K, lift.(highprec))
+end
+
+function a_number(f; basis=nothing, verbose=0, kwargs...)
+    n = nvars(parent(f)) - 1
+
+    if n != 2
+        throw(ArgumentError("a-numbers are only supported for curves so far"))
+    end
+
+    if 0 < verbose
+        println("Calculating Hasse-Witt matrix...")
+    end
+    HW = hasse_witt_matrix(f; basis=nothing, verbose=0, kwargs...)
+
+    basis = get_basis_of_cohomology(f)
+
+    hodge_polygon = hodgepolygon(basis, n)
+    hodge_numbers = hodge_polygon.slopelengths
+    g = hodge_numbers[1]
+
+    g - rank(HW)
 end
