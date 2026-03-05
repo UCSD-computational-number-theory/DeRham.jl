@@ -15,15 +15,9 @@ function is_Ssmooth(f,S)
     cache = controlled_reduction_cache(n,d,S,params)
 
     M_ZZ = compute_controlled_matrix(fLift,l,S,ZZ,PRZZ,params,cache)
-
-    #M = zeros(Float64,size(M_ZZ)...)
-    #float_entries!(M,M_ZZ)
-    #M_gpu = CuModMatrix{Float64}(M,Int(p))
-    #flag, B = GPUFiniteFieldMatrices.is_invertible_with_inverse(M_gpu)
     
     M = matrix(R,M_ZZ)
     flag, B = Oscar.is_invertible_with_inverse(M, side=:right)
-    #is_invertible(M; side=:right)
     flag
 end
 
@@ -66,14 +60,11 @@ function find_Ssmooth_model(f, M, S_target, params, changef, cache)
     vars = gens(PR)
     l = d * n - n + d - length(S_target)
 
-    #bool = true 
     f_transformed = f
-    #println(f_transformed)
     num_iter = min(2*p,100)
     f_changed = false 
     if !changef
         pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params,cache)
-            #bool = false
             
         return f_changed, f_transformed, pseudo_inverse_mat_new
     end
@@ -81,7 +72,6 @@ function find_Ssmooth_model(f, M, S_target, params, changef, cache)
     for i in 1:num_iter 
         try 
             pseudo_inverse_mat_new = pseudo_inverse_controlled_lifted(f_transformed,S_target,l,M,params,cache)
-            #bool = false
             
             return f_changed, f_transformed, pseudo_inverse_mat_new
         catch e
@@ -91,8 +81,7 @@ function find_Ssmooth_model(f, M, S_target, params, changef, cache)
             end 
             (0 < params.verbose) && println("This f is not S-smooth, changing to one that is")
             if isa(e, ArgumentError) && e.msg == "f is not smooth"
-                #throw(ArgumentError("f is not smooth"))
-                #bool = false  
+
                 return false, false, false  
             else
                 mat = rand(SLn)

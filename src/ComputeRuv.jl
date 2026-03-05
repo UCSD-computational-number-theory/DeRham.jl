@@ -52,31 +52,14 @@ function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
             mon[m] = ev1[i][m] + V[m] - Stilda[m]
         end
 
-        #gVec = zero_matrix(R,length(ev2),1)#MS2()
-        #for j in 1:length(ev2)
-        #    if ev2[j] == mon
-        #        gVec[j] = one(R)#R(1)
-        #    else
-        #        gVec[j] = zero(R)#R(0)
-        #    end
-        #end
-        #gJS = pseudoInverseMat*gVec   # writing x^v*g/x^S as \sum_{i\in S} g_i*\partial_i f + \sum_{i\notin S} g_i*x_i*\partial_if
-        #println("After LingAlg problem: $gJS")
-
-        # gVec above has a one at coordinate j, so we may do the matmul
-        # by taking the column.
-        #ind = findfirst(==(mon),ev2)
         ind = get(explookup2,mon,-1)
         if ind == -1
-            #gJS = zeros(base_ring(pseudoInverseMat),size(pseudoInverseMat,1))
             zero!(gJS)
         else
-            #gJS = pseudoInverseMat[:,ind]
             for h in 1:size(pseudoInverseMat,1)
                 gJS[h] = pseudoInverseMat[h,ind]
             end
         end
-        #println(gJS)
 
         distance = 0
         for j in 1:(n+1)

@@ -31,9 +31,7 @@ function reducepoly_akr(pol,S,f,p,picache,params)
     R = coefficient_ring(parent(f))
     result = PR()
     for term in pol
-        #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
-        #println(terms)
         for t in terms
             g = polynomial_to_vector(t[1],n+1,:invlex)
             reduced = reducechain_akr(g,t[2],f,p,picache,params)

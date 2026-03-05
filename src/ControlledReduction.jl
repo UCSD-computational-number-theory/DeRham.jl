@@ -38,49 +38,6 @@ struct ControlledReductionContext{MatrixType,VectorType}
     g_temp::VectorType
 end
 
-
-#"""
-#    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-#
-#applies reduction formula from Prop 1.15 in Costa's thesis to 
-#basis elements of Homog(dn-d), returns them as polynomials
-#will only work with vars_reversed=true
-#"""
-#function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-#    R = coefficient_ring(PR)
-#    Vars = gens(PR)
-#    n = nvars(parent(f)) - 1
-#    d = total_degree(f)
-#    SC = []
-#    B = MPolyBuildCtx(PR)
-#    push_term!(B, R(1), V)
-#    XV = finish(B)
-#    for i in 0:n
-#        if i in S
-#        else
-#            push!(SC,i)
-#        end
-#    end
-#    # get gi's using pseudoinverse
-#    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-#    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
-#    MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
-#    gJS = MS()
-#    gJS = pseudoInverseMat*transpose(gVec)
-#    gc = []
-#    for i in 1:(n+1)
-#        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
-#    end
-#    gc = reverse(gc)
-#    gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
-#    
-#    reverse!(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
-#
-#    #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-#    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
-#c
-#end
-
 """
     chooseV(I, d, S)
 Choose the direction of reduction V following Edgar's method
@@ -96,19 +53,6 @@ function chooseV(I, d, S)
 
     sum = 0
     
-    #=
-    for i in 1:n 
-        if I[i] > 0
-            v[i] = v[i] + 1
-            sum = sum + 1
-            if sum >= d 
-                break
-            end
-        end 
-    end 
-    =#
-    
-    
     for i in S 
         if I[n-i] > 0
             v[n-i] = v[n-i] + 1
@@ -119,7 +63,6 @@ function chooseV(I, d, S)
         end 
     end 
     
-
     while sum < d
         for i in 0:(n-1) 
             if I[n-i] > v[n-i]
@@ -152,7 +95,6 @@ function varbyvar_chooseV(I, d)
     return v
 end
 
-
 """
     skim_chooseV(I, d)
 
@@ -166,23 +108,9 @@ INPUTS:
 function skim_chooseV(I, d)
     V = zeros(Int,length(I))
     i = 0
-    #s = 1
     s = length(I)
     foundNonZero = false
     while i < d
-        #=
-        if s > length(I) && foundNonZero == false
-            return V
-        elseif s > length(I)
-            s = 1
-            foundNonZero = false
-        end
-        if (I - V)[s] > 0
-            V[s] = V[s] + 1
-            i = i + 1
-            foundNonZero = true
-        end
-        =#
         #FIXME reversed to match Costa's
         if s == 0 && foundNonZero == false
             return V
@@ -195,7 +123,6 @@ function skim_chooseV(I, d)
             i = i + 1
             foundNonZero = true
         end
-        #s = s + 1
         s = s-1
     end
     return V
@@ -216,24 +143,6 @@ function rev_chooseV(I, d, S)
     V = chooseV(I,d,S)
 
     reverse!(I)
-    # V = zeros(Int,length(I))
-    # i = 0
-    # s = 1
-    # foundNonZero = false
-    # while i < d
-    #     if s > length(I) && foundNonZero == false
-    #         return V
-    #     elseif s > length(I)
-    #         s = 1
-    #         foundNonZero = false
-    #     end
-    #     if (I - V)[s] > 0
-    #         V[s] = V[s] + 1
-    #         i = i + 1
-    #         foundNonZero = true
-    #     end
-    #     s = s + 1
-    # end
 
     reverse!(V)
 
@@ -355,47 +264,22 @@ function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
         Stilda[j+1] = 1
     end
 
-    #ss = zeros(Int,n+1)
-    #ss[S .+ 1] .= 1
-    #o = ones(Int,length(exponent_vector(i[1],1)))
-    # if vars_reversed
-    #     U = reverse(exponent_vector(i[1],1) + Stilda)
-    # else
-        U = exponent_vector(i[1],1) + Stilda
-    # end
+    U = exponent_vector(i[1],1) + Stilda
     
     gCoeff = coeff(i[1],1)
 
-    # if vars_reversed 
-    #     g_exps = U - rev_tweak(U, n*d-n)  
-    # else
-        g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
-    # end 
-    ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
-    # this is UInt instead of R to get Oscar to use the fast FLINT method
-    #g = zeros(R,length(ev)) 
+    g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
+    
+    ev = cache[n*d-n]
+    
     my_zero!(g)
 
     for j in axes(g,1)
-        # if vars_reversed && !cache.vars_reversed
-        #     if g_exps == reverse(ev[j])
-        #         CUDA.@allowscalar g[j] = lift(gCoeff)
-        #         break
-        #     end 
-        # elseif vars_reversed && cache.vars_reversed
-        #     if g_exps == ev[j]
-        #         CUDA.@allowscalar g[j] = lift(gCoeff)
-        #         break
-        #     end
-        # else
-            if g_exps == ev[j]
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end
-        # end 
+        if g_exps == ev[j]
+            CUDA.@allowscalar g[j] = lift(gCoeff)
+            break
+        end 
     end
-
-    #println(U,Int.(g))
 
     return (U,g)
 end
@@ -441,7 +325,6 @@ function remove_duplicates_gpu!(costadata_arr)
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
                 my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                # costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -480,23 +363,7 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
     cpu_g = Array(g_vec)
     CUDA.@allowscalar g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
-    #=
-    (5 < params.verbose) && begin
-        if params.fastevaluation && !params.use_gpu
-            println("$(Int.(g_vec)) --> $g")
-        else
-            println("$(g_vec) --> $g")
-        end
-    end
-    =#
-
-    # no need to do rev_tweak since reducechain_costachunks returns the "true" u
-    # on the last run
-    # if params.vars_reversed
-    #     return [prod(vars .^ reverse(u)) * g, n]
-    # else
-        return [prod(vars .^ u) * g, n]
-    # end
+    return [prod(vars .^ u) * g, n]
 end
 
 
@@ -536,50 +403,12 @@ function KaratsubaMat(A::zzModMatrix,A_temp=nothing)
     N1 = Int(p)^Int(round(d/2))
     N2 = Int(p)^Int(d - round(d/2))
 
-    # if A_temp == nothing
-    #     A_temp = zeros(Float64, size(A)...)
-    # end
-
-    # res = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,size(A)...,N1,N2,N1*N2,true)
-
-    # @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
-    # copyto!(res.data2, A_temp)
-
-    # @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
-    # copyto!(res.data1, A_temp)
-
     GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
-    # res
 end
 
 function Karatsuba_copyto!(A_gpu::KaratsubaMatrix,A::Matrix{Float64},A_temp=nothing)
-    # m = modulus(base_ring(parent(A)))
-    # temp = collect(factor(m))[1]
-    # d = temp[2]
-    # p = temp[1]
-
-    # N1 = Int(p)^Int(round(d/2))
-    # N2 = Int(p)^Int(d - round(d/2))
-
-    # if A_temp == nothing
-    #     A_temp = zeros(Float64, size(A)...)
-    # end
-
-    # @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
-    # copyto!(A_gpu.data2, A_temp)
-
-    # @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
-    # copyto!(A_gpu.data1, A_temp)
-
-    # cheating by allocating
-    # cheater_array = GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,
-                                                           # ,N1,N2,N1*N2)
+    
     temp = CuModMatrix(A,A_gpu.N1*A_gpu.N2,elem_type=Float64)
-    # copyto!(A_gpu.data2.data, cheater_array.data2.data)
-    # copyto!(A_gpu.data1.data, cheater_array.data1.data)
-
-    # copyto!(A_gpu.data2.data, A)
-    # copyto!(A_gpu.data1.data, A_gpu.data2.data)
 
     GPUFiniteFieldMatrices.divide_elements!(A_gpu.data2,temp,A_gpu.N1)
     GPUFiniteFieldMatrices.mod_elements!(A_gpu.data2,A_gpu.N2)
@@ -611,7 +440,6 @@ function default_context(matspace,Ruv,params)
     B = base_ring(matspace)
     m = modulus(B)
     if params.use_gpu == true && (ZZ(2)^25 < m < ZZ(2)^106)
-    #if params.use_gpu == true && (m < ZZ(2)^106)
         println("using karatsuba")
         temp = collect(factor(m))[1]
         d = temp[2]
@@ -679,7 +507,6 @@ function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=
     Ruv = pregen_select_Ruv_PEP(n,d,S,params,matspace)
 
     if params.use_gpu == true && (ZZ(2)^25 < M < ZZ(2)^106)
-    #if use_gpu == true && (m < ZZ(2)^106)
         println("using karatsuba")
 
         N1 = Int(p)^Int(round(m/2))
@@ -777,16 +604,6 @@ in verbose mode.
 function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
-
-    # if (3 < params.verbose) && (ZZ(2)^25 < m < ZZ(2)^106)
-    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); KaratsubaMat.(compute(V)) end
-    # elseif (3 < params.verbose)
-    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
-    # elseif (ZZ(2)^25 < m < ZZ(2)^106)
-    #     compute_gpu = V -> KaratsubaMat.(compute(V))
-    # else
-    #     compute_gpu = V -> cuMod.(compute(V))
-    # end 
     
     compute_float = V -> float_entries.(compute(V))
 
@@ -936,7 +753,6 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     elseif params.use_gpu && lazy && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
         compute_gpu_karatsuba = V -> @. KaratsubaMat(float_entries(compute(V)))
         Ruv = LazyPEP{KaratsubaMatrix{Float64}}(compute_gpu_karatsuba)
 
@@ -944,7 +760,6 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
 
     elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && (m < ZZ(2)^106)
     compute_gpu_karatsuba = V -> @. KaratsubaMat(float_entries(compute(V)))
         Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
@@ -964,15 +779,6 @@ end
 function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
-    #=
-    if (ZZ(2)^25 < m < ZZ(2)^106)
-        compute_gpu = V -> KaratsubaMat.(compute(V))
-    else
-        compute_gpu = V -> cuMod.(compute(V))
-    end 
-    
-    compute_float = V -> float_entries.(compute(V))
-    =#
 
     if 3 < n && d == 3 && S == [n] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
 
@@ -1033,8 +839,6 @@ function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     
     elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
-        #compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
         Ruv = PregenLazyPEP{KaratsubaMatrix{Float64}}(nothing)
     elseif params.use_gpu 
         Ruv = PregenLazyPEP{CuModMatrix{Float64}}(nothing)
@@ -1055,7 +859,6 @@ function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache,context)
     elseif params.algorithm == :akr
         reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else
-        #throw(ArgumentError("Unsupported Algorithm: $algorithm"))
         println(params.algorithm)
         throw(ArgumentError("Unsupported Algorithm: "))
     end
