@@ -307,6 +307,42 @@ function pregen_precision_info(n,d,p)
 
     return alg
 end 
+
+function get_basis_of_cohomology_twoflavors(f,S,params,cache)
+    n = nvars(parent(f)) - 1
+
+    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
+
+    if basis == nothing
+        (0 < verbose) && println("Cannont compute monomial basis, this f appears to be non-smooth")
+        return false
+    end
+
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
+
+    (basis,Basis)
+end
+
+function get_basis_of_cohomology(f,S,params,cache)
+    get_basis_of_cohomology_twoflavors(f,S,params,cache)[2]
+end
+
+function get_basis_of_cohomology(f)
+    n = nvars(parent(f)) - 1
+    d = total_degree(f)
+
+    params = default_params()
+    S = collect(0:n)
+    cache = controlled_reduction_cache(n, d, S, params)
+
+    get_basis_of_cohomology(f,S,params,cache)
+end
+
 """
     zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
 
@@ -388,17 +424,7 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
     (0 < verbose) && println("p = $p")
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
-    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
-    if basis == nothing
-        (0 < verbose) && println("Cannont compute monomial basis, this f appears to be non-smooth")
-        return false
-    end
-    Basis = []
-    for i in 1:n
-        for j in basis[i]
-            push!(Basis,[j,i])
-        end
-    end
+    (basis, Basis) = get_basis_of_cohomology_twoflavors(f,S,params,cache)
     
     #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
@@ -447,7 +473,6 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
             GC.gc()
         end
     end
-
 
     if (f == false)
         (0 < verbose) && println("f is not smooth (or not S-smooth) and we're done. ")
@@ -623,6 +648,7 @@ function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:default, 
 
     return newton_polygon(p, zf)
 end 
+
 
 
 
