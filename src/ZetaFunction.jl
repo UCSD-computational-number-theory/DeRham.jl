@@ -279,7 +279,7 @@ function pregen_precision_info(n,d,p)
     return alg
 end 
 """
-    zeta_function(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
+    zeta_coefficients(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
 
 
 Wrapper function that outputs the zeta function of
@@ -309,7 +309,7 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
@@ -491,26 +491,26 @@ function zeta_function(f; S=[-1], verbose=0, changef=true, givefrobmat=false, al
 end
 
 """
-a wrapper to zeta_function
+a wrapper to zeta_coefficients
 
 INPUTS: 
 * "f" -- Oscar polynomial (should be homogeneous) over the integers
 * "p" -- a prime number, integer 
 
 """
-function zeta_function(f, p; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_coefficients(f, p; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
     @assert is_prime(p) "p must be prime"
     PR = parent(f)
     PRmodp, hom = change_base_ring(GF(p), PR)
 
-    return zeta_function(hom(f);S=S, verbose=verbose, changef=changef, givefrobmat=givefrobmat, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu, use_threads=use_threads, context=context)
+    return zeta_coefficients(hom(f);S=S, verbose=verbose, changef=changef, givefrobmat=givefrobmat, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu, use_threads=use_threads, context=context)
 end 
 
 function newton_polygon(f; S=[-1], verbose=0, changef=true, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
-    zf = zeta_function(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
+    zf = zeta_coefficients(f; S=S, verbose=verbose, changef=changef, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu)
     
     if zf == false # f isn't smooth
         return false

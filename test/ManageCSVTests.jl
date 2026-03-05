@@ -28,7 +28,7 @@ function savetest(n,p,f,zeta,filename)
 
     if !isfile(filepath)
         open(filepath,"a") do file
-            write(file,"n;p;f;zeta_function\n")
+            write(file,"n;p;f;zeta_coefficients\n")
         end
     end
 
@@ -38,49 +38,49 @@ function savetest(n,p,f,zeta,filename)
 end
 
 """
-    runcsvtest(filename; zeta_function=nothing)
+    runcsvtest(filename; zeta_coefficients=nothing)
 
 Runs all the tests in the file test/variables/[filename]
 
 optionally, you may specify a particular zeta function function
-by using the optional zeta_function argument.
+by using the optional zeta_coefficients argument.
 
 Examples:
 
 runcsvtest("ellipticcurves.csv")
 
-zf = f -> DeRham.zeta_function(f,fastevaluation=true)
-runcsvtest("ellipticcurves.csv"; zeta_function=zf)
+zf = f -> DeRham.zeta_coefficients(f,fastevaluation=true)
+runcsvtest("ellipticcurves.csv"; zeta_coefficients=zf)
 """
-function runcsvtest(filename; zeta_function=nothing)
+function runcsvtest(filename; zeta_coefficients=nothing)
 
     filepath = test_filepath(filename)
     
     tests = CSV.read(filepath,DataFrame,delim=";")
 
-    if zeta_function == nothing
-        zeta_function = DeRham.zeta_function
+    if zeta_coefficients == nothing
+        zeta_coefficients = DeRham.zeta_coefficients
     end
 
     for test in eachrow(tests)
-        testzetafunction(test.n,test.p,test.f,test.zeta_function,zeta_function)
+        testzetafunction(test.n,test.p,test.f,test.zeta_coefficients,zeta_coefficients)
     end
 
 end
 
-function teststring(ts, zeta_function=nothing)
-    if zeta_function == nothing
-        zeta_function = DeRham.zeta_function
+function teststring(ts, zeta_coefficients=nothing)
+    if zeta_coefficients == nothing
+        zeta_coefficients = DeRham.zeta_coefficients
     end
 
     testparts = split(ts,(";"))
 
     n = Meta.parse(testparts[1])
     p = Meta.parse(testparts[2])
-    testzetafunction(n,p,testparts[3],testparts[4],zeta_function)
+    testzetafunction(n,p,testparts[3],testparts[4],zeta_coefficients)
 end
 
-function testzetafunction(n,p,fstring,correctzeta,zeta_function)
+function testzetafunction(n,p,fstring,correctzeta,zeta_coefficients)
     varstring = prod(["x$i," for i in 1:n])[1:end-1]
 
     # this isn't secure!
@@ -96,7 +96,7 @@ function testzetafunction(n,p,fstring,correctzeta,zeta_function)
 
     println("Testing: p=$(p), $n variables, f = $f")
     println()
-    zeta_evaluated = zeta_function(f)
+    zeta_evaluated = zeta_coefficients(f)
     println()
     @test zeta_result == zeta_evaluated
 end
