@@ -3,6 +3,14 @@
     computeT(f,Basis,M,params)
 
 Computes the "T matrix" as in the notation in Costa's thesis.
+
+fields
+------
+f - polynomial
+Basis - output of compute_monomial_bases
+M - algorithm precision
+params - the ControlledReductionParamaters
+cache - the GradedExpCache used for this controlled reduction
 """
 function computeT(f, Basis, M, params, cache)
     p = characteristic(parent(f))

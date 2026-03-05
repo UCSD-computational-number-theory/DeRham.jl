@@ -33,6 +33,9 @@ INPUTS:
 * "m" -- integer, pole order of the basis element 
 * "R" -- ring, precision ring 
 * "PR" -- ring, polynomial ring with coefficients in R 
+* "termorder" -- the term ordering that should be used in vector representations
+* "vars_reversed" -- reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_reversed; verbose=false)
     (9 < verbose) && println("Applying Frobenius to $beta with pole order $m")
@@ -79,6 +82,7 @@ INPUTS:
 * "f" -- polynomial which is the denominator of poles (lifted version)
 * "N_m" -- series precision
 * "p" -- the prime
+* "params" - the ControlledReductionParamaters
 """
 function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     termorder = params.termorder

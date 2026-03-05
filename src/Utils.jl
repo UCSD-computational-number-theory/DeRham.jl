@@ -176,9 +176,12 @@ function gen_exp_vec(n, d, order::Symbol=:lex; vars_reversed=false)
 end
 
 """
-FIXME/DOCUMENTME: exp_vec seems to be a 2d array here?
+    gen_mon
 
-It will also work if exp_vec is an array of arrays.
+fields
+------
+exp_vecs - output of gen_mon
+PR - polynomial ring
 """
 function gen_mon(exp_vecs, PR)
     result = zeros(PR,length(exp_vecs))
@@ -192,8 +195,20 @@ function gen_mon(exp_vecs, PR)
 end
 
 """
+    compute_monomials
+
 Computes the monomials in n variables, of degree d, in the
 variable order order, as Oscar polynonmials.
+
+fields
+------
+n - int
+d - int
+PR - polynomial ring
+order - the term ordering that should be used in vector representations
+cache - the GradedExpCache used for this controlled reduction
+vars_reversed - reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function compute_monomials(n,d,PR,order=:lex,cache=nothing; vars_reversed=false)
     if n < 0 || d < 0
@@ -221,11 +236,13 @@ end
 Convert (homogeneous) polynomial to vector form with specified order. Default is lexicographic.
 Update v with this vector. Assumes v has the correct length.
 
+v - vector
 f - an oscar polynomial
 n - the number of variables (minus 1???)
 order - a symbol which denotes the term order
 cache - a GradedExpCache which gives us the variables
-vars_reversed - should we reverse the variables?
+vars_reversed - reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function polynomial_to_vector!(v, f, n, order=:lex,cache=nothing; vars_reversed=false)
 
@@ -307,6 +324,8 @@ n - number of variables-1
 d - homogeneous degree
 PR - polynomial ring to be the parent of the return value
 order - a symbol which denotes the term order
+vars_reversed - reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function vector_to_polynomial(vect, n, d, PR, order=:lex, vars_reversed=false)
     

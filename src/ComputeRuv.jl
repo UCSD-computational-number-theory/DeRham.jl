@@ -2,6 +2,15 @@
 """
     computeRuvS
 Returns a list of n+2 matrices for the Ruv map as in Proposition 1.15
+
+fields
+------
+V - vector of ints, the direction of reduction
+S - vector of ints
+f - polynomial
+pseudoInverseMat - output of pseudo_inverse_controlled_lifted
+cache - the GradedExpCache used for this controlled reduction
+params - the ControlledReductionParamaters
 """
 function computeRuvS(V,S,f,pseudoInverseMat,cache,params)
     vars_reversed = params.vars_reversed

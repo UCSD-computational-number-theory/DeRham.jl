@@ -1,12 +1,29 @@
 
 """
-    reducechain_costachunks(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
+    reducechain_pchunks(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
 
 takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
 
 
 if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
 (i.e. entries will be multiplies of p in Costa's format)
+
+fields
+------
+u -  vector of ints
+g - vector
+m - pole order
+S - vector of ints
+f - polynomial
+pseudoInverseMat - output of pseudo_inverse_controlled_lifted
+p - prime number
+Ruv - output of computeRuvS
+cache - the GradedExpCache used for this controlled reduction
+A - matrix
+B - matrix
+temp - preallocated storage matrix
+g_temp - preallocated storage vector
+params - the ControlledReductionParamaters
 """
 function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
     verbose = params.verbose
@@ -102,10 +119,24 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
 end
 
 """
-    reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
+    reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
 
 Implements Costa's algorithm for controlled reduction,
 sweeping down the terms of the series expansion by the pole order.
+
+fields
+------
+pol - polynomial
+S - vector of ints
+f - polynomial
+pseudoInverseMat - output of pseudo_inverse_controlled_lifted
+p - prime number
+Ruv - output of computeRuvS
+cache - the GradedExpCache used for this controlled reduction
+A - matrix
+B - matrix
+temp - preallocated storage matrix
+params - the ControlledReductionParamaters
 """
 function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
     n = nvars(parent(f)) - 1
@@ -144,11 +175,20 @@ function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
 end
 
 """
-    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
+    reducetransform_pchunk(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 
 trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
 
+fields
+------
+FT - applyFrobeniusToBasis
 N_m - the precision
+S - vector of ints
+f - polynomial
+pseudoInverseMat - output of pseudo_inverse_controlled_lifted
+p - prime number
+cache - the GradedExpCache used for this controlled reduction
+params - the ControlledReductionParamaters
 """
 function reducetransform_pchunk(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
 

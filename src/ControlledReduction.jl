@@ -136,6 +136,7 @@ choose direction of reduction in the same way as Costa's code
 INPUTS: 
 * "I" -- list/tuple, exponents of monomials
 * "d" -- integer, degree of f 
+* "S" -- Vector of ints
 """
 function rev_chooseV(I, d, S)
     reverse!(I)
@@ -222,6 +223,9 @@ multiples of p such that tweak(J, |J-I|) = I
 
 We're assuming that |J-I| < p here.
 
+INPUTS
+* "I" -- vector of nonnegative integers 
+* "p" -- prime number
 """
 function undo_rev_tweak(I,p)
 
@@ -251,6 +255,17 @@ h = x^{rev_tweak(U)}g
 
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
+
+fields
+------
+term - monomial
+g - vector
+n - # of vars - 1
+d - deg of f
+p - prime number
+S - vector
+cache - the GradedExpCache used for this controlled reduction
+params - the ControlledReductionParamaters
 """
 function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
     termorder = params.termorder
@@ -285,6 +300,8 @@ function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
 end
 
 """
+    incorporate_initial_term
+
 Takes an array of Costa's data tuples, and a new term
 to be added. If the new term already exists, it is 
 added, if not then it concatenates.
@@ -298,6 +315,10 @@ Perhaps this also would be well suited by a custom struct?
 ^^ such concerns have speed implications, so better to wait
 until we're really trying to optimize this.
 
+fields
+------
+costadata_arr - vector of costadata
+costadata - output of costadata_of_initial_term
 """
 function incorporate_initial_term!(costadata_arr,costadata)
     ind_already = false
@@ -352,10 +373,21 @@ end
 
 
 """
+    poly_of_end_costadata
+
 Converts a Costa's data tuple to a polynomial with pole
 after reduction.
 
 Thus, the pole order is n.
+
+fields
+------
+costadata - tuple of two vectors
+PR - polynomial ring
+p - prime number
+d - degree of f
+n - # of vars of f
+params - the ControlledReductionParamaters
 """
 function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
@@ -368,11 +400,22 @@ end
 
 
 """
+    poly_of_end_costadatas
+
 Converts an array of Costa's data tuples to an array of polynomials with pole
 after reduction.
 
 Thus, the pole order is always n.
 
+fields
+------
+costadata - tuple of two vectors
+PR - polynomial ring
+p - prime number
+d - degree of f
+n - # of vars of f - 1
+S - vector of ints
+params - the ControlledReductionParamaters
 """
 function poly_of_end_costadatas(costadatas,PR,p,d,n,S,params)
     res = PR(0)
@@ -493,8 +536,24 @@ function default_context(matspace,Ruv,params)
 end
 
 """
-pregen_default_context
+    pregen_default_context
 Note that n is (number of variables - 1) in this case
+
+fields
+------
+n - # of vars of f - 1
+d - degree of f
+p - prime number
+S - vector of ints
+
+KEYWORD ARGUMENTS:
+givefrobmat -- should the funciton also output the appoximated frobenius matrix
+algorithm -- the algorithm used for controlled reduction
+termorder -- the term ordering that should be used in vector representations
+fastevaluation -- should the algorithm use fast evaluation?
+>>>if you don't know what this is, ignore it.
+vars_reversed -- reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false,lazy=false)
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)

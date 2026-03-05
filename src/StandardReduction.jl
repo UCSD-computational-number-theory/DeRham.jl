@@ -8,7 +8,8 @@ INPUTS:
 * "f" -- polynomial
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
-* "termorder" -- the monomial ordering of vectors
+* "params" -- the ControlledReductionParamaters
+* "cache" -- the GradedExpCache used for this controlled reduction
 """
 function monomial_change_basis(f, l, basis, params, cache)
        #println(basis)
@@ -52,7 +53,8 @@ INPUTS:
 * "f" -- polynomial
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
-* "termorder" -- the monomial ordering of vectors
+* "params" -- the ControlledReductionParamaters
+* "cache" -- the GradedExpCache used for this controlled reduction
 """
 function monomial_change_basis_inverse(f,l,basis,params,cache)    
        PR = parent(f)
@@ -77,7 +79,8 @@ INPUTS:
 * "l" -- integer, degree of homogeneous polynomials in question
 * "basis" -- list, basis elements in the cohomology basis, assumed to be monomials of degree l 
 * "M" -- integer, desired mod p^M precision
-* "termorder" -- the monomial ordering of vectors
+* "params" -- the ControlledReductionParamaters
+* "cache" -- the GradedExpCache used for this controlled reduction
 """
 function monomial_change_basis_inverse_lifted(f, l, basis, M, params, cache)
     PR = parent(f)
