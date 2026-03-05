@@ -45,7 +45,7 @@ function test_fermat_cubic_naive()
 
     n = 2
     d = 3
-    zeta = DeRham.zeta_function(f)
+    zeta = DeRham.zeta_coefficients(f)
     println(zeta)
     pc = DeRham.pointcount(n,d,zeta,p,p)
     #pc2 = DeRham.pointcount(n,d,zeta[2],p,p)

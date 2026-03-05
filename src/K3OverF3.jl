@@ -1,5 +1,5 @@
 # wrapper function to compute zeta functions for quartic K3 surfaces over F_3s ONLY 
-function zeta_function_k3f3(f; S=[-1],verbose=false, precise=true, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
+function zeta_coefficients_k3f3(f; S=[-1],verbose=false, precise=true, changef=true, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true, fastevaluation=false, always_use_bigints=false, use_gpu=false)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(3)
