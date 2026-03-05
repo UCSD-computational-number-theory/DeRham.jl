@@ -77,6 +77,15 @@ the matrix for the map
  where mu_i for 0<= i < |S| are of degree l - (d - 1) and mu_i for
  |S| <= i <= n are of degree l - d.
 
+ fields
+ ------
+ f - polynomial
+ l - int
+ S - vector of ints
+ R - ring
+ PR - polynomial ring
+ params - the ControlledReductionParamaters
+ cache - the GradedExpCache used for this controlled reduction
 """
 function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     n = nvars(parent(f)) - 1
@@ -257,7 +266,9 @@ termorder - the order of the monomials used for vectors
 
 I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
-PR- paren(f)
+PR- parent(f)
+params - the ControlledReductionParamaters
+cache - the GradedExpCache used for this controlled reduction
 """
 function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     n = nvars(parent(f)) - 1
@@ -310,8 +321,8 @@ f - the polynomial definitng the hypersurface
 S - the set in [0..n] to be used for the linear algebra problem
 l - ???? we need to document this, it's something used by compute_contolled_matrix
 M - the absolute precision to lift to.
-params - 
-cache - 
+params - the ControlledReductionParamaters
+cache - the GradedExpCache used for this controlled reduction
 """
 function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     PR = parent(f)

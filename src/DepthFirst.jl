@@ -1,8 +1,22 @@
 
 # what in here could possibly be causing a lock conflict?
 """
+    reducechain_depthfirst
+
 Iteratively execute reduction chunks in the navie strategy until
 the vector g is reduced to pole order n
+
+fields
+------
+u -  vector of ints
+g - vector
+m - pole order
+S - vector of ints
+f - polynomial
+p - prime number
+context - ControlledReductionContext
+cache - the GradedExpCache used for this controlled reduction
+params - the ControlledReductionParamaters
 """
 function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
     n = nvars(parent(f)) - 1

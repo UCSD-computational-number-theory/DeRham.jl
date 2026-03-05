@@ -14,6 +14,8 @@ end
 default_params() = ZetaFunctionParams(0,false,:default,:invlex,false,true,false,false,false)
 
 """
+    controlled_reduction_cache
+
 Give the minimal PolyExpCache needed for controlled reduction
 as in Prop 1.15 of Costa's thesis.
 
@@ -35,6 +37,12 @@ REVERSE:
 d
 n*d - n
 
+fields
+------
+n - int
+d - int
+S - vector of ints
+params - the ControlledReductionParamaters
 """
 function controlled_reduction_cache(n,d,S,params)
     degsforward = [d*n - n,
@@ -65,7 +73,7 @@ function controlled_reduction_cache(n,d,S,params)
 end
 
 """
-    compute_
+    reduce_order_n_to_basis
 
 Takes a polynomial with pole of order n, and converts
 it to a vector in terms of the basis of cohomology

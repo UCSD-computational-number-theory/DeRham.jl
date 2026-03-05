@@ -48,6 +48,9 @@ Inputs:
 * "f" -- Oscar polynomial (should be homogeneous)
 * "M" -- integer, algorithm precision 
 * "S_target" -- list, target S-smoothness 
+* "params" -- the ControlledReductionParamaters
+* "changef" -- bool
+* "cache" -- the GradedExpCache used for this controlled reduction
 """
 function find_Ssmooth_model(f, M, S_target, params, changef, cache)
     p = Int64(characteristic(parent(f)))
