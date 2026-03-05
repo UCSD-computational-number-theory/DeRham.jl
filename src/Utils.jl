@@ -239,7 +239,6 @@ function polynomial_to_vector!(v, f, n, order=:lex,cache=nothing; vars_reversed=
 
     if cache != nothing
         mon_vec = cache[d]
-        #println(cache[d])
     else
         mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
     end
@@ -280,7 +279,6 @@ function polynomial_to_vector(f, n, order=:lex,cache=nothing; vars_reversed=fals
 
     if cache != nothing
         mon_vec = cache[d]
-        #println(cache[d])
     else
         mon_vec = gen_exp_vec(n,d,order,vars_reversed=vars_reversed)
     end
@@ -317,7 +315,6 @@ function vector_to_polynomial(vect, n, d, PR, order=:lex, vars_reversed=false)
     exp_vecs = gen_exp_vec(n+1,d,order)
     @assert length(vect) == length(exp_vecs) "vector has incorrect length for the specified degree"
     for i in eachindex(vect)
-        #res += PR(vect[i]) * mon[i]
         v = vect[i]
         if v isa AbstractFloat
             v = Integer(vect[i])
@@ -366,17 +363,6 @@ function convert_p_to_m(polys, expvecs; vars_reversed=false)
         end
     end
     return result
-    #=
-    result = []
-    for i in axes(polys,1)
-        temp = []
-        for j in axes(expvec,1)
-            push!(temp, coeff(polys[i], expvec[j]))
-        end
-        push!(result, transpose(temp))
-    end
-    vcat(result...)
-    =#
 end
 
 # Converts Matrix of coefficents to vector of polynomials, each row is one polynomial
@@ -692,6 +678,3 @@ function inverseperm(P)
     end
     return S
 end
-
-
-#end

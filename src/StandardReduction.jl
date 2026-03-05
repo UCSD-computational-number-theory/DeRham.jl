@@ -1,13 +1,3 @@
-#module StandardReduction
-
-#using Oscar
-#using BitIntegers
-#using LinearAlgebra
-
-#include("PrecisionEstimate.jl")
-#include("CopiedFindMonomialBasis.jl")
-#include("Utils.jl")
-#include("CopiedFindMonomialBasis.jl")
 
 """
        monomial_change_basis(f, l, basis)

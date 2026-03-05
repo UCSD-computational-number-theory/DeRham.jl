@@ -325,10 +325,6 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     else
         Sol_mod_p_int = lift_to_int(Sol_fp)
     end
-    #U_int = lift_to_int64(U)
-
-    #println("Solution mod p: $Sol_fp")
-    #println("U lifted: $U_int")
 
     p = characteristic(PR)
     GC.gc()
@@ -343,12 +339,3 @@ end
 ## Computes the pseudo_inverse for the classical case.
 ##TODO: update this to reflex changes to pseudo_inverse_controlled
 ##it's used in standard reduction, I'll plan to take care of it then
-#function pseudo_inverse_classical(f, R, PR)
-#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-#end
-#
-#function pseudo_inverse_classicalm(f, m, R, PR)
-#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-#end
-
-#end

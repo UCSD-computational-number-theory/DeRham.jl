@@ -14,16 +14,6 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     tempv = copy(J)
 
     (4 < params.verbose) && println("Starting: J = $J")
-    #=
-    (5 < params.verbose) && begin
-        CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
-        if params.always_use_bigints || params.use_gpu
-            println("Starting: g = $((gMat)) = $g_poly")
-        else    
-            println("Starting: g = $(Int.(gMat)) = $g_poly")
-        end
-    end
-    =#
 
     l = 1
     for i in eachindex(J)
@@ -42,14 +32,6 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
-            # the way that chooseV works right now,
-            # the following if statement should never hit.
-            # for i in 1:length(V)
-            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-            #         print("Illegal choice of V!")
-            #         println("J = $J, S = $S")
-            #     end
-            # end
         end
 
         K = 0
@@ -92,18 +74,6 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
 
         (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
         (4 < params.verbose) && println("J = $J")
-        #=
-        if (5 < params.verbose) 
-            CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            if params.always_use_bigints || params.use_gpu
-                println("g = $((gMat)) = $g")
-            elseif params.fastevaluation
-                println("g = $(Int.(gMat)) = $g")
-            else 
-                println("g = $(gMat) = $g")
-            end
-        end
-        =#
 
     end
 
@@ -172,14 +142,6 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
     m = Integer(modulus(base_ring(MS1)))
 
-    #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-
-    #explookup = Dict{Vector{Int64}, Int64}()
-    #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    #for i in 1:length(ev1)
-    #    get!(explookup,ev1[i],i)
-    #end
-
     if (3 < params.verbose)
         computeRuv = V -> begin
             println("Computing Ruv for V = $V for the first time.")
@@ -202,7 +164,6 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
 
         if (0 < params.verbose)
             println("Creating the Ruv PEP object...")
-            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
             @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         else
             Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
@@ -225,10 +186,6 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
                 end
                 result[i] = reduction
 
-                #println("cache info: $(cache_info(Ruv.Ucomponent))")
-                #i == 5 && error("stopping after vector $i for testing purposes")
-                
-                #push!(result, reduction)
             end
         else 
 
@@ -245,10 +202,6 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
                 end
                 result[i] = reduction
 
-                #println("cache info: $(cache_info(Ruv.Ucomponent))")
-                #i == 5 && error("stopping after vector $i for testing purposes")
-                    
-                #push!(result, reduction)
             end
         end
     else
@@ -278,18 +231,9 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
                 reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
             end
             result[i] = reduction
-
-            #println("cache info: $(cache_info(Ruv.Ucomponent))")
-            #i == 5 && error("stopping after vector $i for testing purposes")
-                
-            #push!(result, reduction)
         end
     end
     
-
-    #(0 < params.verbose && Ruv isa CachePEP) && begin
-    #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
-    #end
     (0 < params.verbose) && begin
         println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
     end

@@ -11,20 +11,7 @@ function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
     R = coefficient_ring(parent(f))
     (9 < params.verbose) && println("u = $u") 
     
-
-    #if cache.vars_reversed
-    #    reverse!(u)
-    #end
-    
-    # if params.vars_reversed == true 
-    #     J = rev_tweak(u,n*d-n)
-    # else
-        J = tweak(u,n*d-n)
-    # end
-
-    #if cache.vars_reversed
-    #    reverse!(u)
-    #end
+    J = tweak(u,n*d-n)
 
     gMat = context.g
     mins = similar(J)
@@ -43,22 +30,10 @@ function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
 
 
     while m > n
-         # if params.vars_reversed == true 
-         #     V = chooseV(J, d, S)
-         # else
-             V = rev_chooseV(J,d,S)
-         # end
+        V = rev_chooseV(J,d,S)
 
         (4 < params.verbose) && print("Chose V = $V; ")
         (6 < params.verbose) && begin
-            # the way that chooseV works right now,
-            # the following if statement should never hit.
-            # for i in 1:length(V)
-            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-            #         print("Illegal choice of V!")
-            #         println("J = $J, S = $S")
-            #     end
-            # end
         end
         @. mins = J
         K = 0
@@ -82,21 +57,9 @@ function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
         end
         matrices = context.Ruvs[V]
 
-        #(5 < params.verbose && firsttime) && begin 
-        #    for i in 1:length(matrices)
-        #        println(matrices[i][:,end])
-        #    end
-        #end
         (6 < params.verbose && V == [0,0,0,3] && firsttime) && begin println(matrices[5][:,25]); firsttime=false; error() end
         
-
-        #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
         eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
-        #(5 < params.verbose && firsttime) && begin 
-        #    println("---")
-        #    println(context.A[:,end])
-        #    println(context.B[:,end])
-        #end
 
         i = 1
         if params.fastevaluation == false
@@ -107,8 +70,6 @@ function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
                 if params.verbose == 11
                     A = context.A
                     B = context.B
-                    #println("context.A is $A")
-                    #println("context.B is $B")
                     g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
                     println("gMat after $i is $gMat = $g")
                 end
@@ -142,9 +103,7 @@ function reducepoly_depthfirst(pol,S,f,p,context,cache,params)
     R = coefficient_ring(parent(f))
     result = PR()
     for term in pol
-        #println("Reducing terms of order $(term[2])")
         terms = termsoforder(pol,term[2])
-        #println(terms)
         for t in terms
             (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,cache,params)
             reduced = reducechain_depthfirst(u,context.g,t[2],S,f,p,context,cache,params)
@@ -157,7 +116,6 @@ function reducepoly_depthfirst(pol,S,f,p,context,cache,params)
     vars = gens(PR)
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(result,XS), n]]
-    #return poly_of_end_costadatas(result,PR,p,d,n,S,params)
 end
 
 function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
@@ -167,14 +125,6 @@ function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,c
 
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
     m = Integer(modulus(base_ring(MS1)))
-
-    #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-
-    #explookup = Dict{Vector{Int64}, Int64}()
-    #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    #for i in 1:length(ev1)
-    #    get!(explookup,ev1[i],i)
-    #end
 
     if (3 < params.verbose)
         computeRuv = V -> begin
@@ -198,7 +148,6 @@ function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,c
 
         if (0 < params.verbose)
             println("Creating the Ruv PEP object...")
-            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
             @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
         else
             Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
@@ -267,17 +216,9 @@ function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,c
                 reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
             end
             result[i] = reduction
-
-            #println("cache info: $(cache_info(Ruv.Ucomponent))")
-            #i == 5 && error("stopping after vector $i for testing purposes")
-            
-            #push!(result, reduction)
         end
     end
 
-    #(0 < params.verbose && Ruv isa CachePEP) && begin
-    #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
-    #end
     (0 < params.verbose) && begin
         println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
     end
