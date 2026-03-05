@@ -34,20 +34,20 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
     
 
     
-    I = u
+    #I = u
    
-    (4 < verbose) && println("Expanded I: $I")
+    (4 < verbose) && println("Expanded U: $u")
 
     gMat = g
-    J = copy(I)
+    J = copy(u)
 
     #TODO?
-    V = rev_chooseV(Array{Int}(divexact.(I,p)),d, S)
-    (4 < verbose) && println("LOOK! I=$I, V = $V")
+    V = rev_chooseV(Array{Int}(divexact.(u,p)),d, S)
+    (4 < verbose) && println("LOOK! U=$u, V = $V")
 
-    gVec = I .- tweak(I,n*d-n)
+    gVec = u .- tweak(u,n*d-n)
 
-    @. I = I - gVec
+    @. u = u - gVec
     if m - n < p
         nend = m - n
     else
@@ -61,14 +61,14 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
     #    this isn't our bottleneck. If it ever does
     #    become the bottleneck, fix the rest of this method
     #    so it doesn't allocate.
-    U = I .- (nend-(d*n-n))*V
+    mins = u .- (nend-(d*n-n))*V
 
-    B,A = eval_to_linear!(B,A,temp,matrices,U,V)
+    B,A = eval_to_linear!(B,A,temp,matrices,mins,V)
 
     i = 1
 
     
-    (4 < verbose) && println("Before reduction chunk, I is $I")
+    (4 < verbose) && println("Before reduction chunk, U is $u")
     if params.fastevaluation && 1 ≤ nend-(d*n-n)
       gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,g_temp)
       i = nend-(d*n-n) + 1
@@ -85,7 +85,7 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
     # i > 1 iff the while loop above is executed at least once 
     if i > 1 # TODO: this will have a problem with fastevaluation
         # UPDATE: I think the problem with fastevaluation is fixed... right?
-        @. I = I - (nend-(d*n-n))*V
+        @. u = u - (nend-(d*n-n))*V
     end
     (4 < verbose) && println("After steps 1-$i, I is $I")
     i = i-1
@@ -105,16 +105,16 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
         
 
         i = i+1
-        @. I = I - y
-        (4 < verbose) && println("After step $(i+1), I is $I")
+        @. u = u - y
+        (4 < verbose) && println("After step $(i+1), U is $u")
     end
     
     if nend == p
-        newI = J .- p*V
+        newu = J .- p*V
 
-        return (newI, gMat)
+        return (newu, gMat)
     else
-        return (I,gMat) # gives the "true" u
+        return (u,gMat) # gives the "true" u
     end
 end
 
@@ -149,29 +149,29 @@ function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
     highpoleorder = i[length(i)][2]
 
     # this is the omega from section 1.5.5 of Costa's thesis.
-    ω = [] # this will be an array of costa data
+    allcostadata = [] # this will be an array of costa data
 
     poleorder = highpoleorder
     while n < poleorder
         (9 < params.verbose) && println("pole order is $poleorder")
         # this is an array of polynomials
-        ωₑ = termsoforder(pol,poleorder)
+        costadatatemp = termsoforder(pol,poleorder)
 
-        for term in ωₑ
+        for term in costadatatemp
             g = zeros(UInt,g_length) 
             term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
-            incorporate_initial_term!(ω,term_costadata)
+            incorporate_initial_term!(allcostadata,term_costadata)
         end
 
-        for i in eachindex(ω)
-            g_temp = similar(ω[i][2])
-            ω[i] = reducechain_pchunk(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
+        for i in eachindex(allcostadata)
+            g_temp = similar(allcostadata[i][2])
+            allcostadata[i] = reducechain_pchunk(allcostadata[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
         end
 
         poleorder = poleorder - p
     end    
 
-    return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
+    return poly_of_end_costadatas(allcostadata,PR,p,d,n,S,params)
 end
 
 """
