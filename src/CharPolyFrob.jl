@@ -215,7 +215,7 @@ function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs, verbo
 end
 
 """
-    boat_shape_Lpoly(coeffs, q)
+    boat_shape_Lpoly(coeffs, deg, q)
 Converts the coefficients of the L-polynomial into the boat-shaped L-polynomial, via the change of variable q*P(T/q)
 """
 function boat_shape_Lpoly(coeffs, deg, q)

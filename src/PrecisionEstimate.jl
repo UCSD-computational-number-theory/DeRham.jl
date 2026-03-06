@@ -92,23 +92,15 @@ function ibm_crank_bound(p,n,M)
     bounds = ibm_derham_bound.(p,1:(nBounds*p^2),n)
 
     for m = 1:nChunks
-#        println(bounds)
-
-        # find the best bound for f(p*m)
         c = 1
         while true
             N = ibm_constant(p,m,bounds)
-            #println("N: $N")
             if N ≤ n - 1 + bounds[m]
                 if n - 1 + bounds[m] ≤ bounds[p*m] 
                     bounds[p*m] = n - 1 + bounds[m]
                 end
-                #bounds[p*m] = n - 1 + bounds[m]
-                #print("reached log bound n - 1 + f(m) = $(bounds[p*m])")
-                #println(" at for chunk $m, i.e. f($(p*m))")
                 break
             elseif bounds[p*m] ≤ N
-                #println("crank stabilized at N=$N for chunk $m, i.e. f($(p*m))")
                 if bounds[p*m] < N
                     #println("original bound is better than N!")
                 end
@@ -134,53 +126,6 @@ function ibm_crank_bound(p,n,M)
 
     bounds[1:nBounds]
 end
-
-#"""
-#This algorithm is not proven to be correct,
-#please don't use it.
-#"""
-#function ibm_crank_bound_longwise(p,n,M;MM=nothing)
-#    if MM == nothing
-#        MM = M * p^2
-#    end
-#
-#    # start with de rham bound
-#    bounds = ibm_derham_bound.(p,1:MM,n)
-#
-#    numCranks = 3
-#    
-#    for i = 1:numCranks
-#
-#        m = 1
-#        while true
-#            N = ibm_constant(p,m,bounds)
-#            if N < n - 1 + bounds[m]
-#                #bounds[p*m] = n - 1 + bounds[m]
-#                for mm = p*m:p:MM
-#                    bounds[mm] = n - 1 + bounds[divexact(mm,p)]
-#                end
-#                println("log bound takes over at m = $(m*p)")
-#                break
-#            else
-#                bounds[p*m] = N
-#            end
-#            m = m + 1
-#        end
-#
-#        # adjust bounds down
-#        for l = p:p:MM
-#            for k = l-p+1:l
-#                if bounds[p] < bounds[k]
-#                    bounds[k] = bounds[p]
-#                end
-#            end
-#        end
-#
-#    end
-#
-#    bounds
-#end
-
 
 """
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
@@ -229,20 +174,11 @@ end
 
 function calculate_series_precision(p,n,r_m)
 
-    #println("Relative precision: $r_m")
-    #if !(p < 2*(n) + maximum(r_m))
-    #    #println("Unsupported p: $p. Returning nonsense.")
-    #    #return zeros(Int,n)
-    #    N = [(r_m[m] == 0 ? 0 : n+1 + r_m[m] - (m+1)) for m in 1:n]
-    #    return N
-    #end
-
     # TODO: prove that this is correct
     #
     # We may assume in (1.8) of Costa's thesis that the worst case is i=0
 
     bounds = ibm_crank_bound(p,n,p*n)
-    #bounds = ibm_derham_bound.(p,1:p*n,n)
 
     #TODO: why does ibm_derham_bound sometimes give answers that are better than the crank?
     
@@ -252,31 +188,7 @@ function calculate_series_precision(p,n,r_m)
     N
 end
 
-
-#"""
-#    relative_precision()
-#
-#Determines the relative p-adic precision [r_m] for the basis of cohomology 
-#"""
-#function relative_precision(k, q)
-#    if k == 2 && q == 7
-#        r_m = [1,2]
-#    elseif k == 21 && q == 7
-#        r_m = [2,3,3]
-#    elseif k == 12 && q == 7
-#        r_m = [3,4]
-#    end
-#    return r_m
-#end 
-
-#function series_precision(r_m, p, n)
 function series_precision(p, n, d, r_m)
-    #if r_m == [2,3] && p == 7 && n == 2
-    #    N_m = [2,2]
-    #elseif r_m == [2,3,3] && p == 7 && n == 3
-    #    N_m = [4,4,3]
-    #end 
-    #return N_m
     N = [0,0]
 
     # begin copypasta
@@ -404,38 +316,9 @@ end
 
 Determines M such that the algorithm works in Z/p^M Z 
 """
-#function algorithm_precision(r_m, N_m, p)
 function algorithm_precision(p,n,d,r_m,N_m)
-    #if r_m == [2,3] && N_m == [2,2] && p == 7
-    #    M = 3
-    #elseif r_m == [2,3,3] && N_m == [4,4,3] && p == 7
-    #    M = 6
-    #end
-    #return M
     s_m = [i+x-1 for (i,x) in enumerate(N_m)]
     s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), ZZ(p)) for s in s_m]
 
     maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
 end 
-
-
-
-
-#=
-function compute_N(p, r, m, n)
-    num = n * log(n + r)
-    denom = (n + r) * log(p) - n
-    return ceil(Int, -m + (n + r) * (1 + num / denom))
-end
-
-function compute_precisions_each(p, r, n)
-    result = []
-    for m = 1:n
-        push!(result,compute_N(p, r, m, n))
-    end
-    return result
-end
-
-#compute_precisions_each(p, r, n)
-=#
-#end

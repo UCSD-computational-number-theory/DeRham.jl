@@ -14,7 +14,7 @@ include("Orderings.jl")
 include("Precision.jl")
 include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
-include("HasseWitt.jl")
+#include("HasseWitt.jl")
 
 # currently, this runs on all the examples that can be done with a full S
 function larger_tests(zf)
@@ -27,24 +27,24 @@ function larger_tests(zf)
     
     for (dim,deg) in fermatfiles
         filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-        runcsvtest(filename,zeta_function=zf)
+        runcsvtest(filename,zeta_coefficients=zf)
     end
 
     for (dim,deg) in randomfiles
         filename = "dim_$(dim)_deg_$(deg)_random.csv"
-        runcsvtest(filename,zeta_function=zf)
+        runcsvtest(filename,zeta_coefficients=zf)
     end
 
     for (dim,deg) in manyfiles
         filename = "dim_$(dim)_deg_$(deg)_many.csv"
-        runcsvtest(filename,zeta_function=zf)
+        runcsvtest(filename,zeta_coefficients=zf)
     end
 end
 
 function quick_test(zf)
-    runcsvtest("dim_1_deg_3_fermat.csv",zeta_function=zf)
-    runcsvtest("dim_1_deg_3_random.csv",zeta_function=zf)
-    runcsvtest("dim_1_deg_3_many.csv",zeta_function=zf)
+    runcsvtest("dim_1_deg_3_fermat.csv",zeta_coefficients=zf)
+    runcsvtest("dim_1_deg_3_random.csv",zeta_coefficients=zf)
+    runcsvtest("dim_1_deg_3_many.csv",zeta_coefficients=zf)
 end
 
 @testset "DeRham.jl" begin
@@ -63,7 +63,7 @@ end
 
    @testset "CPU Fast Evaluation + Naive Strategy" begin 
 
-       zf = f -> DeRham.zeta_function(f,algorithm=:depthfirst,fastevaluation=true,changef=false)
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:depthfirst,fastevaluation=true,changef=false)
 
        # Keep track of which files to run with (dim,degree) tuples
        fermatfiles = [(1,3), (1,4), (1,5), (1,6), (1,7), (1,8),
@@ -71,25 +71,25 @@ end
        randomfiles = [(1,3), (1,4), (1,5), (1,6), (2,4)]
        manyfiles = [(1,3),(1,4),(1,5)]
         
-       for (dim,deg) in fermatfiles
-           filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in fermatfiles
+            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in randomfiles
-           filename = "dim_$(dim)_deg_$(deg)_random.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in randomfiles
+            filename = "dim_$(dim)_deg_$(deg)_random.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in manyfiles
-           filename = "dim_$(dim)_deg_$(deg)_many.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
-   end
+        for (dim,deg) in manyfiles
+            filename = "dim_$(dim)_deg_$(deg)_many.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
+    end
 
    @testset "CPU Fast Evaluation + Naive Strategy (vars_reversed=false)" begin 
 
-       zf = f -> DeRham.zeta_function(f,algorithm=:depthfirst,fastevaluation=true,changef=false,vars_reversed=false)
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:depthfirst,fastevaluation=true,changef=false,vars_reversed=false)
 
        # Keep track of which files to run with (dim,degree) tuples
        fermatfiles = [(1,3), (1,4), (1,5), (1,6), (1,7), (1,8),
@@ -97,97 +97,97 @@ end
        randomfiles = [(1,3), (1,4), (1,5), (1,6), (2,4)]
        manyfiles = [(1,3),(1,4),(1,5)]
         
-       for (dim,deg) in fermatfiles
-           filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in fermatfiles
+            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in randomfiles
-           filename = "dim_$(dim)_deg_$(deg)_random.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in randomfiles
+            filename = "dim_$(dim)_deg_$(deg)_random.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in manyfiles
-           filename = "dim_$(dim)_deg_$(deg)_many.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in manyfiles
+            filename = "dim_$(dim)_deg_$(deg)_many.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
        #runcsvtest("ellipticcurves.csv")
        #runcsvtest("highergenus.csv")
         
-       #runcsvtest("k3surfaces.csv",zeta_function=zf)
-       #runcsvtest("othersurfaces.csv")
-   end
+        #runcsvtest("k3surfaces.csv",zeta_coefficients=zf)
+        #runcsvtest("othersurfaces.csv")
+    end
 
    @testset "CPU S=[0,1,2], Fast Evaluation + Naive Strategy" begin
 
-       zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true)
+        zf = f -> DeRham.zeta_coefficients(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true)
 
        fermatfiles = [(2,3),(2,4),(3,3)]
        randomfiles = [(2,3),(2,4)]
 
-       for (dim,deg) in fermatfiles
-           filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in fermatfiles
+            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in randomfiles
-           filename = "dim_$(dim)_deg_$(deg)_random.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
-   end
+        for (dim,deg) in randomfiles
+            filename = "dim_$(dim)_deg_$(deg)_random.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
+    end
 
    @testset "CPU S=[0,1,2], Fast Evaluation + Naive Strategy (vars_reversed=false)" begin
 
-       zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true,vars_reversed=false)
+        zf = f -> DeRham.zeta_coefficients(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true,vars_reversed=false)
 
        fermatfiles = [(2,3),(2,4),(3,3)]
        randomfiles = [(2,3),(2,4)]
 
-       for (dim,deg) in fermatfiles
-           filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
+        for (dim,deg) in fermatfiles
+            filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
 
-       for (dim,deg) in randomfiles
-           filename = "dim_$(dim)_deg_$(deg)_random.csv"
-           runcsvtest(filename,zeta_function=zf)
-       end
-   end
+        for (dim,deg) in randomfiles
+            filename = "dim_$(dim)_deg_$(deg)_random.csv"
+            runcsvtest(filename,zeta_coefficients=zf)
+        end
+    end
 
    @testset "CPU S=[0,1], Fast Evaluation + Naive Strategy" begin
 
-       # do dimension 1, degree 3 and 4
-       zf = f -> DeRham.zeta_function(f,S=[0,1],algorithm=:depthfirst,fastevaluation=true)
+        # do dimension 1, degree 3 and 4
+        zf = f -> DeRham.zeta_coefficients(f,S=[0,1],algorithm=:depthfirst,fastevaluation=true)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
-   end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
+    end
 
    @testset "CPU S=[0,1], Fast Evaluation + Naive Strategy (vars_reversed=false)" begin
 
-       # do dimension 1, degree 3 and 4
-       zf = f -> DeRham.zeta_function(f,S=[0,1],algorithm=:depthfirst,fastevaluation=true, vars_reversed=false)
+        # do dimension 1, degree 3 and 4
+        zf = f -> DeRham.zeta_coefficients(f,S=[0,1],algorithm=:depthfirst,fastevaluation=true, vars_reversed=false)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
-   end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
+    end
 
-   @testset "CPU Bigints + Fast Evaluation + Naive Strategy" begin
-       # do dimension 1, degree 3 and 4
-       zf = f -> DeRham.zeta_function(f,algorithm=:depthfirst,fastevaluation=true,always_use_bigints=true)
+    @testset "CPU Bigints + Fast Evaluation + Naive Strategy" begin
+        # do dimension 1, degree 3 and 4
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:depthfirst,fastevaluation=true,always_use_bigints=true)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
 
        #TODO: insert specific examples that need the use of bigints here
 
@@ -203,15 +203,15 @@ end
    end
 
 
-   @testset "CPU Bigints + Fast Evaluation + Naive Strategy(vars_reversed=false)" begin
-       # do dimension 1, degree 3 and 4
-       zf = f -> DeRham.zeta_function(f,algorithm=:depthfirst,fastevaluation=true,always_use_bigints=true,vars_reversed=false)
+    @testset "CPU Bigints + Fast Evaluation + Naive Strategy(vars_reversed=false)" begin
+        # do dimension 1, degree 3 and 4
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:depthfirst,fastevaluation=true,always_use_bigints=true,vars_reversed=false)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
 
        #TODO: insert specific examples that need the use of bigints here
 
@@ -228,104 +228,82 @@ end
 
    @testset "CPU Costachunks Strategy" begin
 
-       # do dimension 1, degree 3 and 4, and K3 surfaces
-       zf = f -> DeRham.zeta_function(f,algorithm=:pchunk)
+        # do dimension 1, degree 3 and 4, and K3 surfaces
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:pchunk)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
 
-       runcsvtest("dim_1_deg_4_fermat.csv",zeta_function=zf)
-       runcsvtest("dim_1_deg_4_random.csv",zeta_function=zf)
-       runcsvtest("dim_1_deg_4_many.csv",zeta_function=zf)
-   end
+        runcsvtest("dim_1_deg_4_fermat.csv",zeta_coefficients=zf)
+        runcsvtest("dim_1_deg_4_random.csv",zeta_coefficients=zf)
+        runcsvtest("dim_1_deg_4_many.csv",zeta_coefficients=zf)
+    end
 
    @testset "CPU Costachunks Strategy (vars_reversed_false)" begin
 
-       # do dimension 1, degree 3 and 4, and K3 surfaces
-       zf = f -> DeRham.zeta_function(f,algorithm=:pchunk,vars_reversed=false)
+        # do dimension 1, degree 3 and 4, and K3 surfaces
+        zf = f -> DeRham.zeta_coefficients(f,algorithm=:pchunk,vars_reversed=false)
 
-       for i in 3:4
-           runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_random.csv",zeta_function=zf)
-           runcsvtest("dim_1_deg_$(i)_many.csv",zeta_function=zf)
-       end
+        for i in 3:4
+            runcsvtest("dim_1_deg_$(i)_fermat.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_random.csv",zeta_coefficients=zf)
+            runcsvtest("dim_1_deg_$(i)_many.csv",zeta_coefficients=zf)
+        end
 
-       runcsvtest("dim_1_deg_4_fermat.csv",zeta_function=zf)
-       runcsvtest("dim_1_deg_4_random.csv",zeta_function=zf)
-       runcsvtest("dim_1_deg_4_many.csv",zeta_function=zf)
-   end
+        runcsvtest("dim_1_deg_4_fermat.csv",zeta_coefficients=zf)
+        runcsvtest("dim_1_deg_4_random.csv",zeta_coefficients=zf)
+        runcsvtest("dim_1_deg_4_many.csv",zeta_coefficients=zf)
+    end
 
-   @testset "CPU Cubic Surfaces" begin
-       # do dimension 2, degree 3 and 
-       zf = f -> DeRham.zeta_function(f,S=[1,2],algorithm=:depthfirst,fastevaluation=true)
+    @testset "CPU Cubic Surfaces" begin
+        # do dimension 2, degree 3 and 
+        zf = f -> DeRham.zeta_coefficients(f,S=[1,2],algorithm=:depthfirst,fastevaluation=true)
 
-       runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
-   end 
+        runcsvtest("dim_2_deg_3_many.csv", zeta_coefficients=zf)
+    end 
 
-   @testset "CPU Cubic Surfaces (vars_reversed=false)" begin
-       # do dimension 2, degree 3 and 
-       zf = f -> DeRham.zeta_function(f,S=[1,2],algorithm=:depthfirst,fastevaluation=true,vars_reversed=false)
+    @testset "CPU Cubic Surfaces (vars_reversed=false)" begin
+        # do dimension 2, degree 3 and 
+        zf = f -> DeRham.zeta_coefficients(f,S=[1,2],algorithm=:depthfirst,fastevaluation=true,vars_reversed=false)
 
-       runcsvtest("dim_2_deg_3_many.csv", zeta_function=zf)
-   end 
+        runcsvtest("dim_2_deg_3_many.csv", zeta_coefficients=zf)
+    end 
 
-   @testset "CPU varbyvar" begin
-       # do dimension 2, degree 3 and 
-       zf = f -> DeRham.zeta_function(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=false,changef=false,vars_reversed=false,verbose=0,S=[2])
+    @testset "CPU varbyvar" begin
+        # do dimension 2, degree 3 and 
+        zf = f -> DeRham.zeta_coefficients(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=false,changef=false,vars_reversed=false,verbose=0,S=[2])
 
-       runcsvtest("dim_1_deg_3_nsmooth.csv", zeta_function=zf)
-   end 
+        runcsvtest("dim_1_deg_3_nsmooth.csv", zeta_coefficients=zf)
+    end 
 
-   @testset "GPU Karatsuba varbyvar" begin
-       # do dimension 2, degree 3 and 
-       zf = f -> DeRham.zeta_function(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
+    @testset "GPU Karatsuba varbyvar" begin
+        # do dimension 2, degree 3 and 
+        zf = f -> DeRham.zeta_coefficients(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
 
-       runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_function=zf)
-   end 
+        runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_coefficients=zf)
+    end 
 
    if CUDA.functional()
        @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
         
-           zf = f -> DeRham.zeta_function(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true,use_gpu=true)
+            zf = f -> DeRham.zeta_coefficients(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true,use_gpu=true)
         
            fermatfiles = [(2,3)]#,(2,4),(3,3)]
            randomfiles = [(2,3)]#,(2,4)]
         
-           for (dim,deg) in fermatfiles
-               filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
-               runcsvtest(filename,zeta_function=zf)
-           end
+            for (dim,deg) in fermatfiles
+                filename = "dim_$(dim)_deg_$(deg)_fermat.csv"
+                runcsvtest(filename,zeta_coefficients=zf)
+            end
         
-           #for (dim,deg) in randomfiles
-           #    filename = "dim_$(dim)_deg_$(deg)_random.csv"
-           #    runcsvtest(filename,zeta_function=zf)
-           #end
-       end
-   end
-
-   @testset "Monomial orderings" begin
-       test_supported_monomial_orderings()
-       #test_naive_algorithm()
-       #TODO we need to re-enable this when fastevaluation gets fixed for costachunks
-       #test_fastevaluation()
-
-       #test_reversing_variables()
-
-   end
-
-   @testset "Precision" begin
-       test_hodge_polygon_values()
-       test_hodge_polygon_examples()
-       test_algorithm_precision()
-       #test_series_precision()
-   end
-
-    @testset "HasseWitt" begin
-        test_hasse_witt()
-        test_a_number()
+            #for (dim,deg) in randomfiles
+            #    filename = "dim_$(dim)_deg_$(deg)_random.csv"
+            #    runcsvtest(filename,zeta_coefficients=zf)
+            #end
+        end
     end
 
 end

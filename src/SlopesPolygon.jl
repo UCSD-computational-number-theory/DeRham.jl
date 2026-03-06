@@ -73,7 +73,6 @@ end
 """
 Given an array of vertices
 """
-#function SlopesPolygon(vertices::Array{Tuple{Int,Int}})
 function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
     #TODO implement
     
@@ -82,10 +81,7 @@ function SlopesPolygon(vertices::Vector{Tuple{Int64, Int64}})
     slopes = zeros(Rational{Int},n)
     for i = 2:n+1
         slopevec = vertices[i] .- vertices[i-1]
-        #push!(slopes, slopevec[2] // slopevec[1])
-        #push!(slopelengths,slopevec[2])
         slopes[i-1] = slopevec[2] // slopevec[1]
-        #slopelengths[i-1] = slopevec[2]
         slopelengths[i-1] = slopevec[1]
     end
     
@@ -150,46 +146,6 @@ function SlopesPolygon(xs::Array{T},yvals::Array{T}) where T<:Real
     SlopesPolygon(vertices)
 end
 
-#"""
-#Given a list of coefficients of a polynomial,
-#starting with the constant term and ending with the
-#highest degree term, gives the newton polygon
-#using a very naive algorithm.
-
-#"""
-#function newton_polygon(p,coefs)
-#  vertices = [(0,0)]
-
-#  points = [(i-1,padic_val(2,coefs[i])) for i in eachindex(coefs)]
-
-#  x = 0
-#  while x < length(coefs) - 1 # i.e. the end of the hodge polygon
-#    #println("x=$x")
-#    startpoint = points[x+1]
-#    x2 = x + 1
-#    smallest_slope = typemax(Int128)
-#    finalx = x
-#    while x2 ≤ length(coefs) - 1
-#      #println("x2=$x2, y1=$(points[x2 + 1][2])")
-#      thispoint = points[x2 + 1]
-#      thisslope = (thispoint[2] - startpoint[2]) // (thispoint[1] - startpoint[1])
-#      if thisslope ≤ smallest_slope # we do \leq even though the slope won't change so we can update finalpoint
-#        smallest_slope = thisslope
-#        finalx = x2
-#      end
-#      x2 = x2 + 1
-#    end # postcondition: x2 is the next vertex
-
-#    # add x2 to the vertices
-#    push!(vertices,points[finalx+1])
-
-#    x = finalx
-
-#  end
-
-#  vertices
-#end
-
 function SlopesPolygon(coefficients,valuation)
     n = length(coefficients)-1
     SlopesPolygon(collect(0:n),reverse!(valuation.(coefficients)))
@@ -197,8 +153,6 @@ end
 
 
 function newton_polygon(p,coeffs)
-    #valuation = x -> x == 0 ? typemax(typeof(x)) : padic_val(p,x)
-    #padic_val = x -> x == 0 ? typemax(typeof(x)) : valuation(x, p)
     padic_val = x -> x == 0 ? typemax(Int64) : valuation(x, p) # TODO: make this correct
 
     SlopesPolygon(coeffs,padic_val)

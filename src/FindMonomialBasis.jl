@@ -77,6 +77,15 @@ the matrix for the map
  where mu_i for 0<= i < |S| are of degree l - (d - 1) and mu_i for
  |S| <= i <= n are of degree l - d.
 
+ fields
+ ------
+ f - polynomial
+ l - int
+ S - vector of ints
+ R - ring
+ PR - polynomial ring
+ params - the ControlledReductionParamaters
+ cache - the GradedExpCache used for this controlled reduction
 """
 function compute_controlled_matrix(f, l, S, R, PR, params, cache)
     n = nvars(parent(f)) - 1
@@ -257,7 +266,9 @@ termorder - the order of the monomials used for vectors
 
 I think these are correct: (TODO)
 R - coefficient_ring(parent(f))
-PR- paren(f)
+PR- parent(f)
+params - the ControlledReductionParamaters
+cache - the GradedExpCache used for this controlled reduction
 """
 function pseudo_inverse_controlled(f, S, l, R, PR, params, cache)
     n = nvars(parent(f)) - 1
@@ -310,8 +321,8 @@ f - the polynomial definitng the hypersurface
 S - the set in [0..n] to be used for the linear algebra problem
 l - ???? we need to document this, it's something used by compute_contolled_matrix
 M - the absolute precision to lift to.
-params - 
-cache - 
+params - the ControlledReductionParamaters
+cache - the GradedExpCache used for this controlled reduction
 """
 function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     PR = parent(f)
@@ -325,10 +336,6 @@ function pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
     else
         Sol_mod_p_int = lift_to_int(Sol_fp)
     end
-    #U_int = lift_to_int64(U)
-
-    #println("Solution mod p: $Sol_fp")
-    #println("U lifted: $U_int")
 
     p = characteristic(PR)
     GC.gc()
@@ -343,12 +350,3 @@ end
 ## Computes the pseudo_inverse for the classical case.
 ##TODO: update this to reflex changes to pseudo_inverse_controlled
 ##it's used in standard reduction, I'll plan to take care of it then
-#function pseudo_inverse_classical(f, R, PR)
-#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-#end
-#
-#function pseudo_inverse_classicalm(f, m, R, PR)
-#    return pseudo_inverse_controlled(f, [i for i in 1:n+1], R, PR)
-#end
-
-#end
