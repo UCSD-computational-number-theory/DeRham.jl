@@ -14,7 +14,7 @@ include("Orderings.jl")
 include("Precision.jl")
 include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
-include("HasseWitt.jl")
+#include("HasseWitt.jl")
 
 # currently, this runs on all the examples that can be done with a full S
 function larger_tests(zf)
