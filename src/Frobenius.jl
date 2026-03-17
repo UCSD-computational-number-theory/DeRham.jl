@@ -1,19 +1,3 @@
-#module Frobenius
-
-#using Oscar
-#using BitIntegers
-#using LinearAlgebra
-#using Combinatorics
-
-#include("PrecisionEstimate.jl")
-#include("CopiedFindMonomialBasis.jl")
-#include("FindMonomialBasis.jl")
-#include("Utils.jl")
-#include("SmallestSubsetSmooth.jl")
-#include("StandardReduction.jl")
-#include("PolynomialWithPole.jl")
-
-#verbose = false
 
 """
     computeD(N, m)
@@ -49,14 +33,15 @@ INPUTS:
 * "m" -- integer, pole order of the basis element 
 * "R" -- ring, precision ring 
 * "PR" -- ring, polynomial ring with coefficients in R 
+* "termorder" -- the term ordering that should be used in vector representations
+* "vars_reversed" -- reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_reversed; verbose=false)
     (9 < verbose) && println("Applying Frobenius to $beta with pole order $m")
     (9 < verbose) && println("N=$N, m=$m")
     (9 < verbose) && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
-    #(9 < verbose) && println("Factorial: $Factorial")
-    #(9 < verbose) && println("p: $p")
     o = ones(Int64, n+1)
     B = MPolyBuildCtx(PR)
     push_term!(B, R(1), o)
@@ -68,13 +53,11 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
         factorial_e = R(ZZ(Factorial//factorial(ZZ(p * e - 1))))
         ev = gen_exp_vec(n+1,d*j,termorder)
         fj = f^j
-        #println("f^j = $fj")
         sum = 0
         for alpha in ev
             B = MPolyBuildCtx(PR)
             push_term!(B, R(1),Int64(p) * (beta + alpha + o))
             monomial = div(finish(B), X1)
-            #coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)^p)))
             coefficient = R(factorial_e * (D[j+1] * (coeff(fj,alpha)))) # needs to act by Frobenius on coeff() if base field is not FF_p
             sum = sum + coefficient * monomial
             if (9 < verbose) && coefficient != 0
@@ -82,26 +65,11 @@ function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_rever
                 C_jalpha = coeff(fj,alpha)
                 println("Djm=$Djm, C_jalpha=$C_jalpha\n")
             end
-            #(9 < verbose) && coefficient != 0 && println("coefficient=$coefficient, monomial=$monomial")
-            #println(typeof((D[j+1]*(coeff(map_coefficients(lift,fj),alpha)^p))*monomial))
         end
         push!(result, [sum, p*(m+j)])
     end
     return result
 end
-
-
-#=
-function applyFrobenius(n,d,f,N,p,poly,R,PR)
-    t = terms(poly)
-    temp = []
-    for i in t
-        ev = exponent_vector(i[1],1)
-        push!(temp, applyFrobeniusToMon(n,d,f,N,p,ev,poly[2],R,PR))
-    end
-    return temp
-end
-=#
 
 """
     applyFrobeniusToBasis(Basis,n,d,f,N,p,R,PR)
@@ -114,6 +82,7 @@ INPUTS:
 * "f" -- polynomial which is the denominator of poles (lifted version)
 * "N_m" -- series precision
 * "p" -- the prime
+* "params" - the ControlledReductionParamaters
 """
 function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     termorder = params.termorder
@@ -121,7 +90,6 @@ function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     verbose = params.verbose
 
     n = nvars(parent(f)) - 1
-    #d = degree(f,1)
     d = total_degree(f)
     PR = parent(f)
     R = coefficient_ring(parent(f))
@@ -133,5 +101,3 @@ function applyFrobeniusToBasis(Basis,f,N_m,p,params)
     end
     return result
 end
-
-#end

@@ -387,16 +387,3 @@ function Base.getindex(P::LRULazyPEP, V::Vector{Int})
 
     get!(default,P.Ucomponent,V)
 end
-
-# function Base.getindex(P::LRULazyPEP, V::Vector{Int})
-#     if haskey(P.Ucomponent,V)
-#         return P.Ucomponent[V]
-#     end
-
-#     coeffs = P.compute(V)
-
-#     push!(P.Vs,V)
-#     P.Ucomponent[V] = coeffs
-
-#     return coeffs
-# end

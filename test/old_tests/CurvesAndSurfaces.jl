@@ -14,7 +14,7 @@ function test_ellipticcurve_1(p)
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
-    zeta = DeRham.zeta_function(f)
+    zeta = DeRham.zeta_coefficients(f)
 
     #zeta = zeta[1] # LPolynomial returns two things rn, precision issues i guess
     #t = gen(parent(zeta))
@@ -44,7 +44,7 @@ function test_ellipticcurve_2(p)
 
     f = y^2*z - x^3 - x*z^2
 
-    zeta = DeRham.zeta_function(f)
+    zeta = DeRham.zeta_coefficients(f)
 
     #t = gen(parent(zeta))
 
@@ -74,7 +74,7 @@ function test_fermat_k3(p)
 
     f = x^4 + y^4 + z^4 + w^4 
 
-    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
+    zeta = DeRham.zeta_coefficients(f,givefrobmat=true)[2]
 
     #t = gen(parent(zeta))
     #ts = (t .^ (21:-1:0))
@@ -113,7 +113,7 @@ function test_fermatdeform_k3(p)
 
     f = x^4 + y^4 + z^4 + w^4 + 2x*y*z*w
 
-    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
+    zeta = DeRham.zeta_coefficients(f,givefrobmat=true)[2]
 
     #t = gen(parent(zeta))
     #ts = (t .^ (21:-1:0))
@@ -149,7 +149,7 @@ function test_highergenus_1(p)
 
     f = x^5 + y^5 + z^5 +x*z*y^3
 
-    zeta = DeRham.zeta_function(f,givefrobmat=true)[2]
+    zeta = DeRham.zeta_coefficients(f,givefrobmat=true)[2]
 
     #t = gen(parent(zeta))
     #ts = (t .^ (21:-1:0))

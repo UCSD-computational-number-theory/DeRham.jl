@@ -38,49 +38,6 @@ struct ControlledReductionContext{MatrixType,VectorType}
     g_temp::VectorType
 end
 
-
-#"""
-#    reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-#
-#applies reduction formula from Prop 1.15 in Costa's thesis to 
-#basis elements of Homog(dn-d), returns them as polynomials
-#will only work with vars_reversed=true
-#"""
-#function reduce_LA(U,V,S,f,pseudoInverseMat,g,PR,termorder)
-#    R = coefficient_ring(PR)
-#    Vars = gens(PR)
-#    n = nvars(parent(f)) - 1
-#    d = total_degree(f)
-#    SC = []
-#    B = MPolyBuildCtx(PR)
-#    push_term!(B, R(1), V)
-#    XV = finish(B)
-#    for i in 0:n
-#        if i in S
-#        else
-#            push!(SC,i)
-#        end
-#    end
-#    # get gi's using pseudoinverse
-#    XS =  prod(PR(Vars[i+1]) for i in S; init = PR(1))
-#    gVec = convert_p_to_m([div(XV*(g[1]),XS)],gen_exp_vec(n+1,n*d-n+d-length(S),termorder))
-#    MS = matrix_space(parent(gVec[1]), nrows(pseudoInverseMat),1)
-#    gJS = MS()
-#    gJS = pseudoInverseMat*transpose(gVec)
-#    gc = []
-#    for i in 1:(n+1)
-#        push!(gc, convert_m_to_p(transpose(gJS[Int((i-1)*(length(gJS)/(n+1))+1):Int(i*(length(gJS)/(n+1))),:]),gen_exp_vec(n+1,n*d-n-d+1,termorder),R,PR)[1])
-#    end
-#    gc = reverse(gc)
-#    gcpartials = [ derivative(gc[i], i) for i in 1:(n+1) ]
-#    
-#    reverse!(gcpartials) # TODO: make this an option, this is the way it is in Costa's code, 
-#
-#    #return [sum(PR(U[i+1])*XS*gc[i+1] + div(XS,Vars[i+1])*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0)), g[2]-1]
-#    return [sum(PR(U[i+1])*div(XS,Vars[i+1])*gc[i+1] + XS*gcpartials[i+1] for i in S; init = PR(0)) + XS*sum((PR(U[i+1]+1)*XS*gc[i+1] + XS*Vars[i+1]*gcpartials[i+1]) for i in SC; init = PR(0))]
-#c
-#end
-
 """
     chooseV(I, d, S)
 Choose the direction of reduction V following Edgar's method
@@ -96,19 +53,6 @@ function chooseV(I, d, S)
 
     sum = 0
     
-    #=
-    for i in 1:n 
-        if I[i] > 0
-            v[i] = v[i] + 1
-            sum = sum + 1
-            if sum >= d 
-                break
-            end
-        end 
-    end 
-    =#
-    
-    
     for i in S 
         if I[n-i] > 0
             v[n-i] = v[n-i] + 1
@@ -119,7 +63,6 @@ function chooseV(I, d, S)
         end 
     end 
     
-
     while sum < d
         for i in 0:(n-1) 
             if I[n-i] > v[n-i]
@@ -152,7 +95,6 @@ function varbyvar_chooseV(I, d)
     return v
 end
 
-
 """
     skim_chooseV(I, d)
 
@@ -166,23 +108,9 @@ INPUTS:
 function skim_chooseV(I, d)
     V = zeros(Int,length(I))
     i = 0
-    #s = 1
     s = length(I)
     foundNonZero = false
     while i < d
-        #=
-        if s > length(I) && foundNonZero == false
-            return V
-        elseif s > length(I)
-            s = 1
-            foundNonZero = false
-        end
-        if (I - V)[s] > 0
-            V[s] = V[s] + 1
-            i = i + 1
-            foundNonZero = true
-        end
-        =#
         #FIXME reversed to match Costa's
         if s == 0 && foundNonZero == false
             return V
@@ -195,7 +123,6 @@ function skim_chooseV(I, d)
             i = i + 1
             foundNonZero = true
         end
-        #s = s + 1
         s = s-1
     end
     return V
@@ -209,6 +136,7 @@ choose direction of reduction in the same way as Costa's code
 INPUTS: 
 * "I" -- list/tuple, exponents of monomials
 * "d" -- integer, degree of f 
+* "S" -- Vector of ints
 """
 function rev_chooseV(I, d, S)
     reverse!(I)
@@ -216,24 +144,6 @@ function rev_chooseV(I, d, S)
     V = chooseV(I,d,S)
 
     reverse!(I)
-    # V = zeros(Int,length(I))
-    # i = 0
-    # s = 1
-    # foundNonZero = false
-    # while i < d
-    #     if s > length(I) && foundNonZero == false
-    #         return V
-    #     elseif s > length(I)
-    #         s = 1
-    #         foundNonZero = false
-    #     end
-    #     if (I - V)[s] > 0
-    #         V[s] = V[s] + 1
-    #         i = i + 1
-    #         foundNonZero = true
-    #     end
-    #     s = s + 1
-    # end
 
     reverse!(V)
 
@@ -313,6 +223,9 @@ multiples of p such that tweak(J, |J-I|) = I
 
 We're assuming that |J-I| < p here.
 
+INPUTS
+* "I" -- vector of nonnegative integers 
+* "p" -- prime number
 """
 function undo_rev_tweak(I,p)
 
@@ -335,417 +248,6 @@ function undo_rev_tweak(I,p)
 end
 
 """
-    reducechain_costachunks(u,g,n,d,p,m,S,f,pseudoInverseMat,R,PR)
-
-takes single monomial in frobenius and reduces to pole order n, currently only does one chunk of reduction
-
-
-if the reduction hits the end, returns u as the "true" value, otherwise returns it in Costa's format
-(i.e. entries will be multiplies of p in Costa's format)
-"""
-function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
-    verbose = params.verbose
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    
-
-    
-    I = u
-   
-    (4 < verbose) && println("Expanded I: $I")
-
-    gMat = g
-    #(4 < verbose) && println("This is I: $I_edgar")
-    J = copy(I)
-
-    #TODO?
-    # if params.vars_reversed == false
-        V = rev_chooseV(Array{Int}(divexact.(I,p)),d, S)
-    # else
-    #     V = chooseV(Array{Int}(divexact.(I,p)),d, S)
-    # end
-    (4 < verbose) && println("LOOK! I=$I, V = $V")
-
-
-    # if params.vars_reversed == true
-    #      gVec = I .- rev_tweak(I,n*d-n)
-    # else
-         gVec = I .- tweak(I,n*d-n)
-    # end
-    #ev = gen_exp_vec(n+1,n*d-n,termorder)
-
-    @. I = I - gVec
-    if m - n < p
-        nend = m - n
-    else
-        nend = p
-    end
-
-    matrices = Ruv[V]#computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
-
-    #TODO: the following was changed to use reverse! so 
-    #    it doesn't allocate as much, but I realized that
-    #    this isn't our bottleneck. If it ever does
-    #    become the bottleneck, fix the rest of this method
-    #    so it doesn't allocate.
-    U = I .- (nend-(d*n-n))*V
-    #reverse!(U)
-
-    #reverse!(V)
-    B,A = eval_to_linear!(B,A,temp,matrices,U,V)
-    #reverse!(V) # put V back to normal
-
-    i = 1
-
-    
-    (4 < verbose) && println("Before reduction chunk, I is $I")
-    if params.fastevaluation && 1 ≤ nend-(d*n-n)
-      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,g_temp)
-      i = nend-(d*n-n) + 1
-    else
-      while i <= (nend-(d*n-n))
-        my_mul!(temp,B,nend-(d*n-n)-i)
-        my_add!(temp,temp,A)
-        gMat = temp*gMat
-
-        #gMat = (A+B*(nend-(d*n-n)-i))*gMat
-
-        #(9 < verbose) && println("After step $i: $(convert.(Int,gMat))")
-
-        i = i+1
-        #println(gMat)
-      end
-    end
-    # TODO: test how much of a difference the fast evaluation actually makes
-    # i > 1 iff the while loop above is executed at least once 
-    if i > 1 # TODO: this will have a problem with fastevaluation
-        # UPDATE: I think the problem with fastevaluation is fixed... right?
-        @. I = I - (nend-(d*n-n))*V
-    end
-    (4 < verbose) && println("After steps 1-$i, I is $I")
-    i = i-1
-    while i <= nend-1
-        # if params.vars_reversed == true
-        #     y = rev_tweak(J - i*V,d*n-n) .- rev_tweak(J - (i+1)*V,d*n-n)
-        # else
-            y = tweak(J - i*V,d*n-n) .- tweak(J - (i+1)*V,d*n-n)
-        # end
-        (4 < verbose) && println("Getting y direction reduction matrix for V = $(y)") 
-        
-        # there's some sort of parity issue between our code and Costa's
-        #A,B = computeRPoly_LAOneVar(y,rev_tweak(J - (i+1)*V,d*n-n) - y,S,n,d,f,pseudoInverseMat,R,PR,termorder)
-        
-        matrices1 = Ruv[y]#computeRuvS(y,S,f,pseudoInverseMat,Ruvs,cache,params)
-        #println(matrices1)
-
-        #if params.vars_reversed == true
-        #    #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(rev_tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
-        #    B,A = eval_to_linear!(B,A,temp,matrices1,rev_tweak(J - (i+1)*V,d*n-n) - y,y)
-        #else
-            #B,A = eval_to_linear!(B,A,temp,matrices1,reverse(tweak(J - (i+1)*V,d*n-n) - y),reverse(y))
-            B,A = eval_to_linear!(B,A,temp,matrices1,tweak(J - (i+1)*V,d*n-n) - y,y)
-        # end
-        
-        my_add!(temp,A,B)
-        my_matvecmul!(g_temp,temp,gMat)
-        my_copy!(gMat,g_temp)
-        #gMat = temp*gMat
-
-        #gMat = (A+B)*gMat
-
-        (4 < verbose) && println("After step $(i+1): $(gMat))")
-        
-
-        i = i+1
-        @. I = I - y
-        (4 < verbose) && println("After step $(i+1), I is $I")
-    end
-    
-    if nend == p
-        newI = J .- p*V
-        #@assert undo_rev_tweak(I,p) == newI
-
-        return (newI, gMat)
-    else
-        return (I,gMat) # gives the "true" u
-    end
-end
-
-# what in here could possibly be causing a lock conflict?
-"""
-Iteratively execute reduction chunks in the navie strategy until
-the vector g is reduced to pole order n
-"""
-function reducechain_depthfirst(u,g,m,S,f,p,context,cache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    (9 < params.verbose) && println("u = $u") 
-    
-
-    #if cache.vars_reversed
-    #    reverse!(u)
-    #end
-    
-    # if params.vars_reversed == true 
-    #     J = rev_tweak(u,n*d-n)
-    # else
-        J = tweak(u,n*d-n)
-    # end
-
-    #if cache.vars_reversed
-    #    reverse!(u)
-    #end
-
-    gMat = context.g
-    mins = similar(J)
-    tempv = similar(J)
-    (4 < params.verbose) && println("Starting: J = $J")
-    (5 < params.verbose) && begin
-        g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
-        if params.always_use_bigints || params.use_gpu
-            println("Starting: g = $((gMat)) = $g_poly")
-        else    
-            println("Starting: g = $(Int.(gMat)) = $g_poly")
-        end
-    end
-
-    firsttime = true
-
-
-    while m > n
-         # if params.vars_reversed == true 
-         #     V = chooseV(J, d, S)
-         # else
-             V = rev_chooseV(J,d,S)
-         # end
-
-        (4 < params.verbose) && print("Chose V = $V; ")
-        (6 < params.verbose) && begin
-            # the way that chooseV works right now,
-            # the following if statement should never hit.
-            # for i in 1:length(V)
-            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-            #         print("Illegal choice of V!")
-            #         println("J = $J, S = $S")
-            #     end
-            # end
-        end
-        @. mins = J
-        K = 0
-        while true
-            @. tempv = mins - V
-            isLessThanZero = false
-            for j in tempv
-                if j < 0
-                    isLessThanZero = true
-                    break
-                end
-            end
-            if isLessThanZero == true
-                break
-            end
-            if m - K == n
-                break
-            end
-            @. mins = tempv
-            K = K+1
-        end
-        matrices = context.Ruvs[V]
-
-        #(5 < params.verbose && firsttime) && begin 
-        #    for i in 1:length(matrices)
-        #        println(matrices[i][:,end])
-        #    end
-        #end
-        (6 < params.verbose && V == [0,0,0,3] && firsttime) && begin println(matrices[5][:,25]); firsttime=false; error() end
-        
-
-        #eval_to_linear!(context.B,context.A,context.temp,matrices,reverse(mins),reverse(V))
-        eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
-        #(5 < params.verbose && firsttime) && begin 
-        #    println("---")
-        #    println(context.A[:,end])
-        #    println(context.B[:,end])
-        #end
-
-        i = 1
-        if params.fastevaluation == false
-            params.verbose == 11 && println("gMat before is $gMat")
-            while i <= K
-                gMat = (context.A+context.B*(K-i))*gMat
-                i = i+1
-                if params.verbose == 11
-                    A = context.A
-                    B = context.B
-                    #println("context.A is $A")
-                    #println("context.B is $B")
-                    g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-                    println("gMat after $i is $gMat = $g")
-                end
-            end
-        else
-            gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
-        end
-        @. J = J - K*V
-        m = m - K
-        (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
-        (4 < params.verbose) && println("J = $J")
-        if (5 < params.verbose) 
-            CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            if params.always_use_bigints || params.use_gpu
-                println("g = $((gMat)) = $g")
-            elseif params.fastevaluation
-                println("g = $(Int.(gMat)) = $g")
-            else 
-                println("g = $(gMat) = $g")
-            end
-        end
-        
-    end
-    return (J, gMat)
-end
-
-function reducechain_akr(g,m,f,p,picache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-
-    while m > n
-        gtemp = picache[m]*g
-        len = Int(length(gtemp)/(n+1))
-        g = derivative(vector_to_polynomial(gtemp[1:len],n,d*(m-1)-n,PR,params.termorder),1)
-        for i in 1:n
-            gpolytemp = derivative(vector_to_polynomial(gtemp[(i*len+1):((i+1)*len)],n,d*(m-1)-n,PR,params.termorder),i+1)
-            g = g + gpolytemp
-        end
-        g = polynomial_to_vector(g,n+1,params.termorder)
-        if size(g)[1] == 0
-            g = fill(R(0), binomial(d*(m-1)-1,n))
-        end
-        m = m - 1
-    end
-
-
-    return g
-end
-
-function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-
-    J = copy(u)
-
-    modm = Integer(modulus(base_ring(parent(f))))
-
-    gMat = g
-    mins = copy(J)
-    tempv = copy(J)
-
-    (4 < params.verbose) && println("Starting: J = $J")
-    #=
-    (5 < params.verbose) && begin
-        CUDA.@allowscalar g_poly = vector_to_polynomial(g,n,d*n-n,PR,params.termorder)
-        if params.always_use_bigints || params.use_gpu
-            println("Starting: g = $((gMat)) = $g_poly")
-        else    
-            println("Starting: g = $(Int.(gMat)) = $g_poly")
-        end
-    end
-    =#
-
-    l = 1
-    for i in eachindex(J)
-        if J[n+1-i+1] > 0
-            l = n+1-i+1
-            break
-        end
-    end
-
-    highpole = true
-    if m == n
-        highpole == false
-    end
-    while highpole && J[l] > 0
-        V = varbyvar_chooseV(J,d)
-        
-        (4 < params.verbose) && print("Chose V = $V; ")
-        (6 < params.verbose) && begin
-            # the way that chooseV works right now,
-            # the following if statement should never hit.
-            # for i in 1:length(V)
-            #     if params.vars_reversed && V[i] == 0 && J[i] ≠ 0 && (n+1-i) ∈ S
-            #         print("Illegal choice of V!")
-            #         println("J = $J, S = $S")
-            #     end
-            # end
-        end
-
-        K = 0
-        while true
-            @. tempv = mins - V
-            isLessThanZero = false
-            for j in tempv
-                if j < 0
-                    isLessThanZero = true
-                    break
-                end
-            end
-            if isLessThanZero == true
-                break
-            end
-            if m - K == n
-                break
-            end
-            @. mins = tempv
-            K = K+1
-        end
-
-        (4 < params.verbose) && println("Getting Ruv matrices; ")
-        matrices = context.Ruvs[V]
-        (4 < params.verbose) && println("Computing A and B; ")
-        if params.use_gpu && !(ZZ(2)^25 < modm < ZZ(2)^106) # so not Karatsuba
-            eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
-        elseif params.use_gpu && d == 3 && (n == 4 || n == 5)# karatsuba
-            eval_to_linear_gpu_karatsuba!(context.B,context.A,context.temp,matrices,mins,V)
-        else
-            eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
-        end
-        (4 < params.verbose) && println("Starting the reduction steps; ")
-        gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
-        @. J = J - K*V
-        m = m - K
-        if m == n
-            highpole = false
-        end
-
-        (4 < params.verbose) && print("After $(lpad(K,4,' ')) steps,")
-        (4 < params.verbose) && println("J = $J")
-        #=
-        if (5 < params.verbose) 
-            CUDA.@allowscalar g = vector_to_polynomial(gMat,n,d*n-n,PR,params.termorder)
-            if params.always_use_bigints || params.use_gpu
-                println("g = $((gMat)) = $g")
-            elseif params.fastevaluation
-                println("g = $(Int.(gMat)) = $g")
-            else 
-                println("g = $(gMat) = $g")
-            end
-        end
-        =#
-
-    end
-
-    return ((J, gMat), m)
-end
-
-"""
     costadata_of_intial_term
 Returns the data used by costa's code given a polynomial term.
 More specifically, given a polynomial h, it writes h in the form 
@@ -753,6 +255,17 @@ h = x^{rev_tweak(U)}g
 
 Note: this only works with a single term, so it should
 only be used at the beginning of reduction
+
+fields
+------
+term - monomial
+g - vector
+n - # of vars - 1
+d - deg of f
+p - prime number
+S - vector
+cache - the GradedExpCache used for this controlled reduction
+params - the ControlledReductionParamaters
 """
 function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
     termorder = params.termorder
@@ -766,52 +279,29 @@ function costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
         Stilda[j+1] = 1
     end
 
-    #ss = zeros(Int,n+1)
-    #ss[S .+ 1] .= 1
-    #o = ones(Int,length(exponent_vector(i[1],1)))
-    # if vars_reversed
-    #     U = reverse(exponent_vector(i[1],1) + Stilda)
-    # else
-        U = exponent_vector(i[1],1) + Stilda
-    # end
+    U = exponent_vector(i[1],1) + Stilda
     
     gCoeff = coeff(i[1],1)
 
-    # if vars_reversed 
-    #     g_exps = U - rev_tweak(U, n*d-n)  
-    # else
-        g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
-    # end 
-    ev = cache[n*d-n]#gen_exp_vec(n+1,n*d-n,termorder)
-    # this is UInt instead of R to get Oscar to use the fast FLINT method
-    #g = zeros(R,length(ev)) 
+    g_exps = U - tweak(U, n*d-n)  # TODO: make our code work with tweak 
+    
+    ev = cache[n*d-n]
+    
     my_zero!(g)
 
     for j in axes(g,1)
-        # if vars_reversed && !cache.vars_reversed
-        #     if g_exps == reverse(ev[j])
-        #         CUDA.@allowscalar g[j] = lift(gCoeff)
-        #         break
-        #     end 
-        # elseif vars_reversed && cache.vars_reversed
-        #     if g_exps == ev[j]
-        #         CUDA.@allowscalar g[j] = lift(gCoeff)
-        #         break
-        #     end
-        # else
-            if g_exps == ev[j]
-                CUDA.@allowscalar g[j] = lift(gCoeff)
-                break
-            end
-        # end 
+        if g_exps == ev[j]
+            CUDA.@allowscalar g[j] = lift(gCoeff)
+            break
+        end 
     end
-
-    #println(U,Int.(g))
 
     return (U,g)
 end
 
 """
+    incorporate_initial_term
+
 Takes an array of Costa's data tuples, and a new term
 to be added. If the new term already exists, it is 
 added, if not then it concatenates.
@@ -825,6 +315,10 @@ Perhaps this also would be well suited by a custom struct?
 ^^ such concerns have speed implications, so better to wait
 until we're really trying to optimize this.
 
+fields
+------
+costadata_arr - vector of costadata
+costadata - output of costadata_of_initial_term
 """
 function incorporate_initial_term!(costadata_arr,costadata)
     ind_already = false
@@ -852,7 +346,6 @@ function remove_duplicates_gpu!(costadata_arr)
         while j <= length(costadata_arr)
             if all(costadata_arr[i][1][1] .== costadata_arr[j][1][1])
                 my_add!(costadata_arr[i][1][2],costadata_arr[i][1][2],costadata_arr[j][1][2])
-                # costadata_arr[i] = ((costadata_arr[i][1][1], costadata_arr[i][1][2]),costadata_arr[i][2][1])
                 deleteat!(costadata_arr,j)
             else
                 j = j + 1
@@ -880,10 +373,21 @@ end
 
 
 """
+    poly_of_end_costadata
+
 Converts a Costa's data tuple to a polynomial with pole
 after reduction.
 
 Thus, the pole order is n.
+
+fields
+------
+costadata - tuple of two vectors
+PR - polynomial ring
+p - prime number
+d - degree of f
+n - # of vars of f
+params - the ControlledReductionParamaters
 """
 function poly_of_end_costadata(costadata,PR,p,d,n,params)
     (u,g_vec) = costadata
@@ -891,32 +395,27 @@ function poly_of_end_costadata(costadata,PR,p,d,n,params)
     cpu_g = Array(g_vec)
     CUDA.@allowscalar g = vector_to_polynomial(cpu_g,n,d*n-n,PR,params.termorder)
 
-    #=
-    (5 < params.verbose) && begin
-        if params.fastevaluation && !params.use_gpu
-            println("$(Int.(g_vec)) --> $g")
-        else
-            println("$(g_vec) --> $g")
-        end
-    end
-    =#
-
-    # no need to do rev_tweak since reducechain_costachunks returns the "true" u
-    # on the last run
-    # if params.vars_reversed
-    #     return [prod(vars .^ reverse(u)) * g, n]
-    # else
-        return [prod(vars .^ u) * g, n]
-    # end
+    return [prod(vars .^ u) * g, n]
 end
 
 
 """
+    poly_of_end_costadatas
+
 Converts an array of Costa's data tuples to an array of polynomials with pole
 after reduction.
 
 Thus, the pole order is always n.
 
+fields
+------
+costadata - tuple of two vectors
+PR - polynomial ring
+p - prime number
+d - degree of f
+n - # of vars of f - 1
+S - vector of ints
+params - the ControlledReductionParamaters
 """
 function poly_of_end_costadatas(costadatas,PR,p,d,n,S,params)
     res = PR(0)
@@ -927,346 +426,6 @@ function poly_of_end_costadatas(costadatas,PR,p,d,n,S,params)
     XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
     [[div(res,XS), n]]
 end
-
-"""
-    reducepoly_costachunks(pol,S,f,pseudoInverseMat,p,Ruvs,termorder)
-
-Implements Costa's algorithm for controlled reduction,
-sweeping down the terms of the series expansion by the pole order.
-"""
-function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
-    #p = Int64(characteristic(parent(f)))
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    #(9 < verbose) && println(pol)
-    g_length = binomial(d*n,d*n-n)
-
-    i = pol
-    highpoleorder = i[length(i)][2]
-
-    # this is the omega from section 1.5.5 of Costa's thesis.
-    ω = [] # this will be an array of costa data
-
-    poleorder = highpoleorder
-    while n < poleorder
-        (9 < params.verbose) && println("pole order is $poleorder")
-        # this is an array of polynomials
-        ωₑ = termsoforder(pol,poleorder)
-
-        #(9 < verbose) && println("ωₑ: $ωₑ")
-
-        for term in ωₑ
-            #(9 < verbose) && println("term: $term")
-            g = zeros(UInt,g_length) 
-            term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
-            #(9 < verbose) && println("term, in Costa's format: $term_costadata")
-            #ω = ω + ωₑ
-            incorporate_initial_term!(ω,term_costadata)
-        end
-
-        #(9 < verbose) && println("ω: $ω")
-        #ω = reducepoly_LA(ω,n,d,p,S,f,pseudoInverseMat,R,PR)
-        for i in eachindex(ω)
-            #ω[i] = reducechain...
-            #(9 < verbose) && println("u is type $(typeof(ω[i][1]))")
-            g_temp = similar(ω[i][2])
-            ω[i] = reducechain_pchunk(ω[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
-        end
-
-        poleorder = poleorder - p
-    end
-
-    #println("ω: $ω")
-    #(9 < verbose) && println(poly_of_end_costadatas(ω,PR,p,d,n,S,termorder))
-
-    #println(gen_exp_vec(n,n*d-n-1,termorder))
-           
-
-    return poly_of_end_costadatas(ω,PR,p,d,n,S,params)
-end
-
-function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    result = PR()
-
-    i = pol
-    highpoleorder = i[length(i)][2]
-    terms = []
-    while highpoleorder >= p
-        append!(terms,termsoforder(pol,highpoleorder))
-        highpoleorder = highpoleorder - p
-    end
-
-    vectype = typeof(context.g)
-    allcostadata = Vector{Tuple{Tuple{Vector{Int},vectype},Int}}()
-    for term in terms
-        #g = my_copy(context.g)
-        term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
-        append!(allcostadata,[((tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
-    end
-
-    notallred = true
-    # TODO: prime the jitter here?
-
-    while notallred
-        for i in eachindex(allcostadata)
-            allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
-        end
-        if params.use_gpu == true
-            remove_duplicates_gpu!(allcostadata)
-        else
-            remove_duplicates!(allcostadata)
-        end
-        for i in 1:length(allcostadata)
-            if allcostadata[i][2] > n
-                break
-            elseif i == length(allcostadata)
-                notallred = false
-            end
-        end
-    end
-    result = PR()
-    for i in eachindex(allcostadata)
-        (reduced_poly,m) = poly_of_end_costadata(allcostadata[i][1],PR,p,d,n,params)
-        result += reduced_poly
-    end
-
-    vars = gens(PR)
-    XS = prod(PR(vars[i+1]) for i in S; init = PR(1))
-    [[div(result,XS), n]]
-end
-
-function reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    result = PR()
-    for term in pol
-        #println("Reducing terms of order $(term[2])")
-        terms = termsoforder(pol,term[2])
-        #println(terms)
-        for t in terms
-            (u,_) = costadata_of_initial_term!(t,context.g,n,d,p,S,cache,params)
-            reduced = reducechain_depthfirst(u,context.g,t[2],S,f,p,context,cache,params)
-            (reduced_poly,m) = poly_of_end_costadata(reduced,PR,p,d,n,params)
-            @assert m == n "Controlled reduction outputted a bad pole order"
-            result += reduced_poly
-        end
-    end
-
-    vars = gens(PR)
-    XS =  prod(PR(vars[i+1]) for i in S; init = PR(1))
-    [[div(result,XS), n]]
-    #return poly_of_end_costadatas(result,PR,p,d,n,S,params)
-end
-
-function reducepoly_akr(pol,S,f,p,picache,params)
-    n = nvars(parent(f)) - 1
-    d = total_degree(f)
-    PR = parent(f)
-    R = coefficient_ring(parent(f))
-    result = PR()
-    for term in pol
-        #println("Reducing terms of order $(term[2])")
-        terms = termsoforder(pol,term[2])
-        #println(terms)
-        for t in terms
-            g = polynomial_to_vector(t[1],n+1,:invlex)
-            reduced = reducechain_akr(g,t[2],f,p,picache,params)
-            reduced_poly = vector_to_polynomial(reduced,n,d*n-n-1,PR,:invlex)
-            result += reduced_poly
-        end
-    end
-
-    return [[result, n]]
-end
-
-"""
-    reducetransform_costachunks(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
-
-trying to emulate Costa's controlled reduction, changes the order that polynomials are reduced, starts from highest pole order and accumulates the lower order poles as reduction proceeds
-
-N_m - the precision
-"""
-function reducetransform_pchunk(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
-
-    d = total_degree(f)
-    n = nvars(parent(f)) - 1
-    MS1 = matrix_space(coefficient_ring(parent(f)), binomial(d*n,d*n-n), binomial(d*n,d*n-n))
-    A = MS1()
-    B = MS1()
-    temp = MS1()
-    if (3 < params.verbose)
-        computeRuv = V -> begin
-            println("Computing Ruv for V = $V for the first time.")
-            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    else
-        computeRuv = V -> begin
-            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    end
-    Ruv = LazyPEP{typeof(MS1())}(computeRuv)
-
-    result = []
-    i = 1
-    for pol in FT
-        (0 < params.verbose) && println("Reducing vector $i")
-        i += 1
-        if (0 < params.verbose)
-            @time reduction = reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
-        else
-            reduction = reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
-        end
-
-        push!(result, reduction)
-    end
-
-    return result
-end
-
-function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
-    d = total_degree(f)
-    n = nvars(parent(f)) - 1
-    g_length = binomial(d*n,d*n-n)
-
-    MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
-    m = Integer(modulus(base_ring(MS1)))
-
-    #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-
-    #explookup = Dict{Vector{Int64}, Int64}()
-    #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    #for i in 1:length(ev1)
-    #    get!(explookup,ev1[i],i)
-    #end
-
-    if (3 < params.verbose)
-        computeRuv = V -> begin
-            println("Computing Ruv for V = $V for the first time.")
-            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    else
-        computeRuv = V -> begin
-            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    end
-
-    result = similar(FT)
-
-    if context == nothing
-        #TODO: right now, it usually seems better to do lazy computations,
-        #  since not all of the Ruv are used. However, I know that for some
-        #  classes of examples, they are all pretty much always used. For 
-        #  such examples, it's better to use an EagerPEP and do threads.
-        lazy_Ruv = true#length(S) < d || d < n
-
-        if (0 < params.verbose)
-            println("Creating the Ruv PEP object...")
-            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-            @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-        else
-            Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-        end
-
-        if params.use_threads
-        
-            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-                () -> default_context(MS1,Ruv,params)
-            )
-            Threads.@threads for i in 1:length(FT) 
-                local context = context_tlv[]
-
-                pol = FT[i]
-                if (0 < params.verbose)
-                    println("Reducing vector $i")
-                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-                else
-                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-                end
-                result[i] = reduction
-
-                #println("cache info: $(cache_info(Ruv.Ucomponent))")
-                #i == 5 && error("stopping after vector $i for testing purposes")
-                
-                #push!(result, reduction)
-            end
-        else 
-
-            context = default_context(MS1,Ruv,params)
-            for i in 1:length(FT) #pol in FT
-                
-
-                pol = FT[i]
-                if (0 < params.verbose)
-                    println("Reducing vector $i")
-                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-                else
-                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-                end
-                result[i] = reduction
-
-                #println("cache info: $(cache_info(Ruv.Ucomponent))")
-                #i == 5 && error("stopping after vector $i for testing purposes")
-                    
-                #push!(result, reduction)
-            end
-        end
-    else
-        if (ZZ(2)^25 < m < ZZ(2)^106)
-            compute_gpu = V -> KaratsubaMat.(computeRuv(V))
-        else 
-            compute_gpu = V -> cuMod.(computeRuv(V))
-        end 
-    
-        compute_float = V -> float_entries.(computeRuv(V))
-
-        if 3 < n && d == 3 && S == [n] && params.use_gpu 
-            context.Ruvs.backing.compute = compute_float
-        elseif params.use_gpu
-            context.Ruvs.compute = compute_gpu
-        else
-            context.Ruvs.compute = computeRuv
-        end
-        for i in 1:length(FT) #pol in FT
-            
-
-            pol = FT[i]
-            if (0 < params.verbose)
-                println("Reducing vector $i")
-                @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-            else
-                reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
-            end
-            result[i] = reduction
-
-            #println("cache info: $(cache_info(Ruv.Ucomponent))")
-            #i == 5 && error("stopping after vector $i for testing purposes")
-                
-            #push!(result, reduction)
-        end
-    end
-    
-
-    #(0 < params.verbose && Ruv isa CachePEP) && begin
-    #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
-    #end
-    (0 < params.verbose) && begin
-        println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
-    end
-    (1 < params.verbose) && begin
-        println("V that were created: \n$(allpoints(context.Ruvs))")
-    end
-
-    return result
-end
-
 
 function cuMod(A::zzModMatrix)
     m = modulus(base_ring(parent(A)))
@@ -1287,50 +446,12 @@ function KaratsubaMat(A::zzModMatrix,A_temp=nothing)
     N1 = Int(p)^Int(round(d/2))
     N2 = Int(p)^Int(d - round(d/2))
 
-    # if A_temp == nothing
-    #     A_temp = zeros(Float64, size(A)...)
-    # end
-
-    # res = GPUFiniteFieldMatrices.KaratsubaZeros(Float64,size(A)...,N1,N2,N1*N2,true)
-
-    # @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
-    # copyto!(res.data2, A_temp)
-
-    # @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
-    # copyto!(res.data1, A_temp)
-
     GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,cuMod(A),N1,N2,N1*N2)
-    # res
 end
 
 function Karatsuba_copyto!(A_gpu::KaratsubaMatrix,A::Matrix{Float64},A_temp=nothing)
-    # m = modulus(base_ring(parent(A)))
-    # temp = collect(factor(m))[1]
-    # d = temp[2]
-    # p = temp[1]
-
-    # N1 = Int(p)^Int(round(d/2))
-    # N2 = Int(p)^Int(d - round(d/2))
-
-    # if A_temp == nothing
-    #     A_temp = zeros(Float64, size(A)...)
-    # end
-
-    # @. A_temp = convert(Float64, mod(div(data(A), N1), N2))
-    # copyto!(A_gpu.data2, A_temp)
-
-    # @. A_temp = convert(Float64, mod(data(A - N1*Int(A_temp)), N1))
-    # copyto!(A_gpu.data1, A_temp)
-
-    # cheating by allocating
-    # cheater_array = GPUFiniteFieldMatrices.KaratsubaMatrix(Float64,
-                                                           # ,N1,N2,N1*N2)
+    
     temp = CuModMatrix(A,A_gpu.N1*A_gpu.N2,elem_type=Float64)
-    # copyto!(A_gpu.data2.data, cheater_array.data2.data)
-    # copyto!(A_gpu.data1.data, cheater_array.data1.data)
-
-    # copyto!(A_gpu.data2.data, A)
-    # copyto!(A_gpu.data1.data, A_gpu.data2.data)
 
     GPUFiniteFieldMatrices.divide_elements!(A_gpu.data2,temp,A_gpu.N1)
     GPUFiniteFieldMatrices.mod_elements!(A_gpu.data2,A_gpu.N2)
@@ -1362,7 +483,6 @@ function default_context(matspace,Ruv,params)
     B = base_ring(matspace)
     m = modulus(B)
     if params.use_gpu == true && (ZZ(2)^25 < m < ZZ(2)^106)
-    #if params.use_gpu == true && (m < ZZ(2)^106)
         println("using karatsuba")
         temp = collect(factor(m))[1]
         d = temp[2]
@@ -1416,8 +536,24 @@ function default_context(matspace,Ruv,params)
 end
 
 """
-pregen_default_context
+    pregen_default_context
 Note that n is (number of variables - 1) in this case
+
+fields
+------
+n - # of vars of f - 1
+d - degree of f
+p - prime number
+S - vector of ints
+
+KEYWORD ARGUMENTS:
+givefrobmat -- should the funciton also output the appoximated frobenius matrix
+algorithm -- the algorithm used for controlled reduction
+termorder -- the term ordering that should be used in vector representations
+fastevaluation -- should the algorithm use fast evaluation?
+>>>if you don't know what this is, ignore it.
+vars_reversed -- reverses the order of basis vectors at various places
+>>>if you don't know what this is, ignore it.
 """
 function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=:naive, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false,lazy=false)
     params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
@@ -1430,7 +566,6 @@ function pregen_default_context(n,d,p,S;verbose=0, givefrobmat=false, algorithm=
     Ruv = pregen_select_Ruv_PEP(n,d,S,params,matspace)
 
     if params.use_gpu == true && (ZZ(2)^25 < M < ZZ(2)^106)
-    #if use_gpu == true && (m < ZZ(2)^106)
         println("using karatsuba")
 
         N1 = Int(p)^Int(round(m/2))
@@ -1528,16 +663,6 @@ in verbose mode.
 function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
-
-    # if (3 < params.verbose) && (ZZ(2)^25 < m < ZZ(2)^106)
-    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); KaratsubaMat.(compute(V)) end
-    # elseif (3 < params.verbose)
-    #     compute_gpu = V -> begin println("Moving Ruv for $V to the gpu"); cuMod.(compute(V)) end
-    # elseif (ZZ(2)^25 < m < ZZ(2)^106)
-    #     compute_gpu = V -> KaratsubaMat.(compute(V))
-    # else
-    #     compute_gpu = V -> cuMod.(compute(V))
-    # end 
     
     compute_float = V -> float_entries.(compute(V))
 
@@ -1687,7 +812,6 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
 
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     elseif params.use_gpu && lazy && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
         compute_gpu_karatsuba = V -> @. KaratsubaMat(float_entries(compute(V)))
         Ruv = LazyPEP{KaratsubaMatrix{Float64}}(compute_gpu_karatsuba)
 
@@ -1695,7 +819,6 @@ function select_Ruv_PEP(n,d,S,params,compute,lazy,oscar_matspace,cache)
         Ruv = LazyPEP{CuModMatrix{Float64}}(compute_gpu)
 
     elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && (m < ZZ(2)^106)
     compute_gpu_karatsuba = V -> @. KaratsubaMat(float_entries(compute(V)))
         Ruv = EagerPEP{KaratsubaMatrix{Float64}}(cache[d],compute_gpu_karatsuba,usethreads=false)
 
@@ -1715,15 +838,6 @@ end
 function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
 
     m = Integer(modulus(base_ring(oscar_matspace)))
-    #=
-    if (ZZ(2)^25 < m < ZZ(2)^106)
-        compute_gpu = V -> KaratsubaMat.(compute(V))
-    else
-        compute_gpu = V -> cuMod.(compute(V))
-    end 
-    
-    compute_float = V -> float_entries.(compute(V))
-    =#
 
     if 3 < n && d == 3 && S == [n] && params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106) #4 < n
 
@@ -1784,8 +898,6 @@ function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
         #(1 < params.verbose) && println("Initial cache info: $(cache_info(Ruv.Ucomponent))")
     
     elseif params.use_gpu && (ZZ(2)^25 < m < ZZ(2)^106)
-    #elseif params.use_gpu && lazy && (m < ZZ(2)^106)
-        #compute_gpu_karatsuba = V -> KaratsubaMat.(compute(V))
         Ruv = PregenLazyPEP{KaratsubaMatrix{Float64}}(nothing)
     elseif params.use_gpu 
         Ruv = PregenLazyPEP{CuModMatrix{Float64}}(nothing)
@@ -1794,178 +906,6 @@ function pregen_select_Ruv_PEP(n,d,S,params,oscar_matspace)
     end
 
     Ruv
-end
-
-
-function reducetransform_depthfirst(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
-    d = total_degree(f)
-    n = nvars(parent(f)) - 1
-    g_length = binomial(d*n,d*n-n)
-
-    MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
-    m = Integer(modulus(base_ring(MS1)))
-
-    #Ruvs = Dict{Vector{Int64}, Vector{typeof(MS1())}}()
-
-    #explookup = Dict{Vector{Int64}, Int64}()
-    #ev1 = gen_exp_vec(n+1,n*d-n,params.termorder)
-    #for i in 1:length(ev1)
-    #    get!(explookup,ev1[i],i)
-    #end
-
-    if (3 < params.verbose)
-        computeRuv = V -> begin
-            println("Computing Ruv for V = $V for the first time.")
-            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    else
-        computeRuv = V -> begin
-            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
-        end
-    end
-
-    result = similar(FT)
-
-    if context == nothing
-        #TODO: right now, it usually seems better to do lazy computations,
-        #  since not all of the Ruv are used. However, I know that for some
-        #  classes of examples, they are all pretty much always used. For 
-        #  such examples, it's better to use an EagerPEP and do threads.
-        lazy_Ruv = length(S) < d || d < n
-
-        if (0 < params.verbose)
-            println("Creating the Ruv PEP object...")
-            #CUDA.@time Ruv = select_Ruv_PEP(params,computeRuv,computeRuv_gpu,lazy_Ruv,MS1,cache,d)
-            @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-        else
-            Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
-        end
-
-
-        if params.use_threads
-
-            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-                () -> default_context(MS1,Ruv,params)
-            )
-            
-            Threads.@threads for i in 1:length(FT) 
-                local context = context_tlv[]
-
-                pol = FT[i]
-                if (0 < params.verbose)
-                    println("Reducing vector $i in thread $(Threads.threadid())")
-                    @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-                else
-                    reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-                end
-                result[i] = reduction
-
-            end
-        else 
-            context = default_context(MS1,Ruv,params)
-            for i in 1:length(FT) #pol in FT
-                
-                pol = FT[i]
-                if (0 < params.verbose)
-                    println("Reducing vector $i")
-                    @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-                else
-                    reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-                end
-                result[i] = reduction
-
-            end
-        end
-    else
-        if (ZZ(2)^25 < m < ZZ(2)^106)
-            compute_gpu = V -> KaratsubaMat.(computeRuv(V))
-        else 
-            compute_gpu = V -> cuMod.(computeRuv(V))
-        end 
-    
-        compute_float = V -> float_entries.(computeRuv(V))
-
-        if 3 < n && d == 3 && S == [n] && params.use_gpu 
-            context.Ruvs.backing.compute = compute_float
-        elseif params.use_gpu
-            context.Ruvs.compute = compute_gpu
-        else
-            context.Ruvs.compute = computeRuv
-        end
-
-        for i in 1:length(FT) #pol in FT
-        
-
-            pol = FT[i]
-            if (0 < params.verbose)
-                println("Reducing vector $i in thread $(Threads.threadid())")
-                @time reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-            else
-                reduction = reducepoly_depthfirst(pol,S,f,p,context,cache,params)
-            end
-            result[i] = reduction
-
-            #println("cache info: $(cache_info(Ruv.Ucomponent))")
-            #i == 5 && error("stopping after vector $i for testing purposes")
-            
-            #push!(result, reduction)
-        end
-    end
-
-    #(0 < params.verbose && Ruv isa CachePEP) && begin
-    #    println("Ruv cache info: $(cache_info(Ruv.Ucomponent))")
-    #end
-    (0 < params.verbose) && begin
-        println("Created $(length(allpoints(Ruv))) of $(length(cache[d])) possible V")
-    end
-    (1 < params.verbose) && begin
-        println("V that were created: \n$(allpoints(Ruv))")
-    end
-
-    return result
-end
-
-function reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
-    d = total_degree(f)
-    n = nvars(parent(f)) - 1
-    M = factor(modulus(base_ring(parent(f))))[7]
-
-    result = similar(FT)
-
-    highm = FT[length(FT)][length(FT[length(FT)])][2]
-    
-    picache = Vector{typeof(pseudoInverseMat)}(undef, highm)
-    picache[n] = pseudoInverseMat
-    for i in (n+1):highm
-        l = d*i - n - 1
-        generate_degree_forward(cache,l)
-        generate_degree_forward(cache,l-(d-1))
-        generate_degree_forward(cache,l-d)
-        pi_new = pseudo_inverse_controlled_lifted(f,S,l,M,params,cache)
-        MS = matrix_space(base_ring(parent(f)), nrows(pi_new), ncols(pi_new))
-        pseudo_inverse_mat = MS()
-        for i in 1:nrows(pi_new)
-            for j in 1:ncols(pi_new)
-                pseudo_inverse_mat[i,j] = ZZ(pi_new[i,j])
-            end
-        end
-        picache[i] = pseudo_inverse_mat
-    end
-
-    for i in 1:length(FT) #pol in FT
-
-        pol = FT[i]
-        if (0 < params.verbose)
-            println("Reducing vector $i")
-            @time reduction = reducepoly_akr(pol,S,f,p,picache,params)
-        else
-            reduction = reducepoly_akr(pol,S,f,p,picache,params)
-        end
-        result[i] = reduction
-
-    end
-
-    return result
 end
 
 function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache,context)
@@ -1978,7 +918,6 @@ function reducetransform(FT,N_m,S,f,pseudoInverseMat,p,params,cache,context)
     elseif params.algorithm == :akr
         reducetransform_akr(FT,N_m,S,f,pseudoInverseMat,p,cache,params)
     else
-        #throw(ArgumentError("Unsupported Algorithm: $algorithm"))
         println(params.algorithm)
         throw(ArgumentError("Unsupported Algorithm: "))
     end

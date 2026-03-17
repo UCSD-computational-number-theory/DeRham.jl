@@ -53,14 +53,6 @@ function my_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem
     return z
 end
 
-#function alt_matvecmul!(z::Vector{ZZRingElem},A::ZZModMatrix,b::Vector{ZZRingElem})
-#    @ccall Oscar.Nemo.libflint.fmpz_mod_mat_mul_fmpz_vec(z::Ref{ZZRingElem},
-#                                                         A::Ref{ZZModMatrix},
-#                                                         b::Ref{ZZRingElem},
-#                                                         length(b)::Int,
-#                                                         base_ring(A).ninv::Ref{Oscar.Nemo.fmpz_mod_ctx_struct})::Nothing
-#end
-
 ### END stuff derived from Nemo.jl
 
 # (scalar) mul
