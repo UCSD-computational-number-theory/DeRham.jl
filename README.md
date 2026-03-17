@@ -88,20 +88,20 @@ There are two situations (currently) which require the use of S. First, if the d
 
 ```julia
 p = 7
-R, (x,y,z,w) = GF(p)[:x,:y,:z]
-f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
+R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
+f = x^3 + y^3 + z^3 + w^3
 
 DeRham.zeta_function(f,S=[0,1,2])
 ```
 
-Secondly, if one uses that `:varbyvar` reduction policy, then S must be `{n}`
+Secondly, if one uses that `:varbyvar` reduction policy, then S must be `{n-1}`
 
 ```julia
 p = 11
-R, (x,y,z,w) = GF(p)[:x,:y,:z]
+R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
 f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
 
-DeRham.zeta_function(f,S=[n], algorithm=:varbyvar)
+DeRham.zeta_function(f,S=[3], algorithm=:varbyvar)
 ```
 
 #### Parallel Programming
