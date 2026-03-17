@@ -67,14 +67,14 @@ Execute the following lines in Julia REPL:
 p = 7
 R, (x,y,z) = GF(p)[:x,:y,:z]
 f = y^2*z - x^3 - x*z^2 - z^3
-DeRham.zeta_function(f)
+DeRham.zeta_coefficients(f)
 DeRham.newton_polygon(f)
 
-g = DeRham.random_hypersurface(4,3,p)
-DeRham.zeta_function(g,givefrobmat=true)
+g = DeRham.random_hypersurface(3,4,p)
+DeRham.zeta_coefficients(g,givefrobmat=true)
 
 h = DeRham.fermat_hypersurface(4,4,p)
-DeRham.newton_polygon(g)
+DeRham.newton_polygon(h)
 ```
 
 #### Nondegeneracy Conditions (advanced)
@@ -91,7 +91,7 @@ p = 7
 R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
 f = x^3 + y^3 + z^3 + w^3
 
-DeRham.zeta_function(f,S=[0,1,2])
+DeRham.zeta_coefficients(f,S=[0,1,2])
 ```
 
 Secondly, if one uses that `:varbyvar` reduction policy, then S must be `{n-1}`
@@ -101,7 +101,7 @@ p = 11
 R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
 f = x^4 + y^4 + z^4 + w^4 + x*y*z*w
 
-DeRham.zeta_function(f,S=[3], algorithm=:varbyvar)
+DeRham.zeta_coefficients(f,S=[3], algorithm=:varbyvar)
 ```
 
 #### Parallel Programming
@@ -113,7 +113,7 @@ p = 7
 R, (x,y,z,w,v) = GF(p)[:x,:y,:z,:w,:v]
 f = x^4 + y^4 + z^4 + w^4 + v^4
 
-DeRham.zeta_function(f, S=[n], algorithm=:varbyvar, use_gpu=true)
+DeRham.zeta_coefficients(f, S=[4], algorithm=:varbyvar, use_gpu=true)
 ```
 
 If you start Julia with `julia --threads n` or `julia --threads auto`, you can also use Julia's mutlithreading. This is most effective for quartic and quintic surfaces:
@@ -123,7 +123,7 @@ p = 7
 R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
 f = x^4 + y^4 + z^4 + w^4
 
-DeRham.zeta_function(f, S=[n], use_threads=true)
+DeRham.zeta_coefficients(f, use_threads=true)
 ```
 
 Simultaneous use of `use_gpu=true` and `use_threads=true` is not currently supported.
