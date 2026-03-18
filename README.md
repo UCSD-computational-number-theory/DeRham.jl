@@ -31,6 +31,7 @@ The first time you install DeRham.jl, it will take a while for Julia to download
 
 ```
 activate .
+add https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git
 instantiate
 ```
 
@@ -49,7 +50,9 @@ After starting a new Julia REPL, run
 ```
 using Revise
 ] activate .
-add https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git
+```
+Then, press backspace to go back to a julia prompt and run
+```
 using DeRham, Oscar
 ```
 
