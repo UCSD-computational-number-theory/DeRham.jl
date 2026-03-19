@@ -50,6 +50,16 @@ include("PointCounts.jl")
 include("LPolyUtils.jl")
 include("K3OverF3.jl")
 
+include("./invariants/ZetaCoefficients.jl")
+include("./invariants/HodgePolygon.jl")
+include("./invariants/Smoothness.jl")
+include("./invariants/NewtonPolygon.jl")
+include("./invariants/HasseWittMatrix.jl")
+include("./invariants/aNumber.jl")
+include("./invariants/FrobeniusMatrix.jl")
+include("./invariants/CohomologyBasis.jl")
+
+
 # TODO: export Zeta Function functions
 
 end
