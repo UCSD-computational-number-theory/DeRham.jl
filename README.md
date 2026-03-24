@@ -109,7 +109,7 @@ DeRham.zeta_coefficients(f,S=[3], algorithm=:varbyvar)
 
 #### Parallel Programming
 
-For cubic threefolds and cubic fourfolds, if you have the CUDA driver installed, you can run the following code to use your Nvidia GPUs:
+For cubic threefolds and cubic fourfolds, if you have the CUDA driver installed, you can run the following code to use your Nvidia GPU:
 
 ```julia
 p = 7
