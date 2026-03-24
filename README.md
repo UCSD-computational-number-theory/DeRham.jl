@@ -111,7 +111,7 @@ DeRham.zeta_coefficients(f,S=[3], algorithm=:varbyvar)
 
 For cubic threefolds and cubic fourfolds, if you have the CUDA driver installed, you can run the following code to use your Nvidia GPUs:
 
-```
+```julia
 p = 7
 R, (x,y,z,w,v) = GF(p)[:x,:y,:z,:w,:v]
 f = x^4 + y^4 + z^4 + w^4 + v^4
@@ -121,7 +121,7 @@ DeRham.zeta_coefficients(f, S=[4], algorithm=:varbyvar, use_gpu=true)
 
 If you start Julia with `julia --threads n` or `julia --threads auto`, you can also use Julia's mutlithreading. This is most effective for quartic and quintic surfaces:
 
-```
+```julia
 p = 7
 R, (x,y,z,w) = GF(p)[:x,:y,:z,:w]
 f = x^4 + y^4 + z^4 + w^4
