@@ -38,19 +38,22 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
-      - name: Develop GPUFiniteFieldMatrices from GitHub
+      - name: Clone GPUFiniteFieldMatrices
+        shell: bash
+        run: |
+          git clone --depth 1 --branch main https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git ../GPUFiniteFieldMatrices.jl
+
+      - name: Instantiate project
         shell: bash
         run: |
           julia --project=. -e '
             using Pkg
-            Pkg.develop(PackageSpec(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git"))
-            Pkg.resolve()
             Pkg.instantiate()
           '
 
       - uses: julia-actions/julia-runtest@v1
 
-      - uses: julia-actions/julia-processcoverage@v1
+      # - uses: julia-actions/julia-processcoverage@v1
 
-      - if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v5
+      # - if: matrix.os == 'ubuntu-latest'
+      #   uses: codecov/codecov-action@v5
