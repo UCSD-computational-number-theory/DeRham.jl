@@ -38,6 +38,16 @@ jobs:
 
       - uses: julia-actions/cache@v2
 
+      - name: Develop GPUFiniteFieldMatrices from GitHub
+        shell: bash
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.develop(PackageSpec(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git", rev="main"))
+            Pkg.resolve()
+            Pkg.instantiate()
+          '
+
       - uses: julia-actions/julia-runtest@v1
 
       - uses: julia-actions/julia-processcoverage@v1
