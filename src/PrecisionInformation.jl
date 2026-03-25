@@ -109,75 +109,91 @@ function precision_information_max_auto_r_m(f, r_m; basis=nothing, verbose=0)
     return (hodge_polygon, r_m_max, N_m, M)
 end
 
-function zeta_function_with_precision(f, r::Integer; basis=nothing, verbose=0, kwargs...)
-    r_m = fill(Int(r), nvars(parent(f)) - 1)
-    return zeta_function_with_precision(f, r_m; basis=basis, verbose=verbose, kwargs...)
-end
+"""
+   precision_information(f,basis)
 
-function zeta_function_with_precision(f, r::AbstractVector; basis=nothing, verbose=0, kwargs...)
-    precision_info = precision_information_max_auto_r_m(f, r; basis=basis, verbose=verbose)
-    return zeta_function(f; precision_info=precision_info, verbose=verbose, kwargs...)
-end
+returns all the precision information
+related to f
 
-function frobenius_matrix_with_precision(f, r::Integer; basis=nothing, verbose=0, kwargs...)
-    r_m = fill(Int(r), nvars(parent(f)) - 1)
-    return frobenius_matrix_with_precision(f, r_m; basis=basis, verbose=verbose, kwargs...)
-end
-
-function frobenius_matrix_with_precision(f, r::AbstractVector; basis=nothing, verbose=0, kwargs...)
-    precision_info = precision_information_user_r_m(f, r; basis=basis, verbose=verbose)
-    result = zeta_function(f; precision_info=precision_info, givefrobmat=true, verbose=verbose, kwargs...)
-    if result == false
-        return false
-    end
-    return result[1]
-end
-
-function hasse_witt_matrix(f; basis=nothing, verbose=0, kwargs...)
-
+basis -- the basis of cohomology, in the format of 
+         polynomials with pole
+"""
+function precision_information(f,basis,verbose=0)
+    p = Int64(characteristic(parent(f)))
     n = nvars(parent(f)) - 1
     d = total_degree(f)
-    p = characteristic(parent(f))
-
-    if d < n
-        throw(ArgumentError("Hasse-Witt matrices are no supported for varieties of negative Kodaira dimensin (i.e. degree < number of variables"))
-    end
-
-    r_m = fill(0,n)
-    r_m[1] = 1
-
-    basis = get_basis_of_cohomology(f)
 
     hodge_polygon = hodgepolygon(basis, n)
     hodge_numbers = hodge_polygon.slopelengths
-    fh = hodge_numbers[1]
 
-    F = frobenius_matrix_with_precision(f, r_m, basis=basis, verbose=verbose, kwargs...)
+    k = sum(hodge_numbers) # dimension of H^n
+    (0 < verbose) && println("There are $k basis total elements in H^$n to be reduced")
 
-    highprec = F[end-fh+1:end,end-fh+1:end]
+    r_m = calculate_relative_precision(hodge_polygon, n-1, p) 
+    N_m = series_precision(p,n,d,r_m)
+    N_m[N_m .== 0] .= 1 #TODO: understand the meaning of zero precision better
+    M = algorithm_precision(p,n,d,r_m,N_m)
 
-    K = GF(p)
-
-    map_entries(K, lift.(highprec))
+    (hodge_polygon,r_m,N_m,M)
 end
 
-function a_number(f; basis=nothing, verbose=0, kwargs...)
+"""
+    precision_information(f)
+
+returns the precision information for a polynomial f
+
+"""
+function precision_information(f)
     n = nvars(parent(f)) - 1
+    PR = parent(f)
+    R = coefficient_ring(parent(f))
 
-    if n != 2
-        throw(ArgumentError("a-numbers are only supported for curves so far"))
+    params = default_params()
+
+    d = total_degree(f)
+    S = collect(0:n) #collect(0:d-1)
+    cache = controlled_reduction_cache(n,d,S,params)
+    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
     end
 
-    if 0 < verbose
-        println("Calculating Hasse-Witt matrix...")
-    end
-    HW = hasse_witt_matrix(f; basis=nothing, verbose=0, kwargs...)
-
-    basis = get_basis_of_cohomology(f)
-
-    hodge_polygon = hodgepolygon(basis, n)
-    hodge_numbers = hodge_polygon.slopelengths
-    g = hodge_numbers[1]
-
-    g - rank(HW)
+    precision_information(f,Basis)
 end
+
+"""
+    print_precision_info(n,d,p)
+
+Calcuates how much precision would be needed to compute
+the zeta functino of a polynomial with
+n+1 variables, of degree d, at the prime p
+"""
+function print_precision_info(n,d,p)
+    R, vars = polynomial_ring(GF(p),n+1)
+
+    # any hypersurface will do, all we care
+    # about is the hodge polygon
+    fermat_hypersurface = sum(vars .^ d)
+
+    (hp, rel, ser, alg) = calculate_precision_information(fermat_hypersurface)
+
+    println("Hodge Numbers: $(hp.slopelengths)")
+    println("Relative precision: $rel")
+    println("Series precision: $ser")
+    println("Algorithm precision: $alg")
+end 
+
+function pregen_precision_info(n,d,p)
+    R, vars = polynomial_ring(GF(p),n+1)
+
+    # any hypersurface will do, all we care
+    # about is the hodge polygon
+    fermat_hypersurface = sum(vars .^ d)
+
+    (hp, rel, ser, alg) = calculate_precision_information(fermat_hypersurface)
+
+    return alg
+end 

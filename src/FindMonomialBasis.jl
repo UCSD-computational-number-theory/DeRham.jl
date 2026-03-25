@@ -350,3 +350,27 @@ end
 ## Computes the pseudo_inverse for the classical case.
 ##TODO: update this to reflex changes to pseudo_inverse_controlled
 ##it's used in standard reduction, I'll plan to take care of it then
+
+function get_basis_of_cohomology_twoflavors(f,S,params,cache)
+    n = nvars(parent(f)) - 1
+
+    basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
+
+    if basis == nothing
+        (0 < verbose) && println("Cannont compute monomial basis, this f appears to be non-smooth")
+        return false
+    end
+
+    Basis = []
+    for i in 1:n
+        for j in basis[i]
+            push!(Basis,[j,i])
+        end
+    end
+
+    (basis,Basis)
+end
+
+function get_basis_of_cohomology(f,S,params,cache)
+    get_basis_of_cohomology_twoflavors(f,S,params,cache)[2]
+end
