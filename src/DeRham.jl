@@ -28,7 +28,9 @@ include("PrecisionEstimate.jl")
 include("SmoothNondegenerate.jl")
 
 include("StandardReduction.jl")
+include("ControlledReductionCache.jl")
 
+include("ZetaFunctionParams.jl")
 include("PEP.jl")
 include("EvaluatePEP.jl")
 include("ComputeRuv.jl")
@@ -44,7 +46,6 @@ include("CharPolyFrob.jl")
 
 include("ExamplePolynomials.jl")
 
-include("ZetaFunction.jl")
 include("PrecisionInformation.jl")
 include("PointCounts.jl")
 include("LPolyUtils.jl")
