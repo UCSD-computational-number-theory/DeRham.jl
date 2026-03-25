@@ -1,30 +1,59 @@
 name: CI
+
 on:
   push:
     branches:
       - main
-    tags: '*'
+    tags:
+      - "*"
   pull_request:
+  workflow_dispatch:
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         version:
-          - '1.10'
+          - "1.12"
         os:
           - ubuntu-latest
-          - macOS-latest
+          - macos-latest
         arch:
           - x64
+
+    permissions:
+      actions: write
+      contents: read
+
     steps:
-      - uses: actions/checkout@v1
-      - uses: julia-actions/setup-julia@latest
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/julia-runtest@latest
-      - uses: julia-actions/julia-uploadcodecov@latest
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - uses: julia-actions/cache@v2
+
+      - name: Clone GPUFiniteFieldMatrices
+        shell: bash
+        run: |
+          git clone --depth 1 --branch main https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git ../GPUFiniteFieldMatrices.jl
+
+      - name: Instantiate project
+        shell: bash
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
+          '
+
+      - uses: julia-actions/julia-runtest@v1
+
+      # - uses: julia-actions/julia-processcoverage@v1
+
+      # - if: matrix.os == 'ubuntu-latest'
+      #   uses: codecov/codecov-action@v5

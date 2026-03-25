@@ -279,14 +279,14 @@ end
         runcsvtest("dim_1_deg_3_nsmooth.csv", zeta_coefficients=zf)
     end 
 
-    @testset "GPU Karatsuba varbyvar" begin
-        # do dimension 2, degree 3 and 
-        zf = f -> DeRham.zeta_coefficients(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
-
-        runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_coefficients=zf)
-    end 
-
    if CUDA.functional()
+       @testset "GPU Karatsuba varbyvar" begin
+           # do dimension 2, degree 3 and 
+           zf = f -> DeRham.zeta_coefficients(f,fastevaluation=true,algorithm=:varbyvar,use_gpu=true,changef=false,vars_reversed=false,verbose=0,S=[4])
+
+           runcsvtest("dim_3_deg_3_nsmooth.csv", zeta_coefficients=zf)
+       end
+
        @testset "GPU (CUDA) S=[0,1,2], Fast Evaluation + Naive Strategy" begin
         
             zf = f -> DeRham.zeta_coefficients(f,S=[0,1,2],algorithm=:depthfirst,fastevaluation=true,use_gpu=true)
