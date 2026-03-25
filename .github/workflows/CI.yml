@@ -43,7 +43,7 @@ jobs:
         run: |
           julia --project=. -e '
             using Pkg
-            Pkg.develop(PackageSpec(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git", rev="main"))
+            Pkg.develop(PackageSpec(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl.git"))
             Pkg.resolve()
             Pkg.instantiate()
           '
