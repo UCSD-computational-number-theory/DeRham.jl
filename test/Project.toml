@@ -15,3 +15,6 @@ JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
 ReLint = "b3cc710f-9c33-5bdb-a03d-a94903873e97"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[sources]
+ReLint = {url = "https://github.com/RelationalAI-oss/ReLint.jl", rev = "main"}
