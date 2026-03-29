@@ -47,8 +47,6 @@ include("CharPolyFrob.jl")
 include("ExamplePolynomials.jl")
 
 include("PrecisionInformation.jl")
-include("PointCounts.jl")
-include("LPolyUtils.jl")
 include("K3OverF3.jl")
 
 include("./invariants/ZetaCoefficients.jl")
@@ -59,6 +57,9 @@ include("./invariants/HasseWittMatrix.jl")
 include("./invariants/aNumber.jl")
 include("./invariants/FrobeniusMatrix.jl")
 include("./invariants/CohomologyBasis.jl")
+include("./invariants/PointCounts.jl")
+include("./invariants/LPolynomial.jl")
+include("./invariants/ArtinMazurHeight.jl")
 
 
 # TODO: export Zeta Function functions

@@ -2,9 +2,13 @@
     LPolynomial(FM, q)
 
 Given the Frobenius matrix, computes the corresponding L-polynomial det(1-tq^{-1}FM)
+returns an Oscar polynomial if as_poly=true, and the coefficients if as_poly=false
 
-INPUT: 
+INPUTS: 
 * "FM" -- Frobenius matrix 
+* "n" -- integer, dimension of the ambient projective space
+* "q" -- integer, characteristic of base field
+
 """
 
 function LPolynomial(FM, n, q, polygon, relative_precision, verbose)
@@ -16,23 +20,8 @@ function LPolynomial(FM, n, q, polygon, relative_precision, verbose)
     f = charpoly(P, lift_to_int(FM))
     cp_coeffs = collect(coefficients(f))
     return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs, verbose)
-    
-
-    """
-    k = degree(f)
-    bound = binomial(k,Int(ceil(k/2)))*(q^(n/2))*ceil(k/2)
-    R, t = polynomial_ring(ZZ,"t")
-    result = R(0)
-    for i in 0:k
-        if abs(ZZ(coeff(f,i))) > bound
-            result = result + (ZZ(coeff(f,i)) - characteristic(P))*t^(k-i)
-        else
-            result = result + (ZZ(coeff(f,i)))*t^(k-i)
-        end
-    end
-    """
-
 end 
+
 
 """
     zeta_coefficients(f; verbose=false, givefrobmat=false, algorithm=:costachunks, termorder=:invlex, vars_reversed=true)
