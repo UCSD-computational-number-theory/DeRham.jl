@@ -108,7 +108,7 @@ k3boat_shape_Lpoly_to_pointcount(coeffs, q, n)
 """
 function k3boat_shape_Lpoly_to_pointcount(coeffs, q, n)
     @assert length(coeffs) == 22
-    @assert (coeffs[1] == q) and (coeffs[22] == q) 
+    @assert (coeffs[1] == q) && ((coeffs[22] == q) || (coeffs[22] == -q))
 
     R,T = power_series_ring(QQ, max(n+10, 25), :T)
     L = sum([coeffs[i] * (q*T)^(i-1) for i in 1:22])

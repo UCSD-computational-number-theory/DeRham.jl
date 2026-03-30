@@ -280,3 +280,8 @@ function zeta_coefficients_with_precision(f, r::AbstractVector; basis=nothing, v
     precision_info = precision_information_max_auto_r_m(f, r; basis=basis, verbose=verbose)
     return zeta_coefficients(f; precision_info=precision_info, verbose=verbose, kwargs...)
 end
+
+function zeta_coefficients_with_precision(f, hodge_numbers::AbstractVector, r_m::AbstractVector, N_m::AbstractVector, M::Integer; basis=nothing, verbose=0, kwargs...)
+    precision_info = (SlopesPolygon(hodge_numbers), r_m, N_m, M)
+    return zeta_coefficients(f; precision_info=precision_info, verbose=verbose, kwargs...)
+end 
