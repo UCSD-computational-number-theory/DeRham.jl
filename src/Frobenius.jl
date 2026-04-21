@@ -40,6 +40,9 @@ INPUTS:
 function applyFrobeniusToMon(n, d, f, N, p, beta, m, R, PR, termorder,vars_reversed; verbose=false)
     (9 < verbose) && println("Applying Frobenius to $beta with pole order $m")
     (9 < verbose) && println("N=$N, m=$m")
+    if N == 0
+        return []
+    end
     (9 < verbose) && println("Scaling by factorial of: ", p * (N + m - 1) - 1)
     Factorial = factorial(ZZ(p * (N + m - 1) - 1))
     o = ones(Int64, n+1)

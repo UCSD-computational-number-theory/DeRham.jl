@@ -100,7 +100,11 @@ function reduce_order_n_to_basis(n,p,e,precision,VS,poly_to_reduce,T,R,cache,ev)
 
     N = precision
 
-    ff = factorial(ZZ(p*(e+N-1)-1)) 
+    if N == 0
+        return zero_matrix(R, nrows(T), 1)
+    end
+
+    ff = factorial(ZZ(p*(e+N-1)-1))
     val_ff = valuation(ff,p)
     final_val = (n-1) - val_ff  
     ff_invertible = ff / p^val_ff
