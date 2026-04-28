@@ -54,37 +54,34 @@ function reducechain_pchunk(u,g,m,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_te
         nend = p
     end
 
-    matrices = Ruv[V]#computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
-
-    #TODO: the following was changed to use reverse! so 
-    #    it doesn't allocate as much, but I realized that
-    #    this isn't our bottleneck. If it ever does
-    #    become the bottleneck, fix the rest of this method
-    #    so it doesn't allocate.
-    mins = u .- (nend-(d*n-n))*V
-
-    B,A = eval_to_linear!(B,A,temp,matrices,mins,V)
-
     i = 1
 
-    
     (4 < verbose) && println("Before reduction chunk, U is $u")
-    if params.fastevaluation && 1 ≤ nend-(d*n-n)
-      gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,g_temp)
-      i = nend-(d*n-n) + 1
-    else
-      while i <= (nend-(d*n-n))
-        my_mul!(temp,B,nend-(d*n-n)-i)
-        my_add!(temp,temp,A)
-        gMat = temp*gMat
+    if 0 < nend-(d*n-n)
+        matrices = Ruv[V]#computeRuvS(V,S,f,pseudoInverseMat,Ruvs,cache,params)
 
-        i = i+1
-      end
-    end
-    # TODO: test how much of a difference the fast evaluation actually makes
-    # i > 1 iff the while loop above is executed at least once 
-    if i > 1 # TODO: this will have a problem with fastevaluation
-        # UPDATE: I think the problem with fastevaluation is fixed... right?
+        #TODO: the following was changed to use reverse! so
+        #    it doesn't allocate as much, but I realized that
+        #    this isn't our bottleneck. If it ever does
+        #    become the bottleneck, fix the rest of this method
+        #    so it doesn't allocate.
+        mins = u .- (nend-(d*n-n))*V
+
+        B,A = eval_to_linear!(B,A,temp,matrices,mins,V)
+
+        # TODO: test how much of a difference the fast evaluation actually makes
+        if params.fastevaluation
+          gMat = finitediff_prodeval_linear!(B,A,0,nend-(d*n-n)-1,gMat,temp,g_temp)
+          i = nend-(d*n-n) + 1
+        else
+          while i <= (nend-(d*n-n))
+            my_mul!(temp,B,nend-(d*n-n)-i)
+            my_add!(temp,temp,A)
+            gMat = temp*gMat
+
+            i = i+1
+          end
+        end
         @. u = u - (nend-(d*n-n))*V
     end
     (4 < verbose) && println("After steps 1-$i, I is $I")
@@ -150,26 +147,26 @@ function reducepoly_pchunk(pol,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,params)
 
     # this is the omega from section 1.5.5 of Costa's thesis.
     allcostadata = [] # this will be an array of costa data
+    g_temp = zeros(UInt, g_length)
 
     poleorder = highpoleorder
-    while n < poleorder
+    while n <= poleorder
         (9 < params.verbose) && println("pole order is $poleorder")
         # this is an array of polynomials
         costadatatemp = termsoforder(pol,poleorder)
 
         for term in costadatatemp
-            g = zeros(UInt,g_length) 
+            g = zeros(UInt,g_length)
             term_costadata = costadata_of_initial_term!(term,g,n,d,p,S,cache,params)
             incorporate_initial_term!(allcostadata,term_costadata)
         end
 
         for i in eachindex(allcostadata)
-            g_temp = similar(allcostadata[i][2])
             allcostadata[i] = reducechain_pchunk(allcostadata[i]...,poleorder,S,f,pseudoInverseMat,p,Ruv,cache,A,B,temp,g_temp,params)
         end
 
         poleorder = poleorder - p
-    end    
+    end
 
     return poly_of_end_costadatas(allcostadata,PR,p,d,n,S,params)
 end
