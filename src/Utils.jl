@@ -579,6 +579,15 @@ function float_entries!(dest::Matrix{Float64}, src::ZZMatrix)
     res
 end
 
+function copy_entries!(A, B)
+    @assert nrows(A) == nrows(B)
+    @assert ncols(A) == ncols(B)
+    for i in 1:nrows(A), j in 1:ncols(A)
+        A[i, j] = B[i, j]
+    end
+    return A
+end
+
 """
     henselLift(p, precision, A, T)
 Hensel lifts mod p solution T to the linear system AX-I=0 to mod p^precision
@@ -593,7 +602,7 @@ function henselLift(p, precision, A, T)
     i = 1
 
     temp_T = zero_matrix(base_ring(T),size(T)...)
-    copy!(temp_T,T)
+    copy_entries!(temp_T,T)
     #add!(temp_T,temp_T,T)
     temp_2T = zero_matrix(base_ring(T),size(T)...)
     temp_AT = zero_matrix(base_ring(T),size(A,1),size(T,2))
