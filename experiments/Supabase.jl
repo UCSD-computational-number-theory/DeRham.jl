@@ -7,6 +7,7 @@ using Oscar
 
 include("find_cubic_fourfolds.jl")
 include("find_newton_polygons/cpu_experiments.jl")
+include("find_newton_polygons/gpu_experiments.jl")
 
 ############################################################
 # SUPABASE CODE
@@ -185,9 +186,9 @@ function run_pipeline()
     println("Enter Supabase API key (anon key): ")
     key = ""
 
-    println("Enter n: "); n = 5;
+    println("Enter n: "); n = 6;
     println("Enter d: "); d = 3;
-    println("Enter p: "); p = 7;
+    println("Enter p: "); p = 11;
     println("Enter number of random samples N: "); N = 1;
 
     table = "n$(n)_d$(d)_np"
@@ -212,11 +213,12 @@ function run_pipeline()
     # @time df = gpu_smooth_distributed(n,d,p,N,df_old)
     # @time df = cpu_example_fast_random(n,d,p,N,df_old)
     # @time df = cpu_example_fast_example(n,d,p,N,my_example(p),df_old)
-    @time df = cpu_vector_fast_random(n,d,p,N,df_old)
+    # @time df = cpu_vector_fast_random(n,d,p,N,df_old)
     # @time df = cpu_vector_fast_random_K3(n,d,p,N,df_old)
     # @time df = cpu_vector_fast_example(n,d,p,N,my_example(p),df_old)
     # @time df = cpu_vector_fast_symmetric(n,d,p,N,df_old)
     # @time df = cpu_vector_fast_weighted_example(n,d,p,N,my_example(p),df_old,num_monomials=2,nonzero_weights=true)
+    @time df = gpu_random_hypersurface_experiment(n,d,p,N,df_old)
 
     # TO RUN WITH HEIGHTS
     # @time df, heights = func()
