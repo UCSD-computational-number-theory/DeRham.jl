@@ -225,7 +225,7 @@ function run_pipeline()
 
     # SAVE TO CSV
     filename = "$(table).csv"
-  intln("Saving full table to CSV: $filename")
+    println("Saving full table to CSV: $filename")
     CSV.write(filename, df)
 
     # PUSH TO SUPABASE
