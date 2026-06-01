@@ -70,7 +70,8 @@ Execute the following lines in Julia REPL:
 p = 7
 R, (x,y,z) = GF(p)[:x,:y,:z]
 f = y^2*z - x^3 - x*z^2 - z^3
-DeRham.zeta_coefficients(f)
+zeta_coeffs = DeRham.zeta_coefficients(f)
+DeRham.LPolynomial(zeta_coeffs)
 DeRham.newton_polygon(f)
 
 g = DeRham.random_hypersurface(3,4,p)
