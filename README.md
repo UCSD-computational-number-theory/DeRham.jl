@@ -1,13 +1,12 @@
-
 # DeRham.jl
 
 [![CI](https://github.com/UCSD-computational-number-theory/DeRham.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/UCSD-computational-number-theory/DeRham.jl/actions/workflows/CI.yml)
 
 This package aims to implement cutting-edge algorithms that calculate
 
-* point counts of equations mod $p$ (algebraic varieties over $\mathbb{F}_p$)
-* the cohomology of algebraic varieties
-* the extra structure on this cohomology
+- point counts of equations mod $p$ (algebraic varieties over $\mathbb{F}_p$)
+- the cohomology of algebraic varieties
+- the extra structure on this cohomology
 
 Long term goals include having fast versions of all the various forms of Kedlaya's algorithm, Harvey's algorithm, Harvey's Trace Formula, Moonen's algorithm, etc.
 
@@ -15,13 +14,21 @@ Long term goals include having fast versions of all the various forms of Kedlaya
 
 ## Current functionality
 
-We currently implement a variant of Kedlaya's algorithm that computes the zeta functions (and consequently the newton polygons) of smooth projective hypersurfaces of degree $$d$$ over $$\mathbb{F}_p$$ (for $$p\nmid d$$) using a method known as controlled reduction, see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf).
+We currently implement a variant of Kedlaya's algorithm that computes the zeta functions (and consequently the newton polygons) of smooth projective hypersurfaces of degree $d$ over $\mathbb{F}_p$ (for $p\nmid d$) using a method known as controlled reduction, see Proposition 1.15 [here](https://edgarcosta.org/assets/articles/EdgarCosta-PhDthesis.pdf).
 
 ## Getting Started
 
 #### Installing for the first time
 
-First, install Julia 1.12 and Oscar. If you're new to Julia and Oscar, you can find a tutorial for non-experts [here](https://jjgarzella.github.io/blog/how-to-install-julia/). Then, clone this repo with `git clone https://github.com/UCSD-computational-number-theory/DeRham.jl.git`. 
+First, install Julia 1.12 and Oscar. If you're new to Julia and Oscar, you can find a tutorial for non-experts [here](https://jjgarzella.github.io/blog/how-to-install-julia/). In short:
+
+- On Windows, install Ubuntu through WSL and use the Ubuntu terminal.
+- On Mac, open Terminal and run `xcode-select --install`.
+- On Linux, open your usual terminal.
+
+Then install Julia with `curl -fsSL https://install.julialang.org | sh`, restart your terminal if necessary, open a Julia REPL with `julia`, press `]` to enter package mode, and run `add Oscar`. Press backspace to return to the Julia prompt and check that `using Oscar` works.
+
+Then, clone this repo with `git clone https://github.com/UCSD-computational-number-theory/DeRham.jl.git`.
 If you'd like to use CUDA, you'll need to install the CUDA driver, see [the instructions in the CUDA.jl docs](https://cuda.juliagpu.org/stable/installation/overview/).
 
 `Revise.jl` is recommended for hot reloading. From a new Julia REPL, run
@@ -51,14 +58,16 @@ After starting a new Julia REPL, run
 using Revise
 ] activate .
 ```
+
 Then, press backspace to go back to a julia prompt and run
+
 ```
 using DeRham, Oscar
 ```
 
 #### Troubleshooting
 
-Please ensure that you're using the latest version of both Julia and Oscar. If the package manager gives you errors, try deleting Manifest.toml, upgrading Julia, updating the package registry, and updating Oscar. 
+Please ensure that you're using the latest version of both Julia and Oscar. If the package manager gives you errors, try deleting Manifest.toml, upgrading Julia, updating the package registry, and updating Oscar.
 
 ## Sample code
 
@@ -132,5 +141,6 @@ DeRham.zeta_coefficients(f, use_threads=true)
 
 Simultaneous use of `use_gpu=true` and `use_threads=true` is not currently supported.
 
-## Citing Our Work 
+## Citing Our Work
+
 You are welcome to use the code in this repository for your own research, but we ask that you please cite our paper [Newton strata realization for hypersurfaces via explicit p-adic cohomology](https://arxiv.org/abs/2602.24155) (by Ryan Batubara, Jack J Garzella, Yongyuan Huang, and Maximus Mellberg, arxiv:2602.24155 (2026)) if and when you publish your results.
