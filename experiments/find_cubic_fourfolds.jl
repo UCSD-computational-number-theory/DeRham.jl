@@ -1,14 +1,14 @@
 
 # using DeRham
 
-function find_0smooth(n,d,p,nExamples)
+function find_0smooth(n, d, p, nExamples)
 
     nTries = 7 # just some heuristic
 
 
     result = []
     while length(result) < nExamples
-        f = DeRham.random_hypersurface(n,d,p)
+        f = DeRham.random_hypersurface(n, d, p)
 
         println("Randomly generated new f\n")
 
@@ -24,15 +24,15 @@ function find_0smooth(n,d,p,nExamples)
         GC.gc()
         println("f is smooth!\n")
 
-        for i in 1:nTries # give 
+        for i = 1:nTries # give
             println("Testing if f is {0}-smooth...")
-            @time smooth0 = DeRham.is_Ssmooth(f,[0])
+            @time smooth0 = DeRham.is_Ssmooth(f, [0])
             GC.gc()
 
             if smooth0
                 println("f is {0}-smooth!\n")
                 println("f = $f\n")
-                push!(result,f)
+                push!(result, f)
                 break
             end
 
@@ -48,14 +48,14 @@ function find_0smooth(n,d,p,nExamples)
     result
 end
 
-function find_nsmooth(n,d,p,nExamples)
+function find_nsmooth(n, d, p, nExamples)
 
     nTries = 7 # just some heuristic
 
 
     result = []
     while length(result) < nExamples
-        f = DeRham.random_hypersurface(n,d,p)
+        f = DeRham.random_hypersurface(n, d, p)
 
         println("Randomly generated new f\n")
 
@@ -71,15 +71,15 @@ function find_nsmooth(n,d,p,nExamples)
         GC.gc()
         println("f is smooth!\n")
 
-        for i in 1:nTries # give 
+        for i = 1:nTries # give
             println("Testing if f is {$(n-1)}-smooth...")
-            @time smooth0 = DeRham.is_Ssmooth(f,[n-1])
+            @time smooth0 = DeRham.is_Ssmooth(f, [n-1])
             GC.gc()
 
             if smooth0
                 println("f is {$(n-1)}-smooth!\n")
                 println("f = $f\n")
-                push!(result,f)
+                push!(result, f)
                 break
             end
 
@@ -94,4 +94,3 @@ function find_nsmooth(n,d,p,nExamples)
 
     result
 end
-

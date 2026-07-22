@@ -4,8 +4,8 @@
 Given the Frobenius matrix, computes the corresponding L-polynomial det(1-tq^{-1}FM)
 returns an Oscar polynomial if as_poly=true, and the coefficients if as_poly=false
 
-INPUTS: 
-* "FM" -- Frobenius matrix 
+INPUTS:
+* "FM" -- Frobenius matrix
 * "n" -- integer, dimension of the ambient projective space
 * "q" -- integer, characteristic of base field
 
@@ -15,12 +15,12 @@ function LPolynomial(FM, n, q, polygon, relative_precision, verbose)
     @assert size(FM, 1) == size(FM, 2) "FM is not a square matrix"
 
     P, T = polynomial_ring(ZZ, "T")
-    lift_to_int(s) = map(x -> lift(ZZ,x),s)
+    lift_to_int(s) = map(x -> lift(ZZ, x), s)
 
     f = charpoly(P, lift_to_int(FM))
     cp_coeffs = collect(coefficients(f))
     return compute_Lpolynomial(n, q, polygon, relative_precision, cp_coeffs, verbose)
-end 
+end
 
 
 """
@@ -30,7 +30,7 @@ end
 Wrapper function that outputs the zeta function of
 the projective hypersurface defined by `f`.
 
-INPUTS: 
+INPUTS:
 * "f" -- Oscar polynomial (should be homogeneous)
 
 KEYWORD ARGUMENTS:
@@ -54,14 +54,29 @@ vars_reversed -- reverses the order of basis vectors at various places
 >>>if you don't know what this is, ignore it.
 
 """
-function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=true, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing, precision_info=nothing)
+function zeta_coefficients(
+    f;
+    S = [-1],
+    verbose = 0,
+    changef = true,
+    givefrobmat = false,
+    algorithm = :default,
+    termorder = :invlex,
+    vars_reversed = false,
+    fastevaluation = true,
+    always_use_bigints = false,
+    use_gpu = false,
+    use_threads = false,
+    context = nothing,
+    precision_info = nothing,
+)
     PR = parent(f)
     R = coefficient_ring(PR)
     p = Int64(characteristic(PR))
     q = p
     n = nvars(PR) - 1
     d = total_degree(f)
-    
+
     if S == [-1]
         S = collect(0:n)
     end
@@ -74,13 +89,13 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
         if S == [n]
             algorithm = :varbyvar
         elseif n > 4
-            for i in 0:n
-                if is_Ssmooth(f,[n-i])
+            for i = 0:n
+                if is_Ssmooth(f, [n-i])
                     algorithm = :varbyvar
                     S = [n]
                     vars = gens(PR)
                     new_vars = copy(vars)
-                    for j in 0:n
+                    for j = 0:n
                         if j == i
                             new_vars[i+1] = vars[n+1]
                         end
@@ -101,15 +116,25 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
     end
 
     # vars_reversed = false
-    params = ZetaFunctionParams(verbose,givefrobmat,algorithm,termorder,vars_reversed,fastevaluation,always_use_bigints,use_gpu,use_threads)
+    params = ZetaFunctionParams(
+        verbose,
+        givefrobmat,
+        algorithm,
+        termorder,
+        vars_reversed,
+        fastevaluation,
+        always_use_bigints,
+        use_gpu,
+        use_threads,
+    )
 
-    cache = controlled_reduction_cache(n,d,S,params)
+    cache = controlled_reduction_cache(n, d, S, params)
 
     (0 < verbose) && println("p = $p")
     (9 < verbose) && println("Working with a degree $d hypersurface in P^$n")
 
-    (basis, Basis) = get_basis_of_cohomology_twoflavors(f,S,params,cache)
-    
+    (basis, Basis) = get_basis_of_cohomology_twoflavors(f, S, params, cache)
+
     #println("Basis of cohomology is $Basis")
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
@@ -121,7 +146,9 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
 
     (1 < verbose) && println("N_m=$N_m")
 
-    (9 < verbose) && println("We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series")
+    (9 < verbose) && println(
+        "We work modulo $p^$M, and compute up to the $N_m-th term of the Frobenius power series",
+    )
 
     if always_use_bigints || BigInt(2)^64 < BigInt(p)^M
         residue = BigInt(p)^M
@@ -136,13 +163,15 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
     #residue = BigInt(p)^M
 
     precisionring, = residue_ring(ZZ, residue)
-    precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i in 0:n])
+    precisionringpoly, pvars = polynomial_ring(precisionring, ["x$i" for i = 0:n])
 
     if (0 < verbose)
         println("Computing the relations matrix...")
-        @time f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
+        @time f_changed, f, pseudo_inverse_mat_new =
+            find_Ssmooth_model(f, M, S, params, changef, cache)
     else
-        f_changed, f, pseudo_inverse_mat_new = find_Ssmooth_model(f, M, S, params, changef, cache)
+        f_changed, f, pseudo_inverse_mat_new =
+            find_Ssmooth_model(f, M, S, params, changef, cache)
     end
 
     # For large examples, force a GC here; Julia's GC doesn't seem to automatically cause the
@@ -159,26 +188,26 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
     if (f == false)
         (0 < verbose) && println("f is not smooth (or not S-smooth) and we're done. ")
         return false
-    end 
+    end
 
     (9 < verbose) && println("pseudo_inverse_mat is $pseudo_inverse_mat_new")
 
-    # recomputes basis if f is different 
-    if f_changed 
+    # recomputes basis if f is different
+    if f_changed
         (0 < verbose) && println("New model is $f")
-        basis = compute_monomial_bases(f, params, cache) # basis of cohomology 
+        basis = compute_monomial_bases(f, params, cache) # basis of cohomology
         Basis = []
-        for i in 1:n
+        for i = 1:n
             for j in basis[i]
-                push!(Basis,[j,i])
+                push!(Basis, [j, i])
             end
         end
         (9 < verbose) && println("New basis of cohomology is $Basis")
-    end 
-    
-    for i in 1:length(Basis)
+    end
+
+    for i = 1:length(Basis)
         Basis[i][1] = liftCoefficients(precisionring, precisionringpoly, Basis[i][1])
-    end 
+    end
 
     (9 < verbose) && println("Basis of cohomology is $Basis")
 
@@ -186,15 +215,19 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
     fLift = liftCoefficients(precisionring, precisionringpoly, f)
     if (0 < verbose)
         println("\nApplying Frobenius to basis elements")
-        @time FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+        @time FBasis = applyFrobeniusToBasis(Basis, fLift, N_m, p, params)
     else
-        FBasis = applyFrobeniusToBasis(Basis,fLift, N_m, p, params)
+        FBasis = applyFrobeniusToBasis(Basis, fLift, N_m, p, params)
     end
 
     l = d * n - n + d - length(S)
 
 
-    MS = matrix_space(precisionring, nrows(pseudo_inverse_mat_new), ncols(pseudo_inverse_mat_new))
+    MS = matrix_space(
+        precisionring,
+        nrows(pseudo_inverse_mat_new),
+        ncols(pseudo_inverse_mat_new),
+    )
     pseudo_inverse_mat = MS()
 
     if (0 < verbose)
@@ -205,38 +238,63 @@ function zeta_coefficients(f; S=[-1], verbose=0, changef=true, givefrobmat=false
     end
     (9 < verbose) && println("T matrix is $T")
 
-    for i in 1:nrows(pseudo_inverse_mat_new)
-        for j in 1:ncols(pseudo_inverse_mat_new)
-            pseudo_inverse_mat[i,j] = ZZ(pseudo_inverse_mat_new[i,j])
+    for i = 1:nrows(pseudo_inverse_mat_new)
+        for j = 1:ncols(pseudo_inverse_mat_new)
+            pseudo_inverse_mat[i, j] = ZZ(pseudo_inverse_mat_new[i, j])
         end
     end
 
     #TODO: check which algorithm we're using
     (0 < verbose) && println("\nStarting controlled reduction...")
-    Reductions = reducetransform(FBasis, N_m, S, fLift, pseudo_inverse_mat, p,  params, cache,context) 
+    Reductions = reducetransform(
+        FBasis,
+        N_m,
+        S,
+        fLift,
+        pseudo_inverse_mat,
+        p,
+        params,
+        cache,
+        context,
+    )
     (2 < verbose) && println(Reductions)
-    
-    ev = cache[n*d - n - 1] 
-    (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1],Reductions[2][1][1]],ev))
+
+    ev = cache[n*d-n-1]
+    (9 < verbose) && println(convert_p_to_m([Reductions[1][1][1], Reductions[2][1][1]], ev))
     FM = compute_frobenius_matrix(n, p, d, N_m, Reductions, T, Basis, params, cache)
     (9 < verbose) && println("The Frobenius matrix is $FM")
 
     if givefrobmat
-        (FM,LPolynomial(FM,n,q,hodge_polygon,r_m, verbose))
+        (FM, LPolynomial(FM, n, q, hodge_polygon, r_m, verbose))
     else
-        LPolynomial(FM,n,q,hodge_polygon,r_m, verbose)
+        LPolynomial(FM, n, q, hodge_polygon, r_m, verbose)
     end
 end
 
 """
 a wrapper to zeta_coefficients
 
-INPUTS: 
+INPUTS:
 * "f" -- Oscar polynomial (should be homogeneous) over the integers
-* "p" -- a prime number, integer 
+* "p" -- a prime number, integer
 
 """
-function zeta_coefficients(f, p; S=[-1], verbose=0, changef=true, givefrobmat=false, algorithm=:default, termorder=:invlex, vars_reversed=false, fastevaluation=false, always_use_bigints=false, use_gpu=false, use_threads=false, context=nothing)
+function zeta_coefficients(
+    f,
+    p;
+    S = [-1],
+    verbose = 0,
+    changef = true,
+    givefrobmat = false,
+    algorithm = :default,
+    termorder = :invlex,
+    vars_reversed = false,
+    fastevaluation = false,
+    always_use_bigints = false,
+    use_gpu = false,
+    use_threads = false,
+    context = nothing,
+)
     @assert is_prime(p) "p must be prime"
     PR = parent(f)
     PRmodp, hom = change_base_ring(GF(p), PR)
@@ -245,13 +303,13 @@ function zeta_coefficients(f, p; S=[-1], verbose=0, changef=true, givefrobmat=fa
         if S == [n]
             algorithm = :varbyvar
         elseif n > 4
-            for i in 0:n
-                if is_Ssmooth(f,[n-i])
+            for i = 0:n
+                if is_Ssmooth(f, [n-i])
                     algorithm = :varbyvar
                     S = [n]
                     vars = gens(PR)
                     new_vars = copy(vars)
-                    for j in 0:n
+                    for j = 0:n
                         if j == i
                             new_vars[i+1] = vars[n+1]
                         end
@@ -267,21 +325,73 @@ function zeta_coefficients(f, p; S=[-1], verbose=0, changef=true, givefrobmat=fa
         end
     end
 
-    return zeta_coefficients(hom(f);S=S, verbose=verbose, changef=changef, givefrobmat=givefrobmat, algorithm=algorithm, termorder=termorder, vars_reversed=vars_reversed, fastevaluation=fastevaluation, always_use_bigints=always_use_bigints, use_gpu=use_gpu, use_threads=use_threads, context=context)
-end 
+    return zeta_coefficients(
+        hom(f);
+        S = S,
+        verbose = verbose,
+        changef = changef,
+        givefrobmat = givefrobmat,
+        algorithm = algorithm,
+        termorder = termorder,
+        vars_reversed = vars_reversed,
+        fastevaluation = fastevaluation,
+        always_use_bigints = always_use_bigints,
+        use_gpu = use_gpu,
+        use_threads = use_threads,
+        context = context,
+    )
+end
 
 
-function zeta_coefficients_with_precision(f, r::Integer; basis=nothing, verbose=0, kwargs...)
+function zeta_coefficients_with_precision(
+    f,
+    r::Integer;
+    basis = nothing,
+    verbose = 0,
+    kwargs...,
+)
     r_m = fill(Int(r), nvars(parent(f)) - 1)
-    return zeta_coefficients_with_precision(f, r_m; basis=basis, verbose=verbose, kwargs...)
+    return zeta_coefficients_with_precision(
+        f,
+        r_m;
+        basis = basis,
+        verbose = verbose,
+        kwargs...,
+    )
 end
 
-function zeta_coefficients_with_precision(f, r::AbstractVector; basis=nothing, verbose=0, kwargs...)
-    precision_info = precision_information_max_auto_r_m(f, r; basis=basis, verbose=verbose)
-    return zeta_coefficients(f; precision_info=precision_info, verbose=verbose, kwargs...)
+function zeta_coefficients_with_precision(
+    f,
+    r::AbstractVector;
+    basis = nothing,
+    verbose = 0,
+    kwargs...,
+)
+    precision_info =
+        precision_information_max_auto_r_m(f, r; basis = basis, verbose = verbose)
+    return zeta_coefficients(
+        f;
+        precision_info = precision_info,
+        verbose = verbose,
+        kwargs...,
+    )
 end
 
-function zeta_coefficients_with_precision(f, hodge_numbers::AbstractVector, r_m::AbstractVector, N_m::AbstractVector, M::Integer; basis=nothing, verbose=0, kwargs...)
+function zeta_coefficients_with_precision(
+    f,
+    hodge_numbers::AbstractVector,
+    r_m::AbstractVector,
+    N_m::AbstractVector,
+    M::Integer;
+    basis = nothing,
+    verbose = 0,
+    kwargs...,
+)
     precision_info = (SlopesPolygon(hodge_numbers), r_m, N_m, M)
-    return zeta_coefficients(f; precision_info=precision_info, verbose=verbose, kwargs...)
-end 
+    return zeta_coefficients(
+        f;
+        precision_info = precision_info,
+        verbose = verbose,
+        kwargs...,
+    )
+end

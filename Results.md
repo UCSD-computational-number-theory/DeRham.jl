@@ -13,7 +13,7 @@ m = 1:
     x1^2
     x1*x2
     x2^2
-    
+
     Precision N_m: 10
 
 m = 2:
@@ -25,7 +25,7 @@ m = 2:
     x2^7
 
     Precision N_m: 9
-    
+
 Basis Matrix (left inverse):
 -------
 

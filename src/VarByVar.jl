@@ -1,5 +1,5 @@
 
-function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
+function reducechain_varbyvar(u, g, m, S, f, p, context, cache, params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -28,11 +28,10 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         highpole == false
     end
     while highpole && J[l] > 0
-        V = varbyvar_chooseV(J,d)
-        
+        V = varbyvar_chooseV(J, d)
+
         (4 < params.verbose) && print("Chose V = $V; ")
-        (6 < params.verbose) && begin
-        end
+        (6 < params.verbose) && begin end
 
         K = 0
         while true
@@ -58,14 +57,29 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
         matrices = context.Ruvs[V]
         (4 < params.verbose) && println("Computing A and B; ")
         if params.use_gpu && !(ZZ(2)^25 < modm < ZZ(2)^106) # so not Karatsuba
-            eval_to_linear_gpu!(context.B,context.A,context.temp,matrices,mins,V)
+            eval_to_linear_gpu!(context.B, context.A, context.temp, matrices, mins, V)
         elseif params.use_gpu && d == 3 && (n == 4 || n == 5)# karatsuba
-            eval_to_linear_gpu_karatsuba!(context.B,context.A,context.temp,matrices,mins,V)
+            eval_to_linear_gpu_karatsuba!(
+                context.B,
+                context.A,
+                context.temp,
+                matrices,
+                mins,
+                V,
+            )
         else
-            eval_to_linear!(context.B,context.A,context.temp,matrices,mins,V)
+            eval_to_linear!(context.B, context.A, context.temp, matrices, mins, V)
         end
         (4 < params.verbose) && println("Starting the reduction steps; ")
-        gMat = finitediff_prodeval_linear!(context.B,context.A,0,K-1,gMat,context.temp,context.g_temp)
+        gMat = finitediff_prodeval_linear!(
+            context.B,
+            context.A,
+            0,
+            K-1,
+            gMat,
+            context.temp,
+            context.g_temp,
+        )
         @. J = J - K*V
         m = m - K
         if m == n
@@ -80,7 +94,7 @@ function reducechain_varbyvar(u,g,m,S,f,p,context,cache,params)
     return ((J, gMat), m)
 end
 
-function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+function reducepoly_varbyvar(pol, S, f, p, context, cache, params)
     n = nvars(parent(f)) - 1
     d = total_degree(f)
     PR = parent(f)
@@ -91,7 +105,7 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     highpoleorder = i[length(i)][2]
     terms = []
     while highpoleorder >= p
-        append!(terms,termsoforder(pol,highpoleorder))
+        append!(terms, termsoforder(pol, highpoleorder))
         highpoleorder = highpoleorder - p
     end
 
@@ -99,8 +113,12 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     allcostadata = Vector{Tuple{Tuple{Vector{Int},vectype},Int}}()
     for term in terms
         #g = my_copy(context.g)
-        term_costadata = costadata_of_initial_term!(term,my_copy(context.g),n,d,p,S,cache,params)
-        append!(allcostadata,[((tweak(term_costadata[1],n*d-n),term_costadata[2]),term[2])])
+        term_costadata =
+            costadata_of_initial_term!(term, my_copy(context.g), n, d, p, S, cache, params)
+        append!(
+            allcostadata,
+            [((tweak(term_costadata[1], n*d-n), term_costadata[2]), term[2])],
+        )
     end
 
     notallred = true
@@ -108,14 +126,23 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
 
     while notallred
         for i in eachindex(allcostadata)
-            allcostadata[i] = reducechain_varbyvar(allcostadata[i][1]...,allcostadata[i][2],S,f,p,context,cache,params)
+            allcostadata[i] = reducechain_varbyvar(
+                allcostadata[i][1]...,
+                allcostadata[i][2],
+                S,
+                f,
+                p,
+                context,
+                cache,
+                params,
+            )
         end
         if params.use_gpu == true
             remove_duplicates_gpu!(allcostadata)
         else
             remove_duplicates!(allcostadata)
         end
-        for i in 1:length(allcostadata)
+        for i = 1:length(allcostadata)
             if allcostadata[i][2] > n
                 break
             elseif i == length(allcostadata)
@@ -125,19 +152,29 @@ function reducepoly_varbyvar(pol,S,f,p,context,cache,params)
     end
     result = PR()
     for i in eachindex(allcostadata)
-        (reduced_poly,m) = poly_of_end_costadata(allcostadata[i][1],PR,p,d,n,params)
+        (reduced_poly, m) = poly_of_end_costadata(allcostadata[i][1], PR, p, d, n, params)
         result += reduced_poly
     end
 
     vars = gens(PR)
     XS = prod(PR(vars[i+1]) for i in S; init = PR(1))
-    [[div(result,XS), n]]
+    [[div(result, XS), n]]
 end
 
-function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,context)
+function reducetransform_varbyvar(
+    FT,
+    N_m,
+    S,
+    f,
+    pseudoInverseMat,
+    p,
+    cache,
+    params,
+    context,
+)
     d = total_degree(f)
     n = nvars(parent(f)) - 1
-    g_length = binomial(d*n,d*n-n)
+    g_length = binomial(d*n, d*n-n)
 
     MS1 = matrix_space(coefficient_ring(parent(f)), g_length, g_length)
     m = Integer(modulus(base_ring(MS1)))
@@ -145,11 +182,11 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     if (3 < params.verbose)
         computeRuv = V -> begin
             println("Computing Ruv for V = $V for the first time.")
-            @time computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+            @time computeRuvS(V, S, f, pseudoInverseMat, cache, params)
         end
     else
         computeRuv = V -> begin
-            computeRuvS(V,S,f,pseudoInverseMat,cache,params)
+            computeRuvS(V, S, f, pseudoInverseMat, cache, params)
         end
     end
 
@@ -158,47 +195,49 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     if context == nothing
         #TODO: right now, it usually seems better to do lazy computations,
         #  since not all of the Ruv are used. However, I know that for some
-        #  classes of examples, they are all pretty much always used. For 
+        #  classes of examples, they are all pretty much always used. For
         #  such examples, it's better to use an EagerPEP and do threads.
         lazy_Ruv = true#length(S) < d || d < n
 
         if (0 < params.verbose)
             println("Creating the Ruv PEP object...")
-            @time Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+            @time Ruv = select_Ruv_PEP(n, d, S, params, computeRuv, lazy_Ruv, MS1, cache)
         else
-            Ruv = select_Ruv_PEP(n,d,S,params,computeRuv,lazy_Ruv,MS1,cache)
+            Ruv = select_Ruv_PEP(n, d, S, params, computeRuv, lazy_Ruv, MS1, cache)
         end
 
         if params.use_threads
-        
-            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1,params)}(
-                () -> default_context(MS1,Ruv,params)
+
+            context_tlv = OhMyThreads.TaskLocalValue{default_context_type(MS1, params)}(
+                () -> default_context(MS1, Ruv, params),
             )
-            Threads.@threads for i in 1:length(FT) 
+            Threads.@threads for i = 1:length(FT)
                 local context = context_tlv[]
 
                 pol = FT[i]
                 if (0 < params.verbose)
                     println("Reducing vector $i")
-                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                    @time reduction =
+                        reducepoly_varbyvar(pol, S, f, p, context, cache, params)
                 else
-                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                    reduction = reducepoly_varbyvar(pol, S, f, p, context, cache, params)
                 end
                 result[i] = reduction
 
             end
-        else 
+        else
 
-            context = default_context(MS1,Ruv,params)
-            for i in 1:length(FT) #pol in FT
-                
+            context = default_context(MS1, Ruv, params)
+            for i = 1:length(FT) #pol in FT
+
 
                 pol = FT[i]
                 if (0 < params.verbose)
                     println("Reducing vector $i")
-                    @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                    @time reduction =
+                        reducepoly_varbyvar(pol, S, f, p, context, cache, params)
                 else
-                    reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                    reduction = reducepoly_varbyvar(pol, S, f, p, context, cache, params)
                 end
                 result[i] = reduction
 
@@ -207,33 +246,33 @@ function reducetransform_varbyvar(FT,N_m,S,f,pseudoInverseMat,p,cache,params,con
     else
         if (ZZ(2)^25 < m < ZZ(2)^106)
             compute_gpu = V -> KaratsubaMat.(computeRuv(V))
-        else 
+        else
             compute_gpu = V -> cuMod.(computeRuv(V))
-        end 
-    
+        end
+
         compute_float = V -> float_entries.(computeRuv(V))
 
-        if 3 < n && d == 3 && S == [n] && params.use_gpu 
+        if 3 < n && d == 3 && S == [n] && params.use_gpu
             context.Ruvs.backing.compute = compute_float
         elseif params.use_gpu
             context.Ruvs.compute = compute_gpu
         else
             context.Ruvs.compute = computeRuv
         end
-        for i in 1:length(FT) #pol in FT
-            
+        for i = 1:length(FT) #pol in FT
+
 
             pol = FT[i]
             if (0 < params.verbose)
                 println("Reducing vector $i")
-                @time reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                @time reduction = reducepoly_varbyvar(pol, S, f, p, context, cache, params)
             else
-                reduction = reducepoly_varbyvar(pol,S,f,p,context,cache,params)
+                reduction = reducepoly_varbyvar(pol, S, f, p, context, cache, params)
             end
             result[i] = reduction
         end
     end
-    
+
     (0 < params.verbose) && begin
         println("Created $(length(allpoints(context.Ruvs))) of $(length(cache[d])) possible V")
     end

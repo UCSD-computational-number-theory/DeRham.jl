@@ -10,7 +10,7 @@ function frobenius_matrix_classical(f, n, d, precision, p)
     PR = parent(f)
     R = base_ring(f)
     monomialBases = CopiedFindMonomialBasis.compute_monomial_bases(f, R, PR)
-    
+
     # Step 2: apply Frobenius
 
     # Step 3: reduction
@@ -18,9 +18,7 @@ function frobenius_matrix_classical(f, n, d, precision, p)
     # Step 4: process the answer
 end
 
-function frobenius_matrix_controlled(f, n, d, precision, p)
-
-end
+function frobenius_matrix_controlled(f, n, d, precision, p) end
 
 
 
