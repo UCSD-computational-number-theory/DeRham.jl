@@ -7,23 +7,23 @@ function test_supported_monomial_orderings()
     p = 7
 
     F = GF(p)
-    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+    R, (x, y, z) = polynomial_ring(F, ["x$i" for i = 0:n])
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
-    zeta_invlex = DeRham.zeta_coefficients(f,termorder=:invlex)
+    zeta_invlex = DeRham.zeta_coefficients(f, termorder = :invlex)
 
-    zeta_lex = DeRham.zeta_coefficients(f,termorder=:lex)
+    zeta_lex = DeRham.zeta_coefficients(f, termorder = :lex)
 
-    zeta_neglex = DeRham.zeta_coefficients(f,termorder=:neglex)
+    zeta_neglex = DeRham.zeta_coefficients(f, termorder = :neglex)
 
     @test zeta_invlex == zeta_lex
-    
+
     # This is brittle, but it passes, showing that we are doing something
     # correct. When we fix precision, we can go back to the above line
     #mod49_invlex = lift.((ZZ,),coefficients(zeta_invlex[1])) .% 49
     #mod49_lex = lift.((ZZ,),coefficients(zeta_lex[1])) .% 49
-    
+
     #@test mod49_invlex == mod49_lex
 
     @test zeta_invlex == zeta_neglex
@@ -37,17 +37,17 @@ function test_reversing_variables()
     p = 7
 
     F = GF(p)
-    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+    R, (x, y, z) = polynomial_ring(F, ["x$i" for i = 0:n])
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
     #FIXME: variable reversing doesn't actually do anything right now!
     #This needs to be addressed in ZetaFunction.jl
-    zeta_reversed = DeRham.zeta_coefficients(f,termorder=:invlex,vars_reversed=true)
-    zeta_normal = DeRham.zeta_coefficients(f,termorder=:invlex,vars_reversed=false)
-    
-    zeta_reversed_lex = DeRham.zeta_coefficients(f,termorder=:lex,vars_reversed=true)
-    zeta_normal_lex = DeRham.zeta_coefficients(f,termorder=:lex,vars_reversed=false)
+    zeta_reversed = DeRham.zeta_coefficients(f, termorder = :invlex, vars_reversed = true)
+    zeta_normal = DeRham.zeta_coefficients(f, termorder = :invlex, vars_reversed = false)
+
+    zeta_reversed_lex = DeRham.zeta_coefficients(f, termorder = :lex, vars_reversed = true)
+    zeta_normal_lex = DeRham.zeta_coefficients(f, termorder = :lex, vars_reversed = false)
 
     @test zeta_reversed == zeta_normal
     @test zeta_reversed_lex == zeta_normal_lex
@@ -60,12 +60,12 @@ function test_naive_algorithm()
     p = 7
 
     F = GF(p)
-    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+    R, (x, y, z) = polynomial_ring(F, ["x$i" for i = 0:n])
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
     zeta_costa = DeRham.zeta_coefficients(f)
-    zeta_naive = DeRham.zeta_coefficients(f,algorithm=:naive)
+    zeta_naive = DeRham.zeta_coefficients(f, algorithm = :naive)
 
     @test zeta_costa == zeta_naive
 end
@@ -77,24 +77,36 @@ function test_fastevaluation()
     p = 7
 
     F = GF(p)
-    R, (x,y,z) = polynomial_ring(F, ["x$i" for i in 0:n])
+    R, (x, y, z) = polynomial_ring(F, ["x$i" for i = 0:n])
 
     f = y^2*z - x^3 - x*z^2 - z^3
 
     zeta = DeRham.zeta_coefficients(f)
-    zeta_fasteval = DeRham.zeta_coefficients(f,fastevaluation=true)
+    zeta_fasteval = DeRham.zeta_coefficients(f, fastevaluation = true)
 
     @test zeta == zeta_fasteval
 end
 
 function test_akr()
 
-    R, (x1,x2,x3) = polynomial_ring(GF(7),3)
+    R, (x1, x2, x3) = polynomial_ring(GF(7), 3)
     f = 6*x1^3 + 6*x1*x3^2 + x2^2*x3 + 6*x3^3
 
-    zeta = DeRham.zeta_coefficients(f,fastevaluation=true,use_gpu=false,changef=false,verbose=0)
-    zeta_akr = DeRham.zeta_coefficients(f,fastevaluation=true,algorithm=:akr,use_gpu=false,changef=false,verbose=0)
+    zeta = DeRham.zeta_coefficients(
+        f,
+        fastevaluation = true,
+        use_gpu = false,
+        changef = false,
+        verbose = 0,
+    )
+    zeta_akr = DeRham.zeta_coefficients(
+        f,
+        fastevaluation = true,
+        algorithm = :akr,
+        use_gpu = false,
+        changef = false,
+        verbose = 0,
+    )
 
     @test zeta == zeta_akr
 end
-

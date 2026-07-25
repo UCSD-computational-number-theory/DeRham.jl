@@ -10,4 +10,5 @@ struct ZetaFunctionParams
     use_threads::Bool
 end
 
-default_params() = ZetaFunctionParams(0,false,:default,:invlex,false,true,false,false,false)
+default_params() =
+    ZetaFunctionParams(0, false, :default, :invlex, false, true, false, false, false)

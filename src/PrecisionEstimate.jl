@@ -10,16 +10,16 @@
 """
     frobenius_precision()
 
-Determines the necessary p-adic precision r for the Frobenius matrix  
+Determines the necessary p-adic precision r for the Frobenius matrix
 """
 function frobenius_precision(k, q)
     if k == 2 && q == 7
         r = 2
     elseif k == 21 && q == 7
         r = 10
-    end 
+    end
     return r
-end 
+end
 
 """
     impreciselog(p,a)
@@ -27,7 +27,7 @@ end
 log with any base, via the log rules,
 though I think there should be floating point error.
 """
-impreciselog(p,a) = log(a) / log(p)
+impreciselog(p, a) = log(a) / log(p)
 
 """
     ibm_derham_bound(p,m,n)
@@ -37,19 +37,19 @@ ibm stands for integral basis multiplier
 Calculates the smallest integer t such that
 p^t* ω is in the integral latticee of the cohomology,
 for all ω in the griffiths-dwork basis of cohomology.
-Here, `m` is the pole order, 
+Here, `m` is the pole order,
 and the bound we have depends only on p, m, and n.
 
-This is called ϕ in Costa's thesis, and it is 
+This is called ϕ in Costa's thesis, and it is
 called f in Abbott-Kedlaya-Roe.
-This method implements theorem 3.4.6 only of 
+This method implements theorem 3.4.6 only of
 Abbott-Kedlaya-Roe.
 """
-function ibm_derham_bound(p,m,n)
+function ibm_derham_bound(p, m, n)
 
     sum = 0
-    for i in 1:n
-        sum += floor(Int,impreciselog(p,max(1,m-i)))
+    for i = 1:n
+        sum += floor(Int, impreciselog(p, max(1, m-i)))
     end
 
     sum
@@ -61,15 +61,15 @@ end
 
 Calcuates the `N` in theorem 3.4.9 of Abbott-Kedlaya-Roe
 """
-function ibm_constant(p,m,ibm_bound)
-    g(m,i) = valuation(binomial(-m,i),p)
+function ibm_constant(p, m, ibm_bound)
+    g(m, i) = valuation(binomial(-m, i), p)
 
-    NN(l) = ibm_bound[(m+l)*p] - l - g(m,l)
+    NN(l) = ibm_bound[(m+l)*p] - l - g(m, l)
 
     l = 1
     N = NN(1)
     while 0 < NN(l)
-        N = max(N,NN(l))
+        N = max(N, NN(l))
         l += 1
     end
     #verbose && println("In AKR notation, f((m+l)p) - l - g(m,l) < 0 at l = $l")
@@ -79,24 +79,24 @@ end
 
 """
 This algoritm gives the same
-output as algorithm 3.4.10 of AKR, 
+output as algorithm 3.4.10 of AKR,
 even though it technically isn't the same.
 
 Unlike that algorithm, we don't actually append to an array,
 we simply update elements.
 
 """
-function ibm_crank_bound(p,n,M)
-    nChunks = ceil(Int,M/p)
+function ibm_crank_bound(p, n, M)
+    nChunks = ceil(Int, M/p)
     nBounds = nChunks * p
-    bounds = ibm_derham_bound.(p,1:(nBounds*p^2),n)
+    bounds = ibm_derham_bound.(p, 1:(nBounds*p^2), n)
 
     for m = 1:nChunks
         c = 1
         while true
-            N = ibm_constant(p,m,bounds)
+            N = ibm_constant(p, m, bounds)
             if N ≤ n - 1 + bounds[m]
-                if n - 1 + bounds[m] ≤ bounds[p*m] 
+                if n - 1 + bounds[m] ≤ bounds[p*m]
                     bounds[p*m] = n - 1 + bounds[m]
                 end
                 break
@@ -114,7 +114,7 @@ function ibm_crank_bound(p,n,M)
         end
 
         # update the elements before
-        for k = (p*m)-p+1:p*m
+        for k = ((p*m)-p+1):(p*m)
             if bounds[m*p] < bounds[k]
                 bounds[k] = bounds[m*p]
             end
@@ -130,183 +130,183 @@ end
 """
     calculate_relative_precision(HP, slope, hodge_numbers, weight, p)
 
-Calculates the vector of relative precisions r_m 
+Calculates the vector of relative precisions r_m
 
-INPUTS: 
+INPUTS:
 * "polygon" -- A SlopesPolygon struct describing a polygon whose values describe the
 divisibility of the roots. Note: it is traditional to use the hodge polygon here,
 but if you know the Newton Polygon (e.g. you have a K3 surface and you already have the
 Artin-Mazur height) then the Newton Polygon will do just as well.
 * "weight" -- integer, the motivic weight of the cohomology group, equals to the dimension of the hypersurface
-* "p" -- integer, prime number 
+* "p" -- integer, prime number
 """
-function calculate_relative_precision(polygon, weight, p) 
+function calculate_relative_precision(polygon, weight, p)
 
-#   * "HP" -- list, the i-th item corresponds to the height of above i in the Hodge polygon
-#   * "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
-#   * "hodge_numbers" -- list, the list of Hodge numbers 
+    #   * "HP" -- list, the i-th item corresponds to the height of above i in the Hodge polygon
+    #   * "slope" -- list, the i-th item corresponds to the slope of the i-th segment in the Hodge polygon
+    #   * "hodge_numbers" -- list, the list of Hodge numbers
     HP = polygon.values
     slope = Int.(polygon.slopesbefore)
     hodge_numbers = polygon.slopelengths
 
-    r_vector = [0 for i in 1:length(hodge_numbers)]
+    r_vector = [0 for i = 1:length(hodge_numbers)]
     Pdeg = length(HP) - 1  # degree of the L-polynomial P_n(X,T)
     max_digits = 0
-    
-    for i in 1:(div(Pdeg, 2) + 1)
+
+    for i = 1:(div(Pdeg, 2)+1)
         r = ceil(Int, log(2*Pdeg/i)/log(p) + i*weight*0.5) - HP[i+1]
 
         if r >= max_digits
-            max_digits = r 
-            for j in 0:slope[i+1]
-                r_vector[j+1] = r 
-            end 
+            max_digits = r
+            for j = 0:slope[i+1]
+                r_vector[j+1] = r
+            end
 
-            for j in slope[i+1]+1:length(hodge_numbers)-1
+            for j = (slope[i+1]+1):(length(hodge_numbers)-1)
                 r = r-1
                 r_vector[j+1] = r
-            end 
-        end 
-    end 
+            end
+        end
+    end
 
     return reverse(r_vector)
-end 
+end
 
-function calculate_series_precision(p,n,r_m)
+function calculate_series_precision(p, n, r_m)
 
     # TODO: prove that this is correct
     #
     # We may assume in (1.8) of Costa's thesis that the worst case is i=0
 
-    bounds = ibm_crank_bound(p,n,p*n)
+    bounds = ibm_crank_bound(p, n, p*n)
 
     #TODO: why does ibm_derham_bound sometimes give answers that are better than the crank?
-    
-    N = [(r_m[m] == 0 ? 0 : r_m[m] - m + 1 + bounds[p*m]) for m in 1:n]
+
+    N = [(r_m[m] == 0 ? 0 : r_m[m] - m + 1 + bounds[p*m]) for m = 1:n]
 
     #println("Series precision: $N")
     N
 end
 
 function series_precision(p, n, d, r_m)
-    N = [0,0]
+    N = [0, 0]
 
     # begin copypasta
-    if ( n == 2 && d == 3 ) 
-        if ( p < 5) 
-            N = [2,3]
-        elseif ( 5 <= p && p < 17 ) 
-            N = [2,2]
-        elseif ( 17 <= p  ) 
-            N = [1,1]#[0,1]
+    if (n == 2 && d == 3)
+        if (p < 5)
+            N = [2, 3]
+        elseif (5 <= p && p < 17)
+            N = [2, 2]
+        elseif (17 <= p)
+            N = [1, 1]#[0,1]
         end
-    elseif ( n == 2 && d == 4 ) 
-        if ( p < 5) 
-            N = [4,4]
-        elseif ( 5 <= p && p < 17 ) 
-            N = [3,3]
-        elseif ( 17 <= p  ) 
-            N = [2,2]
+    elseif (n == 2 && d == 4)
+        if (p < 5)
+            N = [4, 4]
+        elseif (5 <= p && p < 17)
+            N = [3, 3]
+        elseif (17 <= p)
+            N = [2, 2]
         end
-    elseif ( n == 2 && d == 5 ) 
-        if ( p < 5) 
-            N = [6,6]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [4,5]
-        elseif ( 7 <= p  ) 
-            N = [4,4]
+    elseif (n == 2 && d == 5)
+        if (p < 5)
+            N = [6, 6]
+        elseif (5 <= p && p < 7)
+            N = [4, 5]
+        elseif (7 <= p)
+            N = [4, 4]
         end
-    elseif ( n == 2 && d == 6 ) 
-        if ( p < 5) 
-            N = [8,9]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [7,7]
-        elseif ( 7 <= p && p < 11 ) 
-            N = [6,7]
-        elseif ( 11 <= p  ) 
-            N = [6,6]
+    elseif (n == 2 && d == 6)
+        if (p < 5)
+            N = [8, 9]
+        elseif (5 <= p && p < 7)
+            N = [7, 7]
+        elseif (7 <= p && p < 11)
+            N = [6, 7]
+        elseif (11 <= p)
+            N = [6, 6]
         end
-    elseif ( n == 2 && d == 7 ) 
-        if ( p < 5) 
-            N = [11,11]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [10,10]
-        elseif ( 7 <= p && p < 11 ) 
-            N = [10,10]
-        elseif ( 11 <= p && p < 17 ) 
-            N = [9,9]
-        elseif ( 17 <= p  ) 
-            N = [8,8]
+    elseif (n == 2 && d == 7)
+        if (p < 5)
+            N = [11, 11]
+        elseif (5 <= p && p < 7)
+            N = [10, 10]
+        elseif (7 <= p && p < 11)
+            N = [10, 10]
+        elseif (11 <= p && p < 17)
+            N = [9, 9]
+        elseif (17 <= p)
+            N = [8, 8]
         end
-    elseif ( n == 2 && d == 8 ) 
-        if ( p < 5) 
-            N = [14,14]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [13,13]
-        elseif ( 7 <= p && p < 13 ) 
-            N = [13,13]
-        elseif ( 13 <= p && p < 17 ) 
-            N = [12,13]
-        elseif ( 17 <= p  ) 
-            N = [11,11]
+    elseif (n == 2 && d == 8)
+        if (p < 5)
+            N = [14, 14]
+        elseif (5 <= p && p < 7)
+            N = [13, 13]
+        elseif (7 <= p && p < 13)
+            N = [13, 13]
+        elseif (13 <= p && p < 17)
+            N = [12, 13]
+        elseif (17 <= p)
+            N = [11, 11]
         end
-    elseif ( n == 2 && d == 9 ) 
-        if ( p < 5) 
-            N = [18,18]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [16,16]
-        elseif ( 7 <= p && p < 11 ) 
-            N = [16,16]
-        elseif ( 11 <= p && p < 17 ) 
-            N = [16,16]
-        elseif ( 17 <= p  ) 
-            N = [15,15]
+    elseif (n == 2 && d == 9)
+        if (p < 5)
+            N = [18, 18]
+        elseif (5 <= p && p < 7)
+            N = [16, 16]
+        elseif (7 <= p && p < 11)
+            N = [16, 16]
+        elseif (11 <= p && p < 17)
+            N = [16, 16]
+        elseif (17 <= p)
+            N = [15, 15]
         end
-    elseif ( n == 3 && d == 4 ) 
-        if ( p < 5) 
-            N = [7,7,8]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [4,5,5]
-        elseif ( 7 <= p && p < 23 ) 
-            N = [4,4,3]
-        elseif ( 23 <= p && p < 43 ) 
-            N = [3,3,3]
-        elseif ( 43 <= p  ) 
-            N = [3,3,2]
+    elseif (n == 3 && d == 4)
+        if (p < 5)
+            N = [7, 7, 8]
+        elseif (5 <= p && p < 7)
+            N = [4, 5, 5]
+        elseif (7 <= p && p < 23)
+            N = [4, 4, 3]
+        elseif (23 <= p && p < 43)
+            N = [3, 3, 3]
+        elseif (43 <= p)
+            N = [3, 3, 2]
         end
-    elseif ( n == 3 && d == 5 ) 
-        if ( p < 5) 
-            N = [11,11,10]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [8,8,9]
-        elseif ( 7 <= p && p < 11 ) 
-            N = [8,8,7]
-        elseif ( 11 <= p && p < 23 ) 
-            N = [7,7,6]
-        elseif ( 23 <= p && p < 29 ) 
-            N = [6,6,6]
-        elseif ( 29 <= p  ) 
-            N = [6,6,5]
+    elseif (n == 3 && d == 5)
+        if (p < 5)
+            N = [11, 11, 10]
+        elseif (5 <= p && p < 7)
+            N = [8, 8, 9]
+        elseif (7 <= p && p < 11)
+            N = [8, 8, 7]
+        elseif (11 <= p && p < 23)
+            N = [7, 7, 6]
+        elseif (23 <= p && p < 29)
+            N = [6, 6, 6]
+        elseif (29 <= p)
+            N = [6, 6, 5]
         end
-    elseif ( n == 3 && d == 6 ) 
-        if ( p < 5) 
-            N = [17,18,17]
-        elseif ( 5 <= p && p < 7 ) 
-            N = [15,15,14]
-        elseif ( 7 <= p && p < 11 ) 
-            N = [15,15,14]
-        elseif ( 11 <= p && p < 17 ) 
-            N = [14,14,13]
-        elseif ( 17 <= p && p < 23 ) 
-            N = [13,13,12]
-        elseif ( 23 <= p  ) 
-            N = [12,12,11]
+    elseif (n == 3 && d == 6)
+        if (p < 5)
+            N = [17, 18, 17]
+        elseif (5 <= p && p < 7)
+            N = [15, 15, 14]
+        elseif (7 <= p && p < 11)
+            N = [15, 15, 14]
+        elseif (11 <= p && p < 17)
+            N = [14, 14, 13]
+        elseif (17 <= p && p < 23)
+            N = [13, 13, 12]
+        elseif (23 <= p)
+            N = [12, 12, 11]
         end
     end
     # end copypasta
 
-    if N == [0,0]
-        N = calculate_series_precision(p,n,r_m)
+    if N == [0, 0]
+        N = calculate_series_precision(p, n, r_m)
     end
     N
 end
@@ -314,11 +314,11 @@ end
 """
     algorithm_precision()
 
-Determines M such that the algorithm works in Z/p^M Z 
+Determines M such that the algorithm works in Z/p^M Z
 """
-function algorithm_precision(p,n,d,r_m,N_m)
-    s_m = [i+x-1 for (i,x) in enumerate(N_m)]
+function algorithm_precision(p, n, d, r_m, N_m)
+    s_m = [i+x-1 for (i, x) in enumerate(N_m)]
     s_m_valuation = [valuation(ZZ(factorial(big(p*s-1))), ZZ(p)) for s in s_m]
 
-    maximum([r_m[m] + s_m_valuation[m] - m + 1 for m in 1:length(r_m)])
-end 
+    maximum([r_m[m] + s_m_valuation[m] - m + 1 for m = 1:length(r_m)])
+end

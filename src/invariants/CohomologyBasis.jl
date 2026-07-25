@@ -6,5 +6,5 @@ function get_basis_of_cohomology(f)
     S = collect(0:n)
     cache = controlled_reduction_cache(n, d, S, params)
 
-    get_basis_of_cohomology(f,S,params,cache)
+    get_basis_of_cohomology(f, S, params, cache)
 end

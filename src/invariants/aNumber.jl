@@ -1,4 +1,4 @@
-function a_number(f; basis=nothing, verbose=0, kwargs...)
+function a_number(f; basis = nothing, verbose = 0, kwargs...)
     n = nvars(parent(f)) - 1
 
     if n != 2
@@ -8,7 +8,7 @@ function a_number(f; basis=nothing, verbose=0, kwargs...)
     if 0 < verbose
         println("Calculating Hasse-Witt matrix...")
     end
-    HW = hasse_witt_matrix(f; basis=nothing, verbose=0, kwargs...)
+    HW = hasse_witt_matrix(f; basis = nothing, verbose = 0, kwargs...)
 
     basis = get_basis_of_cohomology(f)
 
