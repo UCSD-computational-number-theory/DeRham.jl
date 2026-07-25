@@ -1,0 +1,7 @@
+# JuliaFormatter configuration for DeRham.jl.
+#
+# Picked up automatically by JuliaFormatter (the pre-commit hook, editor
+# integrations, and any `format(".")` call). `style` selects an opinionated
+# preset; override individual keys below it as needed.
+# Options: https://domluna.github.io/JuliaFormatter.jl/stable/config/
+style = "default"

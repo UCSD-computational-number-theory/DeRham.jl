@@ -1,0 +1,49 @@
+name: pre-commit
+
+# Source-text hygiene for DeRham.jl: runs the project's pre-commit
+# hooks (JuliaFormatter + standard whitespace/syntax checks) in CI, using the
+# SAME .pre-commit-config.yaml that runs locally — one source of truth. This is
+# the single source-text job; there are no separate JuliaFormatter / ReLint jobs.
+# `${{ ... }}` are GitHub Actions expressions; this file has no pack vars beyond
+# `DeRham` in the comments.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  # Cancel superseded runs on a branch/PR; never cancel runs on the default branch.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    name: pre-commit (source-text hygiene)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Julia is needed by the JuliaFormatter hook (and ReLint when promoted off
+      # the manual stage). The hooks install their tools into isolated envs, so no
+      # global package install is required here.
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3'
+      # Cache the pre-commit hook environments, keyed on the config.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Install pre-commit
+        run: python -m pip install --upgrade pre-commit
+      - name: Run pre-commit on all files
+        run: pre-commit run --all-files --show-diff-on-failure --color=always

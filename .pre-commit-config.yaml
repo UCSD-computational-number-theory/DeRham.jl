@@ -1,0 +1,74 @@
+# Pre-commit configuration for DeRham.jl.
+#
+# This file is the SINGLE source of truth for the fast, source-text checks
+# (formatting + linting + whitespace hygiene). It is run identically by a local
+# `pre-commit` install and by the `pre-commit` CI workflow
+# (`pre-commit run --all-files`), so the same checks gate every commit and every
+# PR. There are deliberately NO separate JuliaFormatter / ReLint CI jobs:
+# configure the check once here and both local and CI honor it.
+#
+# The Julia-based hooks need only the `julia` binary on PATH — they NEVER install
+# anything into your default (`@v1.x`) Julia environment: JuliaFormatter is added
+# to an isolated shared environment (`@juliaformatter`) on first run, and ReLint
+# runs from its own pinned, pre-commit-managed checkout.
+#
+# First-time local setup:
+#     pip install pre-commit && pre-commit install
+# Run on demand against everything:
+#     pre-commit run --all-files
+
+repos:
+  # JuliaFormatter — autoformat Julia sources to the style in .JuliaFormatter.toml.
+  # A `local` hook with an on-the-fly, ISOLATED install keeps it off the default
+  # environment (no global-install assumption): it adds JuliaFormatter to the
+  # shared `@juliaformatter` env once, then reuses it. It rewrites files in place
+  # and exits non-zero when anything was reformatted, so the offending commit is
+  # blocked and a second run is clean. `require_serial` runs one Julia process for
+  # all files (cheaper startup, no first-run install race).
+  - repo: local
+    hooks:
+      - id: juliaformatter
+        name: JuliaFormatter
+        language: system
+        entry: julia
+        args:
+          - --startup-file=no
+          - --history-file=no
+          - --project=@juliaformatter
+          - -e
+          - 'import Pkg; haskey(Pkg.project().dependencies, "JuliaFormatter") || Pkg.add(name="JuliaFormatter", version="2"); using JuliaFormatter: format; exit(format(ARGS) ? 0 : 1)'
+        types: [julia]
+        require_serial: true
+
+  # ReLint — RelationalAI's AST-pattern Julia linter. It is unregistered (URL /
+  # tag install), so it lives here pinned to a tag and is NEVER added to
+  # Project.toml [extras]. pre-commit runs it from its own pinned checkout (its
+  # hook script instantiates ReLint's own project — again, no global install).
+  #
+  # QUARANTINED to the `manual` stage — BY DESIGN, not pending. It is kept as an
+  # opt-in inspection tool and deliberately NOT a hard gate. Its false-positive
+  # rate on real package code was measured (gcs-4os.10) over 7 UCSD math/GPU
+  # repos (260 .jl files): all 58 of ReLint's FATAL/gating findings were
+  # idiomatic, correct code (≈100% FP on the gating set). Every fatal rule
+  # encodes RAI house-style — SafeLogging/PII (`@info`/`@assert` must wrap args
+  # in `@safe(...)`), the RAI Front-end Compiler `Shape` API, RAIStyle, RAI Jira
+  # conventions, the RAI PR workflow, and an `@generated` "extreme caution"
+  # policy — none of which is a general Julia-correctness defect. So do NOT
+  # delete the `stages: [manual]` line; promoting it would block essentially
+  # every real package on valid `@generated`/`@assert`/`@info` usage. See
+  # ../VERIFICATION.md (ReLint section) for the per-rule data. Inspect on demand:
+  #     pre-commit run --hook-stage manual lint-checks --all-files
+  - repo: https://github.com/RelationalAI-oss/ReLint.jl
+    rev: v0.1.16
+    hooks:
+      - id: lint-checks
+        stages: [manual]
+
+  # Standard whitespace / syntax hygiene (fast, language-agnostic).
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-toml
+      - id: check-yaml
