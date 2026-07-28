@@ -36,7 +36,7 @@ repos:
           - --history-file=no
           - --project=@juliaformatter
           - -e
-          - 'import Pkg; haskey(Pkg.project().dependencies, "JuliaFormatter") || Pkg.add(name="JuliaFormatter", version="2"); using JuliaFormatter: format; exit(format(ARGS) ? 0 : 1)'
+          - 'import Pkg; JF_UUID = Base.UUID("98e50ef6-434e-11e9-1051-2b60c6c9e899"); JF_VERSION = v"2.12.3"; deps = Pkg.dependencies(); (haskey(deps, JF_UUID) && deps[JF_UUID].version == JF_VERSION) || Pkg.add(name="JuliaFormatter", version=JF_VERSION); using JuliaFormatter: format; exit(format(ARGS) ? 0 : 1)'
         types: [julia]
         require_serial: true
 
