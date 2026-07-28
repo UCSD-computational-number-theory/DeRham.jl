@@ -1,16 +1,80 @@
 module DeRham
 
-using Oscar
-using BitIntegers
-using LinearAlgebra
-using Combinatorics
-using Memoize
-using LRUCache
-using LFUDACache
-using OhMyThreads
+using Oscar:
+    Oscar,
+    GF,
+    MPolyBuildCtx,
+    PadicField,
+    QQ,
+    RingElem,
+    ZZ,
+    ZZMatrix,
+    ZZModMatrix,
+    ZZRingElem,
+    base_ring,
+    basis,
+    change_base_ring,
+    characteristic,
+    charpoly,
+    coeff,
+    coefficient_ring,
+    coefficients,
+    data,
+    derivative,
+    divexact,
+    evaluate,
+    exponent_vector,
+    factor,
+    finish,
+    gens,
+    grade,
+    hom,
+    homogenizer,
+    ideal,
+    is_prime,
+    is_smooth,
+    lift,
+    map_coefficients,
+    map_entries,
+    matrix,
+    matrix_space,
+    modulus,
+    ncols,
+    nrows,
+    number_of_rows,
+    nvars,
+    polynomial_ring,
+    power_series_ring,
+    proj,
+    push_term!,
+    quo,
+    residue_ring,
+    rref,
+    special_linear_group,
+    terms,
+    total_degree,
+    valuation,
+    vars,
+    zero!,
+    zero_matrix,
+    zzModMatrix
+using BitIntegers: BitIntegers
+using LinearAlgebra: LinearAlgebra, I, nullspace, rank
+using Combinatorics: Combinatorics
+using Memoize: Memoize
+using LRUCache: LRUCache, LRU
+using LFUDACache: LFUDACache, LFUDA
+using OhMyThreads: OhMyThreads
 
-using CUDA
-using GPUFiniteFieldMatrices
+using CUDA: CUDA, @cuda, blockDim, blockIdx, threadIdx, totalmem
+using GPUFiniteFieldMatrices:
+    GPUFiniteFieldMatrices,
+    CuModArray,
+    CuModMatrix,
+    CuModVector,
+    KaratsubaArray,
+    KaratsubaMatrix,
+    KaratsubaVector
 # Pkg.add(url="https://github.com/UCSD-computational-number-theory/GPUFiniteFieldMatrices.jl")
 
 # comment this out when not debugging
