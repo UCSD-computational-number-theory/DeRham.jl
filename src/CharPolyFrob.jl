@@ -188,28 +188,28 @@ function compute_Lpolynomial(n, p, polygon, relative_precision, cp_coeffs, verbo
     dimension = n - 1  # dimension of the projective space
     Lpoly_coeffs = [ZZ(x) for x in cp_coeffs]
     (1 == verbose) && println("initial coefficients = $Lpoly_coeffs")
-    prec_vec = DeRham.prec_vec(polygon, relative_precision)
-    (1 == verbose) && println("prec_vec = $prec_vec")
+    precision_vec = prec_vec(polygon, relative_precision)
+    (1 == verbose) && println("prec_vec = $precision_vec")
     d = length(cp_coeffs) - 1  # degree of characteristic polynomial
     modulus = [ZZ(0) for i = 1:(d+1)]
     for i = 1:(d+1)
-        modulus[i] = p^prec_vec[i]
+        modulus[i] = p^precision_vec[i]
         Lpoly_coeffs[i] = mod(Lpoly_coeffs[i], modulus[i])
     end
     (1 == verbose) && println("coefficients after moding by prec = $Lpoly_coeffs")
     #println("coefficients after moding by prec = $Lpoly_coeffs")
 
     Lpoly_coeffs[d+1] = 1  # set leading coefficient to 1
-    sign = sign_fe(n, d, p, prec_vec, Lpoly_coeffs)  # determine the sign of the functional equation
+    sign = sign_fe(n, d, p, precision_vec, Lpoly_coeffs)  # determine the sign of the functional equation
     (1 == verbose) && println("sign of functional equation = $sign")
     Lpoly_coeffs[1] = sign * p^(div(d*dimension, 2))
     #println(Lpoly_coeffs[1])
-    #println("prec_vec=$prec_vec")
-    Lpoly_coeffs = DeRham.apply_symmetry(n, d, p, prec_vec, Lpoly_coeffs, modulus, sign)
+    #println("prec_vec=$precision_vec")
+    Lpoly_coeffs = apply_symmetry(n, d, p, precision_vec, Lpoly_coeffs, modulus, sign)
     (1 == verbose) && println("coefficients after apply symmetry = $Lpoly_coeffs")
-    #println("prec_vec=$prec_vec")
+    #println("prec_vec=$precision_vec")
     #println("coefficients after apply symmetry = $Lpoly_coeffs")
-    Lpoly_coeffs = DeRham.apply_newton_identity(n, d, p, prec_vec, Lpoly_coeffs, modulus)
+    Lpoly_coeffs = apply_newton_identity(n, d, p, precision_vec, Lpoly_coeffs, modulus)
     (1 == verbose) &&
         println("coeffficients after applying Newton's identity = $Lpoly_coeffs")
 
