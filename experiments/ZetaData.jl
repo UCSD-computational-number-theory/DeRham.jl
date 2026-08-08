@@ -49,7 +49,7 @@ function data_fermat_deform_6()
 
     d = 6
     for p in ps
-        f = DeRham.fermat_hypersurface(3, 6, p);
+        f = DeRham.fermat_hypersurface(3, 6, p)
         f += prod((gens(parent(f)) .^ 2))
 
         z = DeRham.zeta_function(f, algorithm = :naive, fastevaluation = true)

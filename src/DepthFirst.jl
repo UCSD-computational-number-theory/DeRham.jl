@@ -71,8 +71,8 @@ function reducechain_depthfirst(u, g, m, S, f, p, context, cache, params)
         matrices = context.Ruvs[V]
 
         (6 < params.verbose && V == [0, 0, 0, 3] && firsttime) && begin
-            println(matrices[5][:, 25]);
-            firsttime=false;
+            println(matrices[5][:, 25])
+            firsttime=false
             error()
         end
 

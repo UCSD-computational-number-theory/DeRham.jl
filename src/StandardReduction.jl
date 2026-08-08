@@ -40,7 +40,7 @@ function monomial_change_basis(f, l, basis, params, cache)
         basis_columns = transpose(convert_p_to_m(basis_lift, exp_vec))
 
         #change_basis_matrix_aug = hcat(change_basis_matrix,basis_columns);
-        change_basis_matrix_aug = hcat(basis_columns, change_basis_matrix);
+        change_basis_matrix_aug = hcat(basis_columns, change_basis_matrix)
         return change_basis_matrix_aug
     end
 end
