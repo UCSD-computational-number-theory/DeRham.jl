@@ -445,3 +445,5 @@ end
 #    test_lmfdb_elliptic_curves()
 #
 #end
+
+include("quality_gates.jl")
