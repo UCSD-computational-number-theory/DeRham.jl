@@ -9,7 +9,6 @@ using CUDA
 #inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
-#include("CurvesAndSurfaces.jl")
 include("Precision.jl")
 include("ManageCSVTests.jl")
 #include("HasseWitt.jl")
