@@ -4,7 +4,6 @@ using Oscar
 
 # source files, in the future replace this with `using DeRham`
 using DeRham
-using Primes
 using CUDA
 
 include("FirstEllipticCurveExample.jl")
