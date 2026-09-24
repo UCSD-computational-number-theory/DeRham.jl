@@ -326,21 +326,14 @@ using Test
 
             nocases = joinpath(dir, "nocases.json")
             write(nocases, """{"schema_version": "3"}""")
-            @test_throws r"missing required key 'cases'" E2E._read_example_document(
-                nocases,
-            )
+            @test_throws r"missing required key 'cases'" E2E._read_example_document(nocases)
 
             casesnotarr = joinpath(dir, "casesnotarr.json")
             write(casesnotarr, """{"schema_version": "3", "cases": {}}""")
-            @test_throws r"'cases' must be an array" E2E._read_example_document(
-                casesnotarr,
-            )
+            @test_throws r"'cases' must be an array" E2E._read_example_document(casesnotarr)
 
             good = joinpath(dir, "good.json")
-            write(
-                good,
-                """{"schema_version": "3", "cases": [{"id": "x"}]}""",
-            )
+            write(good, """{"schema_version": "3", "cases": [{"id": "x"}]}""")
             cases = E2E._read_example_document(good)
             @test length(cases) == 1
             @test cases[1]["id"] == "x"
@@ -407,10 +400,7 @@ using Test
             dup_within = joinpath(dir, "dup_within.json")
             write(dup_within, document_json(case_json("dup") * ", " * case_json("dup")))
             into = Dict{String,E2E.ExampleCase}()
-            @test_throws r"duplicate example id" E2E._load_examples_into!(
-                into,
-                dup_within,
-            )
+            @test_throws r"duplicate example id" E2E._load_examples_into!(into, dup_within)
 
             f1 = joinpath(dir, "a.json")
             write(f1, document_json(case_json("shared")))
@@ -445,13 +435,8 @@ using Test
             rm(not_array)
 
             missing_field = joinpath(records_dir, "missing_field.toml")
-            write(
-                missing_field,
-                "[[test]]\nname = \"r1\"\ntype = \"zeta_coefficients\"\n",
-            )
-            @test_throws r"missing required key 'example'" E2E.load_execution_records(
-                dir,
-            )
+            write(missing_field, "[[test]]\nname = \"r1\"\ntype = \"zeta_coefficients\"\n")
+            @test_throws r"missing required key 'example'" E2E.load_execution_records(dir)
             rm(missing_field)
 
             empty_name = joinpath(records_dir, "empty_name.toml")
@@ -472,9 +457,7 @@ using Test
                 r2,
                 "[[test]]\nname = \"dup\"\ntype = \"zeta_coefficients\"\nexample = \"ex\"\n",
             )
-            @test_throws r"duplicate execution record name" E2E.load_execution_records(
-                dir,
-            )
+            @test_throws r"duplicate execution record name" E2E.load_execution_records(dir)
             rm(r1)
             rm(r2)
 
