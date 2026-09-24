@@ -10,9 +10,7 @@ using CUDA
 
 include("FirstEllipticCurveExample.jl")
 #include("CurvesAndSurfaces.jl")
-include("Orderings.jl")
 include("Precision.jl")
-include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
 #include("HasseWitt.jl")
 
@@ -53,10 +51,7 @@ end
         testMonomialBasis()
         testLinAlgProb()
         testFrobTrans()
-        #testRedOfTerms()
         testT()
-        #testFrobMat()
-        # test_akr()
     end
 
 
@@ -434,11 +429,6 @@ end
 #end
 #
 
-
-#TODO: we need to re-enable this
-#@testset "Naive Point Counts" begin
-#    test_fermat_cubic_naive()
-#end
 
 #@testset "Elliptic curves" begin
 #
