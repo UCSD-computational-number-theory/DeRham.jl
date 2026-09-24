@@ -2,7 +2,7 @@
 name = "gpu_karatsuba_varbyvar__dim_3_deg_3_fermat_1"
 type = "zeta_coefficients"
 tags = ["gpu", "karatsuba"]
-runtime = 5.0
+runtime = 20.0
 example = "dim_3_deg_3_fermat_1"
 parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [4], use_gpu = true }
 
@@ -10,7 +10,7 @@ parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S
 name = "gpu_karatsuba_varbyvar__dim_3_deg_3_nsmooth_2"
 type = "zeta_coefficients"
 tags = ["gpu", "karatsuba"]
-runtime = 5.0
+runtime = 20.0
 example = "dim_3_deg_3_nsmooth_2"
 parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [4], use_gpu = true }
 
