@@ -54,6 +54,11 @@ end
         testT()
     end
 
+    @testset "Hodge polygon" begin
+        test_hodge_polygon_values()
+        test_hodge_polygon_examples()
+    end
+
 
     @testset "CPU Fast Evaluation + Naive Strategy" begin
 
