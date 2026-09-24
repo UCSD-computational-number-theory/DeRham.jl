@@ -143,7 +143,9 @@ function load_execution_records(e2e_root::AbstractString)
         catch e
             error("$(path): failed to parse as TOML ($(e))")
         end
-        haskey(raw, "test") || continue
+        haskey(raw, "test") || error(
+            "$(path): missing required key 'test' (expected a [[test]] array of tables); found top-level keys $(collect(keys(raw)))",
+        )
         entries = raw["test"]
         entries isa AbstractVector ||
             error("$(path): 'test' must be an array of tables ([[test]])")
