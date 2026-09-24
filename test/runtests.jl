@@ -6,12 +6,10 @@ using Oscar
 using DeRham
 using Primes
 using CUDA
-#inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
 include("Precision.jl")
 include("ManageCSVTests.jl")
-#include("HasseWitt.jl")
 
 # currently, this runs on all the examples that can be done with a full S
 function larger_tests(zf)
@@ -413,31 +411,5 @@ end
     end
 
 end
-
-#@testset "Threefolds" begin
-#    runcsvtest("threefolds.csv")
-#end
-
-#TODO: we don't have this data rn
-#@testset "Bigger primes" begin
-#
-#    test_ellipticcurve_1(next_prime(20))
-#    test_ellipticcurve_1(next_prime(50))
-#    test_ellipticcurve_1(next_prime(100))
-#    test_ellipticcurve_1(next_prime(1000))
-#    test_ellipticcurve_1(next_prime(10000))
-#    test_ellipticcurve_1(next_prime(100000))
-#
-#    # maybe do it with another variety?
-#
-#end
-#
-
-
-#@testset "Elliptic curves" begin
-#
-#    test_lmfdb_elliptic_curves()
-#
-#end
 
 include("quality_gates.jl")
