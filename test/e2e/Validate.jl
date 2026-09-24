@@ -32,17 +32,25 @@ function validate_catalogue(
         loc = "$(record.source_path) (record $(repr(record.name)))"
 
         if !isfinite(record.runtime) || record.runtime < 0
-            push!(errors, "$(loc): runtime must be a finite, nonnegative number, got $(record.runtime)")
+            push!(
+                errors,
+                "$(loc): runtime must be a finite, nonnegative number, got $(record.runtime)",
+            )
         end
 
         for tag in record.tags
-            tag in config.allowed_tags ||
-                push!(errors, "$(loc): unknown tag $(repr(tag)); allowed tags are $(sort(collect(config.allowed_tags)))")
+            tag in config.allowed_tags || push!(
+                errors,
+                "$(loc): unknown tag $(repr(tag)); allowed tags are $(sort(collect(config.allowed_tags)))",
+            )
         end
 
         executor = get(EXECUTOR_REGISTRY, record.type, nothing)
         if executor === nothing
-            push!(errors, "$(loc): unknown type $(repr(record.type)); known types are $(sort(collect(keys(EXECUTOR_REGISTRY))))")
+            push!(
+                errors,
+                "$(loc): unknown type $(repr(record.type)); known types are $(sort(collect(keys(EXECUTOR_REGISTRY))))",
+            )
             continue
         end
 

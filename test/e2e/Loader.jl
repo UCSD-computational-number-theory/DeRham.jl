@@ -12,8 +12,9 @@ function artifact_examples_dir(e2e_root::AbstractString)
     isfile(artifacts_toml) || error("Artifacts.toml not found at $(artifacts_toml)")
     path = ensure_artifact_installed(ARTIFACT_NAME, artifacts_toml)
     casesdir = joinpath(path, ARTIFACT_CASES_SUBDIR, "cases")
-    isdir(casesdir) ||
-        error("resolved artifact $(ARTIFACT_NAME) is missing expected cases/ at $(casesdir)")
+    isdir(casesdir) || error(
+        "resolved artifact $(ARTIFACT_NAME) is missing expected cases/ at $(casesdir)",
+    )
     return casesdir
 end
 
@@ -41,10 +42,9 @@ function _read_example_document(path::AbstractString)
         error("$(path): failed to parse as JSON ($(e))")
     end
     data isa AbstractDict || error("$(path): top level must be a JSON object")
-    get(data, "schema_version", nothing) == SCHEMA_VERSION ||
-        error(
-            "$(path): schema_version must be $(repr(SCHEMA_VERSION)), got $(repr(get(data, "schema_version", nothing)))",
-        )
+    get(data, "schema_version", nothing) == SCHEMA_VERSION || error(
+        "$(path): schema_version must be $(repr(SCHEMA_VERSION)), got $(repr(get(data, "schema_version", nothing)))",
+    )
     haskey(data, "cases") || error("$(path): missing required key 'cases'")
     cases = data["cases"]
     cases isa AbstractVector || error("$(path): 'cases' must be an array")
@@ -79,13 +79,9 @@ end
 # diagnostics, and merges them into `into`. Raises on a duplicate id, either
 # within this source or against what is already in `into` (covers
 # collisions both within and across the artifact / local sources).
-function _load_examples_into!(
-    into::Dict{String,ExampleCase},
-    path::AbstractString,
-)
+function _load_examples_into!(into::Dict{String,ExampleCase}, path::AbstractString)
     for (index, case) in enumerate(_read_example_document(path))
-        case isa AbstractDict ||
-            error("$(path): case #$(index) must be a JSON object")
+        case isa AbstractDict || error("$(path): case #$(index) must be a JSON object")
         example = _parse_example_case(case, path, index)
         if haskey(into, example.id)
             existing = into[example.id]

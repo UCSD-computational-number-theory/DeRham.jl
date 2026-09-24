@@ -45,8 +45,7 @@ function validate_parameters(name::AbstractString, params::AbstractDict)
             error("execution record $(repr(name)): unknown parameter $(repr(k))")
     end
     if haskey(params, "algorithm")
-        params["algorithm"] isa AbstractString &&
-            params["algorithm"] in KNOWN_ALGORITHMS ||
+        params["algorithm"] isa AbstractString && params["algorithm"] in KNOWN_ALGORITHMS ||
             error(
                 "execution record $(repr(name)): unknown algorithm $(repr(get(params, "algorithm", nothing)))",
             )
@@ -73,8 +72,7 @@ capability_available(cap::Symbol) = capability_available(Val(cap))
 
 function _find_result(example::ExampleCase, p::Integer)
     matches = [r for r in example.results if _to_bigint(r["p"]) == BigInt(p)]
-    isempty(matches) &&
-        error("example $(repr(example.id)) has no result for p=$(p)")
+    isempty(matches) && error("example $(repr(example.id)) has no result for p=$(p)")
     length(matches) > 1 &&
         error("example $(repr(example.id)) has more than one result for p=$(p)")
     return matches[1]
@@ -103,8 +101,10 @@ function expected_descending(example::ExampleCase, record::ExecutionRecord)
         "example $(repr(example.id)): zeta_coefficients only supports coeff_domain.kind == \"integer\"",
     )
     nmf = variety["non_middle_factors"]
-    (get(nmf, "kind", nothing) == "projective_lefschetz" &&
-     get(nmf, "middle_factor_content", nothing) == "full") || error(
+    (
+        get(nmf, "kind", nothing) == "projective_lefschetz" &&
+        get(nmf, "middle_factor_content", nothing) == "full"
+    ) || error(
         "example $(repr(example.id)): zeta_coefficients only supports non_middle_factors " *
         "{kind = \"projective_lefschetz\", middle_factor_content = \"full\"}, got $(nmf)",
     )

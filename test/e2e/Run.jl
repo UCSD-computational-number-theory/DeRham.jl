@@ -58,7 +58,14 @@ function run_selected(
         @test passed
         push!(
             outcomes,
-            CaseOutcome(record.name, passed, false, nothing, record.runtime, actual_runtime),
+            CaseOutcome(
+                record.name,
+                passed,
+                false,
+                nothing,
+                record.runtime,
+                actual_runtime,
+            ),
         )
     end
     return outcomes

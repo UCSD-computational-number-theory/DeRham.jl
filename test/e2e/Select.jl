@@ -15,15 +15,15 @@ function parse_selection(args::AbstractVector{<:AbstractString})
     modes = Selection[]
     for arg in args
         if startswith(arg, "--workflow=")
-            raw = arg[(length("--workflow=") + 1):end]
+            raw = arg[(length("--workflow=")+1):end]
             wf = Symbol(raw)
             wf in (:presubmit, :ci, :full) ||
                 error("unknown workflow $(repr(raw)); expected presubmit, ci, or full")
             push!(modes, Selection(:workflow, wf))
         elseif startswith(arg, "--name=")
-            push!(modes, Selection(:name, arg[(length("--name=") + 1):end]))
+            push!(modes, Selection(:name, arg[(length("--name=")+1):end]))
         elseif startswith(arg, "--tag=")
-            push!(modes, Selection(:tag, arg[(length("--tag=") + 1):end]))
+            push!(modes, Selection(:tag, arg[(length("--tag=")+1):end]))
         else
             error(
                 "unknown E2E test_args selector $(repr(arg)); expected --workflow=, --name=, or --tag=",
