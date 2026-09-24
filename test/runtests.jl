@@ -4,17 +4,11 @@ using Oscar
 
 # source files, in the future replace this with `using DeRham`
 using DeRham
-using Primes
 using CUDA
-#inclute("../src/DeRham.jl")
 
 include("FirstEllipticCurveExample.jl")
-#include("CurvesAndSurfaces.jl")
-include("Orderings.jl")
 include("Precision.jl")
-include("NaivePointCounts.jl")
 include("ManageCSVTests.jl")
-#include("HasseWitt.jl")
 
 # currently, this runs on all the examples that can be done with a full S
 function larger_tests(zf)
@@ -53,10 +47,12 @@ end
         testMonomialBasis()
         testLinAlgProb()
         testFrobTrans()
-        #testRedOfTerms()
         testT()
-        #testFrobMat()
-        # test_akr()
+    end
+
+    @testset "Hodge polygon" begin
+        test_hodge_polygon_values()
+        test_hodge_polygon_examples()
     end
 
 
@@ -414,36 +410,5 @@ end
     end
 
 end
-
-#@testset "Threefolds" begin
-#    runcsvtest("threefolds.csv")
-#end
-
-#TODO: we don't have this data rn
-#@testset "Bigger primes" begin
-#
-#    test_ellipticcurve_1(next_prime(20))
-#    test_ellipticcurve_1(next_prime(50))
-#    test_ellipticcurve_1(next_prime(100))
-#    test_ellipticcurve_1(next_prime(1000))
-#    test_ellipticcurve_1(next_prime(10000))
-#    test_ellipticcurve_1(next_prime(100000))
-#
-#    # maybe do it with another variety?
-#
-#end
-#
-
-
-#TODO: we need to re-enable this
-#@testset "Naive Point Counts" begin
-#    test_fermat_cubic_naive()
-#end
-
-#@testset "Elliptic curves" begin
-#
-#    test_lmfdb_elliptic_curves()
-#
-#end
 
 include("quality_gates.jl")
