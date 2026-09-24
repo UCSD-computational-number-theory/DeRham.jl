@@ -1,0 +1,233 @@
+{
+  "schema_version": "3",
+  "cases": [
+    {
+      "id": "dim_1_deg_3_fermat_1",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^3 + x2^3 + x3^3 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              3
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 7,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              1,
+              7
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_3_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_3_fermat_2",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^3 + x2^3 + x3^3 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              3
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 11,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              11
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_3_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_3_fermat_3",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^3 + x2^3 + x3^3 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              3
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 13,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              -5,
+              13
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_3_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_3_fermat_4",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^3 + x2^3 + x3^3 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              3,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0
+            ],
+            [
+              0,
+              0,
+              3
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 17,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              17
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_3_fermat.csv (mcp-ttb.6)"
+    }
+  ]
+}

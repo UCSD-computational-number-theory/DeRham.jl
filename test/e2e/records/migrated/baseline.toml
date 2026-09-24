@@ -1,0 +1,105 @@
+[[test]]
+name = "baseline__dim_1_deg_7_random_1"
+type = "zeta_coefficients"
+runtime = 8.0
+example = "dim_1_deg_7_random_1"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_1"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_1"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_2"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_2"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_3"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_3"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_4"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_4"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_5"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_5"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_6"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_6"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_7"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_7"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_4_many_8"
+type = "zeta_coefficients"
+runtime = 3.0
+example = "dim_2_deg_4_many_8"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_5_fermat_1"
+type = "zeta_coefficients"
+runtime = 40.0
+example = "dim_2_deg_5_fermat_1"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_5_fermat_2"
+type = "zeta_coefficients"
+runtime = 40.0
+example = "dim_2_deg_5_fermat_2"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__dim_2_deg_5_many_1"
+type = "zeta_coefficients"
+runtime = 40.0
+example = "dim_2_deg_5_many_1"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__vanishing_2"
+type = "zeta_coefficients"
+runtime = 0.5
+example = "vanishing_2"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__vanishing_3"
+type = "zeta_coefficients"
+runtime = 8.0
+example = "vanishing_3"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "baseline__vanishing_4"
+type = "zeta_coefficients"
+runtime = 5.0
+example = "vanishing_4"
+parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
+

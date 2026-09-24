@@ -1,0 +1,287 @@
+[[test]]
+name = "pchunk__dim_1_deg_3_fermat_1"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_fermat_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_fermat_2"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_fermat_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_fermat_3"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_fermat_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_fermat_4"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_fermat_4"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_1"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_2"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_3"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_4"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_4"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_5"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_5"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_6"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_6"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_7"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_7"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_8"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_8"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_random_9"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_random_9"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_1"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_2"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_3"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_4"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_4"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_5"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_5"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_6"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_6"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_7"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_7"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_8"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_8"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_9"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_9"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_10"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_10"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_11"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_11"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_3_many_12"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_12"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_fermat_1"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_fermat_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_fermat_2"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_fermat_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_fermat_3"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_fermat_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_1"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_2"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_3"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_4"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_4"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_5"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_5"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_6"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_6"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_7"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_7"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_8"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_8"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_random_9"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_random_9"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_many_1"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_many_1"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_many_2"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_many_2"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_many_3"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_many_3"
+parameters = { algorithm = "pchunk" }
+
+[[test]]
+name = "pchunk__dim_1_deg_4_many_4"
+type = "zeta_coefficients"
+runtime = 0.15
+example = "dim_1_deg_4_many_4"
+parameters = { algorithm = "pchunk" }
+

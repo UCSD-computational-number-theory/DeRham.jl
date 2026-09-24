@@ -1,0 +1,90 @@
+{
+  "schema_version": "3",
+  "cases": [
+    {
+      "id": "dim_1_deg_7_fermat_1",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^7 + x2^7 + x3^7 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              7,
+              0,
+              0
+            ],
+            [
+              0,
+              7,
+              0
+            ],
+            [
+              0,
+              0,
+              7
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 13,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              195,
+              0,
+              17745,
+              0,
+              999635,
+              0,
+              38985765,
+              0,
+              1114992879,
+              0,
+              24158179045,
+              0,
+              403786706895,
+              0,
+              5249227189635,
+              0,
+              53075519361865,
+              0,
+              413989051022547,
+              0,
+              2446298937860505,
+              0,
+              10600628730728855,
+              0,
+              31801886192186565,
+              0,
+              59060645785489335,
+              0,
+              51185893014090757
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_7_fermat.csv (mcp-ttb.6)"
+    }
+  ]
+}
