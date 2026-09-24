@@ -13,4 +13,3 @@ tags = ["gpu"]
 runtime = 0.5
 example = "dim_2_deg_3_fermat_2"
 parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, use_gpu = true }
-

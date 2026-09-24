@@ -102,4 +102,3 @@ type = "zeta_coefficients"
 runtime = 150.0
 example = "vanishing_4"
 parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
-

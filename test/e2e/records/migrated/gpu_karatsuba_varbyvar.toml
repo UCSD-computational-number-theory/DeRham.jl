@@ -13,4 +13,3 @@ tags = ["gpu", "karatsuba"]
 runtime = 150.0
 example = "dim_3_deg_3_nsmooth_2"
 parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [4], use_gpu = true }
-

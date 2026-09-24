@@ -18,4 +18,3 @@ type = "zeta_coefficients"
 runtime = 0.5
 example = "dim_2_deg_3_many_3"
 parameters = { S = [1, 2], algorithm = "depthfirst", fastevaluation = true }
-

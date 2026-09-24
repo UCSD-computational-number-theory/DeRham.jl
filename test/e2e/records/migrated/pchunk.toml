@@ -284,4 +284,3 @@ type = "zeta_coefficients"
 runtime = 0.15
 example = "dim_1_deg_4_many_4"
 parameters = { algorithm = "pchunk" }
-

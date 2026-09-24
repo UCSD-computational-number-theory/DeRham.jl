@@ -382,4 +382,3 @@ type = "zeta_coefficients"
 runtime = 15.0
 example = "dim2_deg_4_k3f3_1"
 parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
-

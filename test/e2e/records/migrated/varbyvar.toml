@@ -46,4 +46,3 @@ type = "zeta_coefficients"
 runtime = 0.05
 example = "dim_1_deg_3_nsmooth_7"
 parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
-
