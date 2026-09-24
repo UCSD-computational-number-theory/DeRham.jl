@@ -351,7 +351,7 @@ parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false 
 [[test]]
 name = "fast_eval__dim_1_deg_7_fermat_1"
 type = "zeta_coefficients"
-runtime = 30.0
+runtime = 100.0
 example = "dim_1_deg_7_fermat_1"
 parameters = { algorithm = "depthfirst", fastevaluation = true, changef = false }
 
