@@ -1,0 +1,15 @@
+[[test]]
+name = "gpu_s012__dim_2_deg_3_fermat_1"
+type = "zeta_coefficients"
+tags = ["gpu"]
+runtime = 0.5
+example = "dim_2_deg_3_fermat_1"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, use_gpu = true }
+
+[[test]]
+name = "gpu_s012__dim_2_deg_3_fermat_2"
+type = "zeta_coefficients"
+tags = ["gpu"]
+runtime = 0.5
+example = "dim_2_deg_3_fermat_2"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, use_gpu = true }

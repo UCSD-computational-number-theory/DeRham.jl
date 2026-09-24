@@ -1,0 +1,48 @@
+[[test]]
+name = "varbyvar__dim_1_deg_3_fermat_1"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_fermat_1"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_many_1"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_many_1"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_nsmooth_3"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_nsmooth_3"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_nsmooth_4"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_nsmooth_4"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_nsmooth_5"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_nsmooth_5"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_nsmooth_6"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_nsmooth_6"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }
+
+[[test]]
+name = "varbyvar__dim_1_deg_3_nsmooth_7"
+type = "zeta_coefficients"
+runtime = 0.05
+example = "dim_1_deg_3_nsmooth_7"
+parameters = { algorithm = "varbyvar", fastevaluation = true, changef = false, S = [2] }

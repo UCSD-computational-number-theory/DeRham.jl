@@ -1,0 +1,380 @@
+{
+  "schema_version": "3",
+  "cases": [
+    {
+      "id": "dim_1_deg_6_fermat_1",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^6 + x2^6 + x3^6 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              6
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 19,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              52,
+              1324,
+              22128,
+              274686,
+              2713092,
+              22238610,
+              155275620,
+              938506065,
+              4958887340,
+              23033123780,
+              94218859460,
+              338800689465,
+              1065035477580,
+              2898157893810,
+              6717884388108,
+              12922844868366,
+              19779593840592,
+              22486237466284,
+              16779760284508,
+              6131066257801
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_6_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_6_fermat_2",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^6 + x2^6 + x3^6 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              6
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 11,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              110,
+              0,
+              5445,
+              0,
+              159720,
+              0,
+              3074610,
+              0,
+              40584852,
+              0,
+              372027810,
+              0,
+              2338460520,
+              0,
+              9646149645,
+              0,
+              23579476910,
+              0,
+              25937424601
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_6_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_6_fermat_3",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^6 + x2^6 + x3^6 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              6
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 47,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              470,
+              0,
+              99405,
+              0,
+              12458760,
+              0,
+              1024733010,
+              0,
+              57794941764,
+              0,
+              2263635219090,
+              0,
+              60794774455560,
+              0,
+              1071507899779245,
+              0,
+              11191304731027670,
+              0,
+              52599132235830049
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_6_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_6_fermat_4",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^6 + x2^6 + x3^6 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              6
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 53,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              530,
+              0,
+              126405,
+              0,
+              17865240,
+              0,
+              1657001010,
+              0,
+              105385264236,
+              0,
+              4654515837090,
+              0,
+              140965336780440,
+              0,
+              2801686068511245,
+              0,
+              32997635918021330,
+              0,
+              174887470365513049
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_6_fermat.csv (mcp-ttb.6)"
+    },
+    {
+      "id": "dim_1_deg_6_fermat_5",
+      "variety": {
+        "coeff_domain": {
+          "kind": "integer"
+        },
+        "dim": 1,
+        "non_middle_factors": {
+          "kind": "projective_lefschetz",
+          "middle_factor_content": "full"
+        },
+        "model": {
+          "kind": "plane_curve",
+          "pretty": "x1^6 + x2^6 + x3^6 = 0",
+          "vars": [
+            "x1",
+            "x2",
+            "x3"
+          ],
+          "monomials": [
+            [
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              6
+            ]
+          ],
+          "coeffs": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "results": [
+        {
+          "p": 59,
+          "Lpoly": {
+            "coeffs_asc": [
+              1,
+              0,
+              590,
+              0,
+              156645,
+              0,
+              24645480,
+              0,
+              2544645810,
+              0,
+              180160923348,
+              0,
+              8857912064610,
+              0,
+              298638178178280,
+              0,
+              6607369692194445,
+              0,
+              86629958186549390,
+              0,
+              511116753300641401
+            ]
+          }
+        }
+      ],
+      "notes": "migrated from test/varieties/dim_1_deg_6_fermat.csv (mcp-ttb.6)"
+    }
+  ]
+}

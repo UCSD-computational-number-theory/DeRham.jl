@@ -1,0 +1,20 @@
+[[test]]
+name = "cubic_surfaces__dim_2_deg_3_many_1"
+type = "zeta_coefficients"
+runtime = 0.5
+example = "dim_2_deg_3_many_1"
+parameters = { S = [1, 2], algorithm = "depthfirst", fastevaluation = true }
+
+[[test]]
+name = "cubic_surfaces__dim_2_deg_3_many_2"
+type = "zeta_coefficients"
+runtime = 0.5
+example = "dim_2_deg_3_many_2"
+parameters = { S = [1, 2], algorithm = "depthfirst", fastevaluation = true }
+
+[[test]]
+name = "cubic_surfaces__dim_2_deg_3_many_3"
+type = "zeta_coefficients"
+runtime = 0.5
+example = "dim_2_deg_3_many_3"
+parameters = { S = [1, 2], algorithm = "depthfirst", fastevaluation = true }

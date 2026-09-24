@@ -1,0 +1,6 @@
+[thresholds]
+presubmit_seconds = 5.0
+ci_seconds = 90.0
+
+[tags]
+allowed = ["gpu", "multithreading", "uint", "bigint", "karatsuba"]

@@ -1,0 +1,34 @@
+[[test]]
+name = "k3f3__dim2_deg_4_k3f3_1"
+type = "zeta_coefficients"
+runtime = 15.0
+example = "dim2_deg_4_k3f3_1"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "k3f3__dim2_deg_4_k3f3_2"
+type = "zeta_coefficients"
+runtime = 15.0
+example = "dim2_deg_4_k3f3_2"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "k3f3__dim2_deg_4_k3f3_3"
+type = "zeta_coefficients"
+runtime = 15.0
+example = "dim2_deg_4_k3f3_3"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "k3f3__dim2_deg_4_k3f3_4"
+type = "zeta_coefficients"
+runtime = 15.0
+example = "dim2_deg_4_k3f3_4"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, changef = false }
+
+[[test]]
+name = "k3f3__dim2_deg_4_k3f3_5"
+type = "zeta_coefficients"
+runtime = 15.0
+example = "dim2_deg_4_k3f3_5"
+parameters = { S = [0, 1, 2], algorithm = "depthfirst", fastevaluation = true, changef = false }
